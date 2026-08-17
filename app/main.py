@@ -1,0 +1,357 @@
+import os
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+import sqlite3
+
+from app.database import get_db, init_db
+from app.auth import verify_password, create_access_token, get_current_user, get_current_admin, get_password_hash
+from app import schemas, crud
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="Ausgabenplaner API", version="1.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# --- Auth Endpoints ---
+
+@app.post("/api/auth/login", response_model=schemas.TokenResponse)
+def login(req: schemas.LoginRequest, conn: sqlite3.Connection = Depends(get_db)):
+    user_row = conn.execute("SELECT * FROM users WHERE username = ?", (req.username,)).fetchone()
+    if not user_row:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ungültiger Benutzername oder Passwort")
+
+    user = dict(user_row)
+    if not verify_password(req.password, user["password_hash"]):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ungültiger Benutzername oder Passwort")
+
+    token = create_access_token({"sub": user["username"], "role": user["role"]})
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "username": user["username"],
+            "name": user["name"],
+            "role": user["role"],
+        },
+    }
+
+
+@app.get("/api/auth/me", response_model=schemas.UserResponse)
+def get_me(current_user: dict = Depends(get_current_user)):
+    return current_user
+
+
+# --- User Management Endpoints (Admin only) ---
+
+@app.post("/api/users", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+def create_user(
+    req: schemas.UserCreate,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    existing = conn.execute("SELECT id FROM users WHERE username = ?", (req.username,)).fetchone()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Benutzername existiert bereits")
+
+    hashed_pw = get_password_hash(req.password)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)",
+        (req.username, hashed_pw, req.name, req.role),
+    )
+    conn.commit()
+    user_id = cursor.lastrowid
+    return {"id": user_id, "username": req.username, "name": req.name, "role": req.role}
+
+
+@app.get("/api/users")
+def list_users(
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    rows = conn.execute("SELECT id, username, name, role, created_at FROM users ORDER BY id ASC").fetchall()
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/admin/run-tests")
+def run_test_suite_route(current_admin: dict = Depends(get_current_admin)):
+    import subprocess
+    import sys
+
+    env = os.environ.copy()
+    env["TESTING"] = "1"
+
+    res = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "tests/test_auth.py",
+            "tests/test_domain.py",
+            "tests/test_snapshots.py",
+            "tests/test_spreadsheet_data.py",
+            "-v",
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    return {
+        "status": "success" if res.returncode == 0 else "failure",
+        "passed": res.returncode == 0,
+        "returncode": res.returncode,
+        "output": res.stdout + "\n" + res.stderr,
+    }
+
+
+@app.get("/api/admin/run-tests-stream")
+def run_tests_stream_route(
+    token: str = None,
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    from fastapi.responses import StreamingResponse
+    import subprocess
+    import sys
+    import json
+    import re
+    from app.auth import decode_access_token
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Nicht authentifiziert")
+
+    payload = decode_access_token(token)
+    if not payload or payload.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin-Rechte erforderlich")
+
+    def event_generator():
+        env = os.environ.copy()
+        env["TESTING"] = "1"
+
+        proc = subprocess.Popen(
+            [
+                sys.executable,
+                "-u",
+                "-m",
+                "pytest",
+                "tests/test_auth.py",
+                "tests/test_domain.py",
+                "tests/test_snapshots.py",
+                "tests/test_spreadsheet_data.py",
+                "-v",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            env=env,
+        )
+
+        progress = 0
+        pattern = re.compile(r"\[\s*(\d+)%\]")
+
+        yield f"data: {json.dumps({'type': 'start', 'message': 'Starte Pytest Testsuite...'})}\n\n"
+
+        for line in proc.stdout:
+            match = pattern.search(line)
+            if match:
+                progress = int(match.group(1))
+
+            yield f"data: {json.dumps({'type': 'log', 'line': line, 'progress': progress})}\n\n"
+
+        proc.wait()
+        passed = proc.returncode == 0
+        yield f"data: {json.dumps({'type': 'complete', 'passed': passed, 'progress': 100})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+
+
+
+# --- Plan & Version Endpoints ---
+
+@app.get("/api/plans/active", response_model=schemas.PlanResponse)
+def get_active_plan_route(
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    plan = crud.get_active_plan(conn)
+    if not plan:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kein aktiver Plan vorhanden")
+    return plan
+
+
+@app.get("/api/versions/{version_id}", response_model=schemas.VersionResponse)
+def get_version_route(
+    version_id: int,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    ver = crud.get_version_details(conn, version_id)
+    if not ver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    return ver
+
+
+@app.post("/api/plans/{plan_id}/snapshots", response_model=schemas.VersionResponse, status_code=status.HTTP_201_CREATED)
+def create_snapshot_route(
+    plan_id: int,
+    req: schemas.VersionCreate,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    ver = crud.create_version_snapshot(
+        conn,
+        plan_id=plan_id,
+        title=req.title,
+        effective_date=req.effective_date,
+        copy_from_version_id=req.copy_from_version_id,
+    )
+    return ver
+
+
+@app.get("/api/plans/{plan_id}/history-comparison", response_model=schemas.HistoryComparisonResponse)
+def get_history_comparison_route(
+    plan_id: int,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return crud.get_history_comparison(conn, plan_id)
+
+
+# --- Positions Endpoints ---
+
+@app.post("/api/versions/{version_id}/positions", response_model=schemas.PositionResponse, status_code=status.HTTP_201_CREATED)
+def create_position_route(
+    version_id: int,
+    req: schemas.PositionCreate,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return crud.create_position(
+        conn,
+        version_id=version_id,
+        title=req.title,
+        amount=req.amount,
+        comment=req.comment,
+        category=req.category,
+        sort_order=req.sort_order or 0,
+    )
+
+
+@app.put("/api/positions/{position_id}", response_model=schemas.PositionResponse)
+def update_position_route(
+    position_id: int,
+    req: schemas.PositionUpdate,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    updated = crud.update_position(
+        conn,
+        position_id=position_id,
+        title=req.title,
+        amount=req.amount,
+        comment=req.comment,
+        category=req.category,
+        sort_order=req.sort_order,
+    )
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Position nicht gefunden")
+    return updated
+
+
+@app.delete("/api/positions/{position_id}")
+def delete_position_route(
+    position_id: int,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    success = crud.delete_position(conn, position_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Position nicht gefunden")
+    return {"message": "Position gelöscht"}
+
+
+# --- Contributions Endpoints ---
+
+@app.post("/api/versions/{version_id}/contributions", response_model=schemas.ContributionResponse, status_code=status.HTTP_201_CREATED)
+def create_contribution_route(
+    version_id: int,
+    req: schemas.ContributionCreate,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return crud.create_contribution(
+        conn,
+        version_id=version_id,
+        person_name=req.person_name,
+        amount=req.amount,
+        comment=req.comment,
+        sort_order=req.sort_order or 0,
+    )
+
+
+@app.put("/api/contributions/{contribution_id}", response_model=schemas.ContributionResponse)
+def update_contribution_route(
+    contribution_id: int,
+    req: schemas.ContributionUpdate,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    updated = crud.update_contribution(
+        conn,
+        contribution_id=contribution_id,
+        person_name=req.person_name,
+        amount=req.amount,
+        comment=req.comment,
+        sort_order=req.sort_order,
+    )
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Beitrag nicht gefunden")
+    return updated
+
+
+@app.delete("/api/contributions/{contribution_id}")
+def delete_contribution_route(
+    contribution_id: int,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    success = crud.delete_contribution(conn, contribution_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Beitrag nicht gefunden")
+    return {"message": "Beitrag gelöscht"}
+
+
+# --- Static Files / SPA Mounting ---
+
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+@app.get("/{full_path:path}")
+def serve_spa(full_path: str):
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API route not found")
+    index_file = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return JSONResponse({"message": "Ausgabenplaner API running"})

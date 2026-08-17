@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ausgabenplaner - Haushalts- & Kostenübersicht</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="overlay hidden">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Login View -->
+        <div id="login-view" class="view">
+            <div class="login-card glass-panel">
+                <div class="brand-header">
+                    <div class="brand-icon">📊</div>
+                    <h1>Ausgabenplaner</h1>
+                    <p class="subtitle">Haushaltskosten & Beitragsverwaltung</p>
+                </div>
+                <form id="login-form">
+                    <div id="login-error" class="alert alert-danger hidden"></div>
+                    <div class="form-group">
+                        <label for="login-username">Benutzername</label>
+                        <input type="text" id="login-username" required autocomplete="username" placeholder="admin">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Passwort</label>
+                        <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <span>Anmelden</span>
+                    </button>
+                </form>
+                <div class="login-footer">
+                    <p>Standard-Admin: <code>admin</code> / <code>admin123</code></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard View -->
+        <div id="dashboard-view" class="view hidden">
+            <!-- Top Navbar -->
+            <header class="navbar glass-header">
+                <div class="navbar-brand">
+                    <span class="brand-logo">📊</span>
+                    <span class="brand-name">Ausgabenplaner</span>
+                </div>
+                <div class="navbar-actions">
+                    <div class="user-badge glass-badge">
+                        <span id="user-display-name">Admin</span>
+                        <span id="user-role-badge" class="badge badge-admin">Admin</span>
+                    </div>
+                    <button id="btn-run-tests" class="btn btn-accent btn-sm hidden">
+                        🧪 Testsuite
+                    </button>
+                    <button id="btn-user-mgmt" class="btn btn-secondary btn-sm hidden">
+                        👥 Benutzer
+                    </button>
+                    <button id="btn-logout" class="btn btn-outline btn-sm">
+                        🚪 Abmelden
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <main class="content-container">
+                <!-- Header Toolbar & Version Selector -->
+                <div class="plan-header-bar glass-panel">
+                    <div class="plan-title-box">
+                        <h2 id="plan-title">Tütingstraße 22</h2>
+                        <div class="version-selector-container">
+                            <label for="select-version">Stand:</label>
+                            <select id="select-version" class="form-select"></select>
+                        </div>
+                    </div>
+                    <div class="plan-actions">
+                        <button id="btn-new-snapshot" class="btn btn-secondary">
+                            ➕ Neuer Stand
+                        </button>
+                        <button id="btn-history-comparison" class="btn btn-accent">
+                            📜 Historischer Vergleich
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Summary Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card kpi-expenses glass-card">
+                        <div class="kpi-icon">💸</div>
+                        <div class="kpi-details">
+                            <span class="kpi-label">Gesamtausgaben</span>
+                            <span id="kpi-expenses-val" class="kpi-value">-0,00 €</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-contributions glass-card">
+                        <div class="kpi-icon">👥</div>
+                        <div class="kpi-details">
+                            <span class="kpi-label">Beiträge (Zahlungen)</span>
+                            <span id="kpi-contributions-val" class="kpi-value">0,00 €</span>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-balance glass-card" id="kpi-balance-card">
+                        <div class="kpi-icon">⚖️</div>
+                        <div class="kpi-details">
+                            <span class="kpi-label">Rest / SUMME</span>
+                            <span id="kpi-balance-val" class="kpi-value">0,00 €</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Tables Grid -->
+                <div class="tables-grid">
+                    <!-- Expenses Positions Table -->
+                    <div class="table-card glass-panel">
+                        <div class="card-header">
+                            <h3>Positionsausgaben</h3>
+                            <button id="btn-add-position" class="btn btn-sm btn-primary">
+                                ➕ Position hinzufügen
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table" id="table-positions">
+                                <thead>
+                                    <tr>
+                                        <th>Position</th>
+                                        <th>Kosten</th>
+                                        <th>Bemerkung</th>
+                                        <th class="text-right">Aktionen</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-sum-row">
+                                        <td><strong>Summe Ausgaben</strong></td>
+                                        <td id="sum-positions-val"><strong>-0,00 €</strong></td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Contributions Table -->
+                    <div class="table-card glass-panel">
+                        <div class="card-header">
+                            <h3>Personenbeiträge</h3>
+                            <button id="btn-add-contribution" class="btn btn-sm btn-primary">
+                                ➕ Beitrag hinzufügen
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table" id="table-contributions">
+                                <thead>
+                                    <tr>
+                                        <th>Person / Bezahler</th>
+                                        <th>Betrag</th>
+                                        <th>Bemerkung</th>
+                                        <th class="text-right">Aktionen</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-sum-row">
+                                        <td><strong>Summe Beiträge</strong></td>
+                                        <td id="sum-contributions-val"><strong>0,00 €</strong></td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal: Add / Edit Position -->
+    <div id="modal-position" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel">
+            <div class="modal-header">
+                <h3 id="modal-position-title">Position hinzufügen</h3>
+                <button class="modal-close" data-close="modal-position">&times;</button>
+            </div>
+            <form id="form-position">
+                <input type="hidden" id="pos-id">
+                <div class="form-group">
+                    <label for="pos-title">Bezeichnung / Position</label>
+                    <input type="text" id="pos-title" required placeholder="z.B. Strom / Naturstrom">
+                </div>
+                <div class="form-group">
+                    <label for="pos-amount">Kosten (€)</label>
+                    <input type="number" step="0.01" id="pos-amount" required placeholder="-87.00 (negativ für Ausgaben)">
+                    <small class="form-help">Negative Werte für Ausgaben (z.B. -1235.00), positive Werte für Rückerstattungen.</small>
+                </div>
+                <div class="form-group">
+                    <label for="pos-comment">Bemerkung</label>
+                    <input type="text" id="pos-comment" placeholder="z.B. Wird quartalsweise eingezogen">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close="modal-position">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add / Edit Contribution -->
+    <div id="modal-contribution" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel">
+            <div class="modal-header">
+                <h3 id="modal-contrib-title">Beitrag hinzufügen</h3>
+                <button class="modal-close" data-close="modal-contribution">&times;</button>
+            </div>
+            <form id="form-contribution">
+                <input type="hidden" id="contrib-id">
+                <div class="form-group">
+                    <label for="contrib-person">Person / Bezahler</label>
+                    <input type="text" id="contrib-person" required placeholder="z.B. Phil">
+                </div>
+                <div class="form-group">
+                    <label for="contrib-amount">Beitragsbetrag (€)</label>
+                    <input type="number" step="0.01" id="contrib-amount" required placeholder="930.00">
+                </div>
+                <div class="form-group">
+                    <label for="contrib-comment">Bemerkung</label>
+                    <input type="text" id="contrib-comment" placeholder="z.B. Monatliche Überweisung">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close="modal-contribution">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: New Stand / Snapshot -->
+    <div id="modal-snapshot" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel">
+            <div class="modal-header">
+                <h3>Neuen Stand / Snapshot anlegen</h3>
+                <button class="modal-close" data-close="modal-snapshot">&times;</button>
+            </div>
+            <form id="form-snapshot">
+                <div class="form-group">
+                    <label for="snap-title">Bezeichnung des Stands</label>
+                    <input type="text" id="snap-title" required placeholder="z.B. Stand ab 01.10.2026">
+                </div>
+                <div class="form-group">
+                    <label for="snap-date">Gültig ab (Datum)</label>
+                    <input type="date" id="snap-date">
+                </div>
+                <div class="form-checkbox">
+                    <input type="checkbox" id="snap-copy" checked>
+                    <label for="snap-copy">Positionen & Beiträge vom aktuellen Stand kopieren</label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close="modal-snapshot">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Stand erstellen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: History Side-by-Side Comparison -->
+    <div id="modal-history" class="modal-overlay hidden">
+        <div class="modal-dialog modal-xl glass-panel">
+            <div class="modal-header">
+                <h3>📜 Historischer Stände-Vergleich</h3>
+                <button class="modal-close" data-close="modal-history">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive" id="history-comparison-container">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: User Management (Admin) -->
+    <div id="modal-users" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel">
+            <div class="modal-header">
+                <h3>👥 Benutzerverwaltung</h3>
+                <button class="modal-close" data-close="modal-users">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-user-create" class="user-create-box">
+                    <h4>Neuen Benutzer anlegen</h4>
+                    <div class="form-group">
+                        <input type="text" id="user-username" required placeholder="Benutzername">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="user-name" required placeholder="Name (z.B. Sabrina)">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="user-password" required placeholder="Passwort">
+                    </div>
+                    <div class="form-group">
+                        <select id="user-role" class="form-select">
+                            <option value="user">Benutzer</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">Benutzer erstellen</button>
+                </form>
+
+                <div class="users-list-box">
+                    <h4>Bestehende Benutzer</h4>
+                    <ul id="users-list" class="users-list"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Testsuite Runner (Admin only) -->
+    <div id="modal-testsuite" class="modal-overlay hidden">
+        <div class="modal-dialog modal-xl glass-panel">
+            <div class="modal-header">
+                <h3>🧪 Automatische Testsuite (TDD Verification)</h3>
+                <button class="modal-close" data-close="modal-testsuite">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="testsuite-status-box" class="alert alert-info">
+                    Testsuite wird ausgeführt, bitte einen Augenblick gedulden...
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar-wrap">
+                        <div id="testsuite-progress-bar" class="progress-bar" style="width: 0%;"></div>
+                    </div>
+                    <span id="testsuite-progress-percent" class="progress-percent">0%</span>
+                </div>
+                <div class="testsuite-log-box">
+                    <pre id="testsuite-output">Warte auf Testergebnisse...</pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-re-run-tests" class="btn btn-primary">🔄 erneut ausführen</button>
+                <button type="button" class="btn btn-outline" data-close="modal-testsuite">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  ausgabenplaner:
+    build: .
+    container_name: ausgabenplaner
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DB_PATH=/app/data/ausgabenplaner.db
+      - ADMIN_PASSWORD=admin123
+      - JWT_SECRET=change-this-secret-key-in-production
+    volumes:
+      - ./data:/app/data

@@ -57,6 +57,12 @@
                         <span id="user-display-name">Admin</span>
                         <span id="user-role-badge" class="badge badge-admin">Admin</span>
                     </div>
+                    <button id="btn-export-json" class="btn btn-outline btn-sm">
+                        📥 Export (JSON)
+                    </button>
+                    <button id="btn-import-json" class="btn btn-outline btn-sm">
+                        📤 Import (JSON)
+                    </button>
                     <button id="btn-run-tests" class="btn btn-accent btn-sm hidden">
                         🧪 Testsuite
                     </button>
@@ -350,6 +356,32 @@
                 <button id="btn-re-run-tests" class="btn btn-primary">🔄 erneut ausführen</button>
                 <button type="button" class="btn btn-outline" data-close="modal-testsuite">Schließen</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="modal-import" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel">
+            <div class="modal-header">
+                <h3>📤 Daten aus JSON-Datei importieren</h3>
+                <button class="modal-close" data-close="modal-import">&times;</button>
+            </div>
+            <form id="form-import-json">
+                <div class="modal-body">
+                    <p class="text-muted" style="margin-bottom: 1rem;">
+                        Wählen Sie eine zuvor exportierte <code>.json</code>-Datei aus, um alle Pläne, Stände, Positionen und Beiträge wiederherzustellen.
+                    </p>
+                    <div class="form-group">
+                        <label for="import-file-input">JSON-Datei auswählen</label>
+                        <input type="file" id="import-file-input" accept=".json,application/json" required style="display: block; width: 100%; margin-top: 0.5rem;">
+                    </div>
+                    <div id="import-error" class="alert alert-danger hidden" style="margin-top: 1rem;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close="modal-import">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">📤 Daten wiederherstellen</button>
+                </div>
+            </form>
         </div>
     </div>
 

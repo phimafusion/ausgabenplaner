@@ -68,6 +68,14 @@ const elements = {
     formUserCreate: document.getElementById("form-user-create"),
     usersList: document.getElementById("users-list"),
 
+    btnExportJson: document.getElementById("btn-export-json"),
+    btnImportJson: document.getElementById("btn-import-json"),
+
+    modalImport: document.getElementById("modal-import"),
+    formImportJson: document.getElementById("form-import-json"),
+    importFileInput: document.getElementById("import-file-input"),
+    importError: document.getElementById("import-error"),
+
     modalTestsuite: document.getElementById("modal-testsuite"),
     testsuiteStatusBox: document.getElementById("testsuite-status-box"),
     testsuiteOutput: document.getElementById("testsuite-output"),
@@ -260,6 +268,64 @@ function setupEventListeners() {
     elements.btnHistoryComparison.addEventListener("click", async () => {
         await loadHistoryComparison();
         openModal("modal-history");
+    });
+
+    // Export JSON
+    elements.btnExportJson.addEventListener("click", async () => {
+        try {
+            const resp = await apiFetch("/api/data/export");
+            if (!resp.ok) throw new Error("Export fehlgeschlagen");
+            const data = await resp.json();
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            const dateStr = new Date().toISOString().split("T")[0];
+            a.href = url;
+            a.download = `ausgabenplaner_export_${dateStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            alert(err.message || "Fehler beim Exportieren der Daten");
+        }
+    });
+
+    // Import JSON
+    elements.btnImportJson.addEventListener("click", () => {
+        elements.formImportJson.reset();
+        elements.importError.classList.add("hidden");
+        openModal("modal-import");
+    });
+
+    elements.formImportJson.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        elements.importError.classList.add("hidden");
+        const file = elements.importFileInput.files[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const payload = JSON.parse(text);
+
+            const resp = await apiFetch("/api/data/import", {
+                method: "POST",
+                body: payload,
+            });
+
+            if (!resp.ok) {
+                const errData = await resp.json();
+                throw new Error(errData.detail || "Import fehlgeschlagen");
+            }
+
+            closeModal("modal-import");
+            await loadActivePlan();
+            alert("Daten erfolgreich wiederhergestellt!");
+        } catch (err) {
+            elements.importError.textContent = err.message || "Fehler beim Importieren der Datei. Bitte prüfen Sie das JSON-Format.";
+            elements.importError.classList.remove("hidden");
+        }
     });
 
     // User Management (Admin)

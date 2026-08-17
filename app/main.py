@@ -340,6 +340,26 @@ def delete_contribution_route(
     return {"message": "Beitrag gelöscht"}
 
 
+# --- Export / Import Endpoints ---
+
+@app.get("/api/data/export", response_model=schemas.FullExportData)
+def export_data_route(
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return crud.export_full_data(conn)
+
+
+@app.post("/api/data/import")
+def import_data_route(
+    req: schemas.FullExportData,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    data = req.model_dump()
+    return crud.import_full_data(conn, data, overwrite=True)
+
+
 # --- Static Files / SPA Mounting ---
 
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")

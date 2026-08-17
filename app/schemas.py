@@ -119,3 +119,41 @@ class HistoryComparisonResponse(BaseModel):
     rows: List[HistoryRow]
     contributions_rows: List[HistoryRow]
     totals: Dict[str, Dict[str, Any]]
+
+
+# --- Export / Import Schemas ---
+
+class ExportPositionData(BaseModel):
+    title: str
+    amount: float
+    comment: Optional[str] = None
+    category: Optional[str] = None
+    sort_order: Optional[int] = 0
+
+
+class ExportContributionData(BaseModel):
+    person_name: str
+    amount: float
+    comment: Optional[str] = None
+    sort_order: Optional[int] = 0
+
+
+class ExportVersionData(BaseModel):
+    title: str
+    effective_date: Optional[str] = None
+    is_active: Optional[int] = 1
+    positions: List[ExportPositionData] = []
+    contributions: List[ExportContributionData] = []
+
+
+class ExportPlanData(BaseModel):
+    title: str
+    description: Optional[str] = None
+    versions: List[ExportVersionData] = []
+
+
+class FullExportData(BaseModel):
+    version: int = 1
+    exported_at: Optional[str] = None
+    plans: List[ExportPlanData] = []
+

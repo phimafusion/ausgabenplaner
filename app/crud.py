@@ -1,3 +1,4 @@
+import datetime
 import sqlite3
 from typing import List, Dict, Any, Optional
 from app.domain import calculate_plan_totals, format_currency_de
@@ -230,3 +231,112 @@ def get_history_comparison(conn: sqlite3.Connection, plan_id: int) -> Dict[str, 
         "contributions_rows": list(contributions_map.values()),
         "totals": totals_by_version,
     }
+
+
+def export_full_data(conn: sqlite3.Connection) -> Dict[str, Any]:
+    plan_rows = conn.execute("SELECT * FROM plans ORDER BY id ASC").fetchall()
+    plans = []
+
+    for p in plan_rows:
+        p_dict = dict(p)
+        plan_id = p_dict["id"]
+
+        ver_rows = conn.execute("SELECT * FROM versions WHERE plan_id = ? ORDER BY id ASC", (plan_id,)).fetchall()
+        versions = []
+
+        for v in ver_rows:
+            v_dict = dict(v)
+            v_id = v_dict["id"]
+
+            pos_rows = conn.execute(
+                "SELECT title, amount, comment, category, sort_order FROM positions WHERE version_id = ? ORDER BY sort_order ASC, id ASC",
+                (v_id,),
+            ).fetchall()
+            positions = [dict(pos) for pos in pos_rows]
+
+            contrib_rows = conn.execute(
+                "SELECT person_name, amount, comment, sort_order FROM contributions WHERE version_id = ? ORDER BY sort_order ASC, id ASC",
+                (v_id,),
+            ).fetchall()
+            contributions = [dict(c) for c in contrib_rows]
+
+            versions.append(
+                {
+                    "title": v_dict["title"],
+                    "effective_date": v_dict["effective_date"],
+                    "is_active": v_dict["is_active"],
+                    "positions": positions,
+                    "contributions": contributions,
+                }
+            )
+
+        plans.append(
+            {
+                "title": p_dict["title"],
+                "description": p_dict["description"],
+                "versions": versions,
+            }
+        )
+
+    return {
+        "version": 1,
+        "exported_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "plans": plans,
+    }
+
+
+def import_full_data(conn: sqlite3.Connection, data: Dict[str, Any], overwrite: bool = True) -> Dict[str, Any]:
+    cursor = conn.cursor()
+
+    if overwrite:
+        cursor.execute("DELETE FROM contributions;")
+        cursor.execute("DELETE FROM positions;")
+        cursor.execute("DELETE FROM versions;")
+        cursor.execute("DELETE FROM plans;")
+        conn.commit()
+
+    plans_imported = 0
+    versions_imported = 0
+    positions_imported = 0
+    contributions_imported = 0
+
+    plans = data.get("plans", [])
+    for p in plans:
+        cursor.execute("INSERT INTO plans (title, description) VALUES (?, ?)", (p["title"], p.get("description")))
+        plan_id = cursor.lastrowid
+        plans_imported += 1
+
+        versions = p.get("versions", [])
+        for v in versions:
+            cursor.execute(
+                "INSERT INTO versions (plan_id, title, effective_date, is_active) VALUES (?, ?, ?, ?)",
+                (plan_id, v["title"], v.get("effective_date"), v.get("is_active", 1)),
+            )
+            version_id = cursor.lastrowid
+            versions_imported += 1
+
+            positions = v.get("positions", [])
+            for idx, pos in enumerate(positions):
+                cursor.execute(
+                    "INSERT INTO positions (version_id, title, amount, comment, category, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+                    (version_id, pos["title"], pos["amount"], pos.get("comment"), pos.get("category"), pos.get("sort_order", idx)),
+                )
+                positions_imported += 1
+
+            contributions = v.get("contributions", [])
+            for idx, c in enumerate(contributions):
+                cursor.execute(
+                    "INSERT INTO contributions (version_id, person_name, amount, comment, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (version_id, c["person_name"], c["amount"], c.get("comment"), c.get("sort_order", idx)),
+                )
+                contributions_imported += 1
+
+    conn.commit()
+    return {
+        "success": True,
+        "plans_imported": plans_imported,
+        "versions_imported": versions_imported,
+        "positions_imported": positions_imported,
+        "contributions_imported": contributions_imported,
+    }
+

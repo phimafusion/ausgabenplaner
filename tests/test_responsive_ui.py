@@ -51,6 +51,10 @@ def test_styles_css_responsive_rules():
     assert "position: sticky;" in content
     assert "matrix-table" in content
 
+    # Cost column nowrap enforcement
+    assert "white-space: nowrap !important;" in content
+    assert ".data-table th:nth-child(2)" in content
+
 
 def test_app_js_mobile_interaction_and_data_labels():
     """Verify that app.js wires up the mobile menu toggle and sets data-label attributes."""

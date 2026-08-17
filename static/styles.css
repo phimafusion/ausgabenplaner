@@ -613,18 +613,40 @@ body {
     padding-top: 16px;
 }
 
-.text-right {
-    text-align: right !important;
+.data-table th:nth-child(2),
+.data-table td:nth-child(2) {
+    white-space: nowrap !important;
+    width: 1%;
+    min-width: 120px;
+    font-variant-numeric: tabular-nums;
 }
 
-.text-neg {
-    color: #fca5a5;
-    font-weight: 600;
+.data-table td[data-label="Kosten"],
+.data-table td[data-label="Betrag"],
+#sum-positions-val,
+#sum-contributions-val,
+.kpi-value {
+    white-space: nowrap !important;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
 }
 
-.text-pos {
-    color: #6ee7b7;
+.text-neg,
+.kpi-value.text-neg,
+.balance-negative .kpi-value {
+    color: #f87171 !important;
     font-weight: 600;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+}
+
+.text-pos,
+.kpi-value.text-pos,
+.balance-positive .kpi-value {
+    color: #34d399 !important;
+    font-weight: 600;
+    white-space: nowrap !important;
+    flex-shrink: 0;
 }
 
 .actions-cell {
@@ -632,6 +654,7 @@ body {
     align-items: center;
     justify-content: flex-end;
     gap: 6px;
+    white-space: nowrap;
 }
 
 /* Modals */

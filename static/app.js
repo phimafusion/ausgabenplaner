@@ -519,10 +519,21 @@ function renderVersionDetails(verData) {
     state.currentVersionDetails = verData;
     const totals = verData.totals;
 
+    // Helper for amount color class
+    function getAmountClass(val) {
+        if (!val || val === "-") return "";
+        return val.trim().startsWith("-") ? "text-neg" : "text-pos";
+    }
+
     // Render KPIs
     elements.kpiExpensesVal.textContent = totals.total_expenses_formatted;
+    elements.kpiExpensesVal.className = `kpi-value ${totals.total_expenses < 0 ? "text-neg" : "text-pos"}`;
+
     elements.kpiContributionsVal.textContent = totals.total_contributions_formatted;
+    elements.kpiContributionsVal.className = `kpi-value ${totals.total_contributions < 0 ? "text-neg" : "text-pos"}`;
+
     elements.kpiBalanceVal.textContent = totals.net_balance_formatted;
+    elements.kpiBalanceVal.className = `kpi-value ${totals.net_balance < 0 ? "text-neg" : "text-pos"}`;
 
     elements.kpiBalanceCard.classList.remove("balance-positive", "balance-negative");
     if (totals.net_balance >= 0) {
@@ -548,14 +559,16 @@ function renderVersionDetails(verData) {
         elements.tablePositionsBody.appendChild(tr);
     });
     elements.sumPositionsVal.textContent = totals.total_expenses_formatted;
+    elements.sumPositionsVal.className = totals.total_expenses < 0 ? "text-neg" : "text-pos";
 
     // Render Contributions Table
     elements.tableContributionsBody.innerHTML = "";
     verData.contributions.forEach((c) => {
         const tr = document.createElement("tr");
+        const amountClass = c.amount < 0 ? "text-neg" : "text-pos";
         tr.innerHTML = `
             <td data-label="Person"><strong>Zahlung ${escapeHtml(c.person_name)}</strong></td>
-            <td data-label="Betrag" class="text-pos">${escapeHtml(c.amount_formatted)}</td>
+            <td data-label="Betrag" class="${amountClass}">${escapeHtml(c.amount_formatted)}</td>
             <td data-label="Bemerkung" class="text-muted">${escapeHtml(c.comment || "")}</td>
             <td data-label="Aktionen" class="actions-cell">
                 <button class="btn btn-sm btn-outline btn-icon" onclick="editContribution(${c.id})" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
@@ -565,6 +578,7 @@ function renderVersionDetails(verData) {
         elements.tableContributionsBody.appendChild(tr);
     });
     elements.sumContributionsVal.textContent = totals.total_contributions_formatted;
+    elements.sumContributionsVal.className = totals.total_contributions < 0 ? "text-neg" : "text-pos";
 }
 
 // Edit/Delete handlers
@@ -627,7 +641,8 @@ async function loadHistoryComparison() {
             <td class="text-muted">${escapeHtml(r.comment || "")}</td>`;
         versions.forEach((v) => {
             const formatted = r.formatted_values[v.id.toString()] || "-";
-            html += `<td>${formatted}</td>`;
+            const valClass = formatted && formatted.trim().startsWith("-") ? "text-neg" : (formatted !== "-" ? "text-pos" : "");
+            html += `<td class="${valClass}">${formatted}</td>`;
         });
         html += `</tr>`;
     });
@@ -640,7 +655,8 @@ async function loadHistoryComparison() {
             <td class="text-muted">${escapeHtml(r.comment || "")}</td>`;
         versions.forEach((v) => {
             const formatted = r.formatted_values[v.id.toString()] || "-";
-            html += `<td>${formatted}</td>`;
+            const valClass = formatted && formatted.trim().startsWith("-") ? "text-neg" : (formatted !== "-" ? "text-pos" : "");
+            html += `<td class="${valClass}">${formatted}</td>`;
         });
         html += `</tr>`;
     });
@@ -652,7 +668,8 @@ async function loadHistoryComparison() {
     versions.forEach((v) => {
         const tot = compData.totals[v.id.toString()];
         const formatted = tot ? tot.net_balance_formatted : "-";
-        html += `<td><strong>${formatted}</strong></td>`;
+        const valClass = formatted && formatted.trim().startsWith("-") ? "text-neg" : (formatted !== "-" ? "text-pos" : "");
+        html += `<td class="${valClass}"><strong>${formatted}</strong></td>`;
     });
     html += `</tr></tbody></table>`;
 

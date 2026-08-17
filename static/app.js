@@ -14,6 +14,8 @@ const elements = {
     dashboardView: document.getElementById("dashboard-view"),
     loginForm: document.getElementById("login-form"),
     loginError: document.getElementById("login-error"),
+    btnMobileMenu: document.getElementById("btn-mobile-menu"),
+    navbarActions: document.getElementById("navbar-actions"),
     userDisplayName: document.getElementById("user-display-name"),
     userRoleBadge: document.getElementById("user-role-badge"),
     btnRunTests: document.getElementById("btn-run-tests"),
@@ -162,6 +164,30 @@ function setupEventListeners() {
 
     // Logout
     elements.btnLogout.addEventListener("click", logout);
+
+    // Mobile Navigation Menu Toggle
+    if (elements.btnMobileMenu && elements.navbarActions) {
+        elements.btnMobileMenu.addEventListener("click", (e) => {
+            e.stopPropagation();
+            elements.navbarActions.classList.toggle("is-open");
+            elements.btnMobileMenu.classList.toggle("is-active");
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!elements.navbarActions.contains(e.target) && !elements.btnMobileMenu.contains(e.target)) {
+                elements.navbarActions.classList.remove("is-open");
+                elements.btnMobileMenu.classList.remove("is-active");
+            }
+        });
+
+        // Close mobile menu when clicking any button inside it
+        elements.navbarActions.querySelectorAll("button").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                elements.navbarActions.classList.remove("is-open");
+                elements.btnMobileMenu.classList.remove("is-active");
+            });
+        });
+    }
 
     // Version dropdown change
     elements.selectVersion.addEventListener("change", async (e) => {
@@ -511,12 +537,12 @@ function renderVersionDetails(verData) {
         const tr = document.createElement("tr");
         const amountClass = p.amount < 0 ? "text-neg" : "text-pos";
         tr.innerHTML = `
-            <td><strong>${escapeHtml(p.title)}</strong></td>
-            <td class="${amountClass}">${escapeHtml(p.amount_formatted)}</td>
-            <td class="text-muted">${escapeHtml(p.comment || "")}</td>
-            <td class="actions-cell">
-                <button class="btn btn-sm btn-outline btn-icon" onclick="editPosition(${p.id})">✏️</button>
-                <button class="btn btn-sm btn-danger btn-icon" onclick="deletePosition(${p.id})">🗑️</button>
+            <td data-label="Position"><strong>${escapeHtml(p.title)}</strong></td>
+            <td data-label="Kosten" class="${amountClass}">${escapeHtml(p.amount_formatted)}</td>
+            <td data-label="Bemerkung" class="text-muted">${escapeHtml(p.comment || "")}</td>
+            <td data-label="Aktionen" class="actions-cell">
+                <button class="btn btn-sm btn-outline btn-icon" onclick="editPosition(${p.id})" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
+                <button class="btn btn-sm btn-danger btn-icon" onclick="deletePosition(${p.id})" title="Löschen" aria-label="Löschen">🗑️</button>
             </td>
         `;
         elements.tablePositionsBody.appendChild(tr);
@@ -528,12 +554,12 @@ function renderVersionDetails(verData) {
     verData.contributions.forEach((c) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td><strong>Zahlung ${escapeHtml(c.person_name)}</strong></td>
-            <td class="text-pos">${escapeHtml(c.amount_formatted)}</td>
-            <td class="text-muted">${escapeHtml(c.comment || "")}</td>
-            <td class="actions-cell">
-                <button class="btn btn-sm btn-outline btn-icon" onclick="editContribution(${c.id})">✏️</button>
-                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteContribution(${c.id})">🗑️</button>
+            <td data-label="Person"><strong>Zahlung ${escapeHtml(c.person_name)}</strong></td>
+            <td data-label="Betrag" class="text-pos">${escapeHtml(c.amount_formatted)}</td>
+            <td data-label="Bemerkung" class="text-muted">${escapeHtml(c.comment || "")}</td>
+            <td data-label="Aktionen" class="actions-cell">
+                <button class="btn btn-sm btn-outline btn-icon" onclick="editContribution(${c.id})" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
+                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteContribution(${c.id})" title="Löschen" aria-label="Löschen">🗑️</button>
             </td>
         `;
         elements.tableContributionsBody.appendChild(tr);

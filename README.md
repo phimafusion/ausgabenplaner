@@ -122,9 +122,9 @@ ausgabenplaner/
 - [ ] **1. Historienmodul integrieren**:
   - Archivierung und Auswertung historischer Monatsabschlüsse.
   - Langzeitvergleich von Einnahmen, Ausgaben und Sparquoten über Monate und Jahre hinweg (Diagramme & Trends).
-- [ ] **2. Mobile Ansicht (Responsive Design)**:
+- [x] **2. Mobile Ansicht (Responsive Design)**:
   - Optimierung der Benutzeroberfläche für Smartphones und Tablets.
-  - Touch-freundliche Navigation, responsive Tabellen und modale Dialoge für kompakte Displays.
+  - Touch-freundliche Navigation (Hamburger-Menü & Touch-Targets), responsive Tabellenkarten und mobile Dialoge für kompakte Displays.
 
 ---
 

@@ -68,8 +68,8 @@ def get_current_user(
             detail="Ungültiges Token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    username: str = payload.get("sub")
-    if username is None:
+    username = payload.get("sub")
+    if not username:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ungültiges Token")
 
     user_row = conn.execute("SELECT id, username, name, role, can_export FROM users WHERE username = ?", (username,)).fetchone()

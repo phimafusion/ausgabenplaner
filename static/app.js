@@ -56,6 +56,9 @@ const elements = {
     formPosition: document.getElementById("form-position"),
     posId: document.getElementById("pos-id"),
     posTitle: document.getElementById("pos-title"),
+    posInterval: document.getElementById("pos-interval"),
+    posRawAmount: document.getElementById("pos-raw-amount"),
+    posCalculatedMonthlyVal: document.getElementById("pos-calculated-monthly-val"),
     posAmount: document.getElementById("pos-amount"),
     posComment: document.getElementById("pos-comment"),
     modalPosTitle: document.getElementById("modal-position-title"),
@@ -393,10 +396,42 @@ function setupEventListeners() {
         });
     }
 
+    // Live Calculation of Monthly Expense from Payment Interval
+    function updatePositionCalculationPreview() {
+        if (!elements.posRawAmount || !elements.posInterval || !elements.posCalculatedMonthlyVal) return;
+        const rawVal = parseFloat(elements.posRawAmount.value);
+        if (isNaN(rawVal)) {
+            elements.posCalculatedMonthlyVal.textContent = "-0,00 € / Monat";
+            elements.posAmount.value = "";
+            return;
+        }
+
+        const interval = elements.posInterval.value;
+        let divisor = 1;
+        if (interval === "quarterly") divisor = 3;
+        else if (interval === "yearly") divisor = 12;
+
+        const absAmount = Math.abs(rawVal);
+        const monthlyAbs = Math.round((absAmount / divisor) * 100) / 100;
+        const finalMonthlyVal = -monthlyAbs; // Negative for expense
+
+        elements.posAmount.value = finalMonthlyVal;
+        elements.posCalculatedMonthlyVal.textContent = `${formatCurrency(finalMonthlyVal)} / Monat`;
+    }
+
+    if (elements.posRawAmount && elements.posInterval) {
+        elements.posRawAmount.addEventListener("input", updatePositionCalculationPreview);
+        elements.posInterval.addEventListener("change", updatePositionCalculationPreview);
+    }
+
     // Positions Modals & Forms (Draft in memory)
     elements.btnAddPosition.addEventListener("click", () => {
         elements.formPosition.reset();
         elements.posId.value = "";
+        elements.posInterval.value = "monthly";
+        elements.posRawAmount.value = "";
+        elements.posAmount.value = "";
+        elements.posCalculatedMonthlyVal.textContent = "-0,00 € / Monat";
         elements.modalPosTitle.textContent = "Position hinzufügen";
         openModal("modal-position");
     });
@@ -405,7 +440,12 @@ function setupEventListeners() {
         e.preventDefault();
         const id = elements.posId.value;
         const title = elements.posTitle.value.trim();
+        updatePositionCalculationPreview();
         const amount = parseFloat(elements.posAmount.value);
+        if (isNaN(amount)) {
+            alert("Bitte einen gültigen Zahlungsbetrag eingeben.");
+            return;
+        }
         const comment = elements.posComment.value.trim();
 
         if (!state.currentVersionDetails) return;
@@ -1046,8 +1086,11 @@ window.editPosition = (posId) => {
     if (!pos) return;
     elements.posId.value = pos.id;
     elements.posTitle.value = pos.title;
+    elements.posInterval.value = "monthly";
+    elements.posRawAmount.value = Math.abs(pos.amount);
     elements.posAmount.value = pos.amount;
     elements.posComment.value = pos.comment || "";
+    elements.posCalculatedMonthlyVal.textContent = `${formatCurrency(pos.amount)} / Monat`;
     elements.modalPosTitle.textContent = "Position bearbeiten";
     openModal("modal-position");
 };

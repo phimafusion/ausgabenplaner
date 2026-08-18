@@ -765,6 +765,31 @@ body {
     margin-top: 24px;
 }
 
+/* Position Interval Calculation Preview */
+.pos-calculation-preview {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 2px;
+}
+
+.pos-calculation-preview .calc-label {
+    font-size: 0.86rem;
+    color: var(--text-muted);
+}
+
+.pos-calculation-preview .calc-val {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f87171;
+    font-variant-numeric: tabular-nums;
+}
+
 /* Historical Matrix Table */
 .matrix-table {
     width: 100%;

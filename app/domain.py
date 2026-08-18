@@ -30,3 +30,23 @@ def calculate_plan_totals(positions: List[Dict[str, Any]], contributions: List[D
         "total_contributions_formatted": format_currency_de(total_contributions),
         "net_balance_formatted": format_currency_de(net_balance),
     }
+
+
+def calculate_monthly_amount_from_interval(raw_amount: float, interval: str = "monthly") -> float:
+    """
+    Calculates the monthly expense value from an entered payment interval.
+    If positive or negative expense amount entered, converts it to monthly negative expense (or 0).
+    """
+    divisors = {
+        "monthly": 1,
+        "quarterly": 3,
+        "half_yearly": 6,
+        "yearly": 12,
+    }
+    divisor = divisors.get(interval.lower(), 1)
+    abs_amount = abs(raw_amount)
+    if abs_amount == 0:
+        return 0.0
+    monthly_val = round(abs_amount / divisor, 2)
+    return -monthly_val
+

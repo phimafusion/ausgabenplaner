@@ -223,16 +223,32 @@
                 <input type="hidden" id="pos-id">
                 <div class="form-group">
                     <label for="pos-title">Bezeichnung / Position</label>
-                    <input type="text" id="pos-title" required placeholder="z.B. Strom / Naturstrom">
+                    <input type="text" id="pos-title" required placeholder="z.B. OSBO Versicherung">
                 </div>
-                <div class="form-group">
-                    <label for="pos-amount">Kosten (€)</label>
-                    <input type="number" step="0.01" id="pos-amount" required placeholder="-87.00 (negativ für Ausgaben)">
-                    <small class="form-help">Negative Werte für Ausgaben (z.B. -1235.00), positive Werte für Rückerstattungen.</small>
+                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label for="pos-interval">Zahlungsintervall</label>
+                        <select id="pos-interval" class="form-select">
+                            <option value="monthly" selected>Monatlich (1× pro Monat)</option>
+                            <option value="quarterly">Quartalsweise (alle 3 Monate)</option>
+                            <option value="yearly">Jährlich (1× pro Jahr)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pos-raw-amount" id="pos-amount-label">Zahlungsbetrag (€)</label>
+                        <input type="number" step="0.01" id="pos-raw-amount" required placeholder="z.B. 116.16">
+                    </div>
                 </div>
+                <div class="form-group" id="pos-calc-box">
+                    <div class="pos-calculation-preview">
+                        <span class="calc-label">Umgerechneter Monatswert:</span>
+                        <strong id="pos-calculated-monthly-val" class="calc-val">-0,00 € / Monat</strong>
+                    </div>
+                </div>
+                <input type="hidden" id="pos-amount">
                 <div class="form-group">
                     <label for="pos-comment">Bemerkung</label>
-                    <input type="text" id="pos-comment" placeholder="z.B. Wird quartalsweise eingezogen">
+                    <input type="text" id="pos-comment" placeholder="z.B. Wird quartalsweise eingezogen (COSMOS)">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" data-close="modal-position">Abbrechen</button>

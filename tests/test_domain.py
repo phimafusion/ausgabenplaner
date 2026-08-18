@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import init_db, reset_db
-from app.domain import calculate_plan_totals, format_currency_de
+from app.domain import calculate_plan_totals, format_currency_de, calculate_monthly_amount_from_interval
 
 client = TestClient(app)
 
@@ -19,6 +19,23 @@ def test_format_currency_de():
     assert format_currency_de(-1235.00) == "-1.235,00 €"
     assert format_currency_de(0.0) == "0,00 €"
     assert format_currency_de(-6.41) == "-6,41 €"
+
+
+def test_calculate_monthly_amount_from_interval():
+    # Monthly
+    assert calculate_monthly_amount_from_interval(87.0, "monthly") == -87.0
+    assert calculate_monthly_amount_from_interval(-1235.0, "monthly") == -1235.0
+    assert calculate_monthly_amount_from_interval(0.0, "monthly") == 0.0
+
+    # Quarterly (/3)
+    assert calculate_monthly_amount_from_interval(116.16, "quarterly") == -38.72
+    assert calculate_monthly_amount_from_interval(55.08, "quarterly") == -18.36
+
+    # Yearly (/12)
+    assert calculate_monthly_amount_from_interval(102.0, "yearly") == -8.50
+    assert calculate_monthly_amount_from_interval(76.92, "yearly") == -6.41
+    assert calculate_monthly_amount_from_interval(110.04, "yearly") == -9.17
+
 
 
 def test_calculate_plan_totals():

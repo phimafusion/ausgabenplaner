@@ -104,3 +104,22 @@ def test_table_lock_toggle_ui():
     assert "btnToggleUnlockPositions" in js_content
     assert "updateLockControls" in js_content
 
+
+def test_position_interval_calculation_ui():
+    """Verify that modal-position contains payment interval select, amount input and live calculation preview."""
+    html_path = STATIC_DIR / "index.html"
+    content = html_path.read_text(encoding="utf-8")
+
+    assert 'id="pos-interval"' in content
+    assert 'value="monthly"' in content
+    assert 'value="quarterly"' in content
+    assert 'value="yearly"' in content
+    assert 'id="pos-raw-amount"' in content
+    assert 'id="pos-calculated-monthly-val"' in content
+
+    js_path = STATIC_DIR / "app.js"
+    js_content = js_path.read_text(encoding="utf-8")
+    assert "posInterval" in js_content
+    assert "updatePositionCalculationPreview" in js_content
+
+

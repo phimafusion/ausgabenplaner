@@ -696,8 +696,7 @@ body {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(15, 23, 42, 0.75);
-    backdrop-filter: blur(8px);
+    background: rgba(8, 12, 22, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -711,6 +710,7 @@ body {
     padding: 28px;
     max-height: 90vh;
     overflow-y: auto;
+    contain: paint;
 }
 
 .modal-xl {
@@ -1198,32 +1198,36 @@ select,
 .history-timeline-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     max-height: 60vh;
     overflow-y: auto;
-    padding-right: 4px;
+    padding-right: 6px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    transform: translateZ(0);
+    scrollbar-gutter: stable;
 }
 
 .history-card {
-    background: rgba(30, 41, 59, 0.6);
+    background: rgba(26, 34, 52, 0.95);
     border: 1px solid var(--card-border);
     border-radius: 12px;
     padding: 16px;
-    transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    contain: content;
 }
 
 .history-card.is-active {
-    border-color: rgba(16, 185, 129, 0.5);
-    background: rgba(16, 185, 129, 0.05);
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.6);
+    background: rgba(16, 185, 129, 0.08);
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.15);
 }
 
 .history-card.is-unlocked {
     border-color: rgba(245, 158, 11, 0.6);
-    background: rgba(245, 158, 11, 0.05);
+    background: rgba(245, 158, 11, 0.08);
 }
 
 .history-card-header {
@@ -1339,5 +1343,54 @@ select,
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* History Comparison Matrix */
+#history-tab-matrix {
+    max-height: 60vh;
+    overflow: auto;
+    transform: translateZ(0);
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 4px;
+}
+
+.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.matrix-table th,
+.matrix-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.matrix-table th {
+    background: #111827;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    color: var(--text-muted);
+    font-family: var(--font-heading);
+    font-weight: 600;
+}
+
+.matrix-section-header td {
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+}
+
+.matrix-total-row td {
+    border-top: 2px solid var(--card-border);
+    background: rgba(15, 23, 42, 0.95);
+    font-size: 0.95rem;
+}
+
 
 

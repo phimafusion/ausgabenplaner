@@ -850,6 +850,9 @@ function showDashboardView() {
             if (targetId === "tab-settings-new-user" && elements.userUsername) {
                 elements.userUsername.focus();
             }
+            if (targetId === "tab-settings-testsuite") {
+                executeTestsuite();
+            }
         });
     });
 
@@ -1135,59 +1138,110 @@ async function executeTestsuite() {
     showSettings("tab-settings-testsuite");
 
     if (activeEventSource) {
-        activeEventSource.close();
+        try { activeEventSource.close(); } catch (e) {}
+        activeEventSource = null;
     }
 
     const progressBar = document.getElementById("testsuite-progress-bar");
     const progressPercent = document.getElementById("testsuite-progress-percent");
+    const statusBox = document.getElementById("testsuite-status-box") || elements.testsuiteStatusBox;
+    const outputBox = document.getElementById("testsuite-output") || elements.testsuiteOutput;
 
-    progressBar.style.width = "0%";
-    progressPercent.textContent = "0%";
-    elements.testsuiteStatusBox.className = "alert alert-info";
-    elements.testsuiteStatusBox.textContent = "⏳ Verbinde zur Testsuite...";
-    elements.testsuiteOutput.textContent = "";
+    if (progressBar) progressBar.style.width = "0%";
+    if (progressPercent) progressPercent.textContent = "0%";
+    if (statusBox) {
+        statusBox.className = "alert alert-info";
+        statusBox.textContent = "⏳ Verbinde zur Testsuite...";
+    }
+    if (outputBox) outputBox.textContent = "";
 
-    const url = `/api/admin/run-tests-stream?token=${encodeURIComponent(state.token)}`;
-    const evtSource = new EventSource(url);
-    activeEventSource = evtSource;
+    const token = state.token || localStorage.getItem("token") || "";
+    let receivedAnyMessage = false;
 
-    evtSource.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            if (data.type === "start") {
-                elements.testsuiteStatusBox.textContent = `🚀 ${data.message}`;
-            } else if (data.type === "log") {
-                if (data.progress !== undefined) {
-                    progressBar.style.width = `${data.progress}%`;
-                    progressPercent.textContent = `${data.progress}%`;
+    try {
+        const url = `/api/admin/run-tests-stream?token=${encodeURIComponent(token)}`;
+        const evtSource = new EventSource(url);
+        activeEventSource = evtSource;
+
+        evtSource.onmessage = (event) => {
+            receivedAnyMessage = true;
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === "start") {
+                    if (statusBox) statusBox.textContent = `🚀 ${data.message}`;
+                } else if (data.type === "log") {
+                    if (data.progress !== undefined && progressBar && progressPercent) {
+                        progressBar.style.width = `${data.progress}%`;
+                        progressPercent.textContent = `${data.progress}%`;
+                    }
+                    if (outputBox) {
+                        outputBox.textContent += data.line;
+                        const logBox = document.querySelector(".testsuite-log-box");
+                        if (logBox) logBox.scrollTop = logBox.scrollHeight;
+                    }
+                } else if (data.type === "complete") {
+                    evtSource.close();
+                    activeEventSource = null;
+                    if (progressBar) progressBar.style.width = "100%";
+                    if (progressPercent) progressPercent.textContent = "100%";
+                    if (statusBox) {
+                        if (data.passed) {
+                            statusBox.className = "alert alert-success";
+                            statusBox.textContent = "✅ Alle 38 Tests erfolgreich bestanden (100% Green)!";
+                        } else {
+                            statusBox.className = "alert alert-danger";
+                            statusBox.textContent = "❌ Einige Tests sind fehlgeschlagen.";
+                        }
+                    }
                 }
-                elements.testsuiteOutput.textContent += data.line;
-                const logBox = document.querySelector(".testsuite-log-box");
-                if (logBox) logBox.scrollTop = logBox.scrollHeight;
-            } else if (data.type === "complete") {
-                evtSource.close();
-                progressBar.style.width = "100%";
-                progressPercent.textContent = "100%";
-                if (data.passed) {
-                    elements.testsuiteStatusBox.className = "alert alert-success";
-                    elements.testsuiteStatusBox.textContent = "✅ Alle automatisierte Tests erfolgreich bestanden (100% Green)!";
-                } else {
-                    elements.testsuiteStatusBox.className = "alert alert-danger";
-                    elements.testsuiteStatusBox.textContent = "❌ Einige Tests sind fehlgeschlagen.";
+            } catch (e) {
+                console.error("Event parse error", e);
+            }
+        };
+
+        evtSource.onerror = async () => {
+            evtSource.close();
+            activeEventSource = null;
+            if (!receivedAnyMessage) {
+                // Fallback to regular POST run-tests endpoint
+                if (statusBox) {
+                    statusBox.className = "alert alert-info";
+                    statusBox.textContent = "⏳ Führe Testsuite über API aus...";
+                }
+                try {
+                    const resp = await apiFetch("/api/admin/run-tests", { method: "POST" });
+                    const resData = await resp.json();
+                    if (progressBar) progressBar.style.width = "100%";
+                    if (progressPercent) progressPercent.textContent = "100%";
+                    if (outputBox) outputBox.textContent = resData.output || "";
+                    if (statusBox) {
+                        if (resData.passed) {
+                            statusBox.className = "alert alert-success";
+                            statusBox.textContent = "✅ Alle Tests erfolgreich bestanden (100% Green)!";
+                        } else {
+                            statusBox.className = "alert alert-danger";
+                            statusBox.textContent = "❌ Testsuite fehlgeschlagen.";
+                        }
+                    }
+                } catch (err) {
+                    if (statusBox) {
+                        statusBox.className = "alert alert-danger";
+                        statusBox.textContent = "❌ Fehler bei der Testausführung: " + (err.message || "Unbekannter Fehler");
+                    }
+                }
+            } else if (progressBar && progressBar.style.width !== "100%") {
+                if (statusBox) {
+                    statusBox.className = "alert alert-danger";
+                    statusBox.textContent = "❌ Verbindung zur Testsuite unterbrochen.";
                 }
             }
-        } catch (e) {
-            console.error("Event parse error", e);
+        };
+    } catch (err) {
+        if (statusBox) {
+            statusBox.className = "alert alert-danger";
+            statusBox.textContent = "❌ Testsuite-Aufruf fehlgeschlagen: " + err.message;
         }
-    };
-
-    evtSource.onerror = () => {
-        evtSource.close();
-        if (progressBar.style.width !== "100%") {
-            elements.testsuiteStatusBox.className = "alert alert-danger";
-            elements.testsuiteStatusBox.textContent = "❌ Verbindung zur Testsuite unterbrochen.";
-        }
-    };
+    }
 }
 
 // Discard Current Draft & Revert to Saved

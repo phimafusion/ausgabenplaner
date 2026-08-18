@@ -4,6 +4,14 @@ Dieses Dokument fasst geplante Erweiterungen, architektonische Verbesserungen un
 
 ---
 
+## 🚀 0. DevOps, CI/CD & Synology Deployment (🔥 Höchste Priorität)
+- [ ] **GitHub Actions Container Build & GitHub Container Registry (GHCR)**:
+  - Automatischer Build des Multi-Arch Docker-Images (`linux/amd64`, `linux/arm64`) bei Push auf `main` oder neuem Release.
+  - Veröffentlichung des fertigen Images unter `ghcr.io/phimafusion/ausgabenplaner:latest`.
+  - Anpassung der `docker-compose.yml` auf `image: ghcr.io/phimafusion/ausgabenplaner:latest` für 1-Klick-Updates im Synology Container Manager ohne lokalen Build-Aufwand auf dem NAS.
+
+---
+
 ## 📊 1. Visualisierung & Analytics (Charts & Trends)
 - [ ] **Kategorien-Aufteilung (Donut / Pie Chart)**:
   - Visuelle Kostenverteilung (z. B. Wohnen, Energie, Versicherung, Instandhaltung, Rücklagen).

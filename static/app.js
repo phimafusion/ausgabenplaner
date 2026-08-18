@@ -1665,26 +1665,47 @@ async function loadUsersList() {
     const users = await resp.json();
     elements.usersList.innerHTML = "";
     users.forEach((u) => {
-        const li = document.createElement("li");
-        li.className = "user-list-item";
+        const card = document.createElement("div");
+        card.className = "user-profile-card glass-panel";
         const uJson = JSON.stringify(u).replace(/'/g, "&#39;");
-        li.innerHTML = `
-            <div class="user-info">
-                <div class="user-name-line">
-                    <strong>${escapeHtml(u.name)}</strong>
-                    <span class="text-muted" style="font-size: 0.85rem;">(@${escapeHtml(u.username)})</span>
+        const isAdmin = u.role === "admin";
+        const isSelf = state.user && String(state.user.id) === String(u.id);
+        const initials = (u.name || u.username || "??").trim().substring(0, 2).toUpperCase();
+
+        card.innerHTML = `
+            <div class="user-card-top">
+                <div class="user-avatar ${isAdmin ? 'avatar-admin' : 'avatar-user'}">
+                    <span>${isAdmin ? '👑' : initials}</span>
                 </div>
-                <div class="user-badges-line">
-                    <span class="badge ${u.role === "admin" ? "badge-admin" : "badge-user"}">${u.role === "admin" ? "👑 Administrator" : "👤 Benutzer"}</span>
-                    <span class="badge ${u.can_export ? "badge-saved" : "badge-archived"}">${u.can_export ? "💾 Export erlaubt" : "🔒 Kein Export"}</span>
+                <div class="user-card-identity">
+                    <div class="user-card-name-row">
+                        <strong class="user-card-name">${escapeHtml(u.name)}</strong>
+                        ${isSelf ? '<span class="badge badge-self">Sie</span>' : ''}
+                    </div>
+                    <span class="user-card-handle">@${escapeHtml(u.username)}</span>
                 </div>
             </div>
-            <div class="user-item-actions">
-                <button type="button" class="btn btn-sm btn-outline btn-icon" onclick='startEditUser(${uJson})' title="Benutzer bearbeiten">✏️</button>
-                ${u.username !== "admin" ? `<button type="button" class="btn btn-sm btn-danger btn-icon" onclick="deleteUser(${u.id}, '${escapeHtml(u.username)}')" title="Benutzer löschen">🗑️</button>` : ''}
+
+            <div class="user-card-badges">
+                <span class="badge ${isAdmin ? 'badge-admin' : 'badge-user'}">
+                    ${isAdmin ? '👑 Administrator' : '👤 Benutzer'}
+                </span>
+                <span class="badge ${u.can_export ? 'badge-saved' : 'badge-archived'}">
+                    ${u.can_export ? '💾 Export erlaubt' : '🔒 Kein Export'}
+                </span>
+            </div>
+
+            <div class="user-card-actions">
+                <button type="button" class="btn btn-sm btn-secondary user-action-btn" onclick='startEditUser(${uJson})' title="Benutzer bearbeiten">
+                    ✏️ Bearbeiten
+                </button>
+                ${u.username !== "admin" ? `
+                <button type="button" class="btn btn-sm btn-danger user-action-btn" onclick="deleteUser(${u.id}, '${escapeHtml(u.username)}')" title="Benutzer löschen">
+                    🗑️ Löschen
+                </button>` : ''}
             </div>
         `;
-        elements.usersList.appendChild(li);
+        elements.usersList.appendChild(card);
     });
 }
 

@@ -850,9 +850,6 @@ function showDashboardView() {
             if (targetId === "tab-settings-new-user" && elements.userUsername) {
                 elements.userUsername.focus();
             }
-            if (targetId === "tab-settings-testsuite") {
-                executeTestsuite();
-            }
         });
     });
 
@@ -1135,7 +1132,7 @@ function showDashboard() {
 let activeEventSource = null;
 
 async function executeTestsuite() {
-    showSettings("tab-settings-testsuite");
+    switchSettingsTab("tab-settings-testsuite");
 
     if (activeEventSource) {
         try { activeEventSource.close(); } catch (e) {}
@@ -1243,6 +1240,7 @@ async function executeTestsuite() {
         }
     }
 }
+window.executeTestsuite = executeTestsuite;
 
 // Discard Current Draft & Revert to Saved
 async function discardCurrentDraft() {

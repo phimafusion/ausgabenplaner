@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import json
@@ -13,16 +14,74 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 
-from app.database import get_db, init_db
+from app.database import get_db, init_db, get_db_connection
 from app.auth import verify_password, create_access_token, get_current_user, get_current_admin, get_password_hash, decode_access_token
-from app import schemas, crud
+from app import schemas, crud, backups
 
+
+async def backup_scheduler_loop():
+    """Background task checking once every 60s for scheduled automated backups based on configured frequency."""
+    while True:
+        try:
+            await asyncio.sleep(60)
+            if os.getenv("TESTING") == "1":
+                continue
+            conn = get_db_connection()
+            try:
+                settings = backups.get_backup_settings(conn)
+                if settings.get("backup_enabled"):
+                    now = datetime.datetime.now()
+                    now_time_str = now.strftime("%H:%M")
+                    target_time = settings.get("auto_backup_time", "03:00")
+                    last_backup_str = settings.get("last_backup_at")
+                    freq = settings.get("backup_frequency", "daily")
+
+                    last_backup_dt = None
+                    if last_backup_str:
+                        try:
+                            last_backup_dt = datetime.datetime.strptime(last_backup_str, "%Y-%m-%d %H:%M:%S")
+                        except Exception:
+                            pass
+
+                    should_backup = False
+                    if freq == "hourly":
+                        if not last_backup_dt or (now - last_backup_dt).total_seconds() >= 3600:
+                            should_backup = True
+                    elif freq == "every_6_hours":
+                        if not last_backup_dt or (now - last_backup_dt).total_seconds() >= 6 * 3600:
+                            should_backup = True
+                    elif freq == "every_12_hours":
+                        if not last_backup_dt or (now - last_backup_dt).total_seconds() >= 12 * 3600:
+                            should_backup = True
+                    elif freq == "weekly":
+                        today_str = now.strftime("%Y-%m-%d")
+                        already_backed_up_today = bool(last_backup_str and last_backup_str.startswith(today_str))
+                        if now.weekday() == 0 and now_time_str == target_time and not already_backed_up_today:
+                            should_backup = True
+                    else:  # "daily"
+                        today_str = now.strftime("%Y-%m-%d")
+                        already_backed_up_today = bool(last_backup_str and last_backup_str.startswith(today_str))
+                        if now_time_str == target_time and not already_backed_up_today:
+                            should_backup = True
+
+                    if should_backup:
+                        backups.create_database_backup(conn)
+            finally:
+                conn.close()
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            pass
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    yield
+    task = asyncio.create_task(backup_scheduler_loop())
+    try:
+        yield
+    finally:
+        task.cancel()
 
 
 app = FastAPI(title="Ausgabenplaner API", version="1.0.0", lifespan=lifespan)
@@ -560,6 +619,92 @@ def import_data_route(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sie besitzen keine Berechtigung zum Importieren der Daten.")
     data = req.model_dump()
     return crud.import_full_data(conn, data, overwrite=True)
+
+
+# --- Automated Backup & Snapshot Endpoints (Admin) ---
+
+@app.get("/api/admin/backups/settings", response_model=schemas.BackupSettingsResponse)
+def get_backup_settings_route(
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return backups.get_backup_settings(conn)
+
+
+@app.patch("/api/admin/backups/settings", response_model=schemas.BackupSettingsResponse)
+def update_backup_settings_route(
+    req: schemas.BackupSettingsUpdate,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return backups.update_backup_settings(
+        conn,
+        backup_enabled=req.backup_enabled,
+        backup_frequency=req.backup_frequency,
+        backup_folder=req.backup_folder,
+        retention_count=req.retention_count,
+        auto_backup_time=req.auto_backup_time,
+    )
+
+
+@app.get("/api/admin/backups", response_model=List[schemas.BackupFileInfo])
+def list_backups_route(
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return backups.list_database_backups(conn)
+
+
+@app.post("/api/admin/backups/create", response_model=schemas.BackupCreateResponse, status_code=status.HTTP_201_CREATED)
+def create_backup_route(
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return backups.create_database_backup(conn)
+
+
+@app.get("/api/admin/backups/download/{filename}")
+def download_backup_route(
+    filename: str,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    file_path = backups.get_backup_file_path(conn, filename)
+    if not file_path or not file_path.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Backup-Datei nicht gefunden")
+    return FileResponse(
+        str(file_path),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{file_path.name}"'},
+    )
+
+
+@app.delete("/api/admin/backups/{filename}")
+def delete_backup_route(
+    filename: str,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    success = backups.delete_database_backup(conn, filename)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Backup-Datei nicht gefunden")
+    return {"message": f"Backup '{filename}' gelöscht"}
+
+
+@app.post("/api/admin/backups/restore/{filename}")
+def restore_backup_route(
+    filename: str,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    try:
+        return backups.restore_database_backup(conn, filename)
+    except FileNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Backup '{filename}' nicht gefunden")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Fehler bei der Wiederherstellung: {str(e)}")
+
+
 
 
 # --- Static Files / SPA Mounting ---

@@ -268,8 +268,9 @@ export async function loadHistoryComparison() {
     });
     html += `</tr></tbody></table>`;
 
-    if (elements.historyContainer) {
-        elements.historyContainer.innerHTML = html;
+    const container = elements.historyContainer || document.getElementById("history-comparison-container") || document.getElementById("history-container");
+    if (container) {
+        container.innerHTML = html;
     }
 }
 

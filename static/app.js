@@ -9,11 +9,16 @@ import { renderVersionDetails, updateLockControls, editPosition, deletePosition,
 import { loadHistoryTimeline, loadHistoryComparison, switchHistoryTab, setOnPlanChangedHandler } from "./js/components/history.js";
 import { loadUsersList, resetUserForm, startEditUser, deleteUser, setSwitchTabHandler as setUsersSwitchTab } from "./js/components/users.js";
 import { executeTestsuite, setSwitchTabHandler as setTestsuiteSwitchTab } from "./js/components/testsuite.js";
+import { loadBackupSettings, loadBackupsList, createManualBackup, downloadBackup, deleteBackup, restoreBackup, setOnBackupRestoredHandler } from "./js/components/backups.js";
 import { setupEventListeners } from "./js/events.js";
 
 // Wire callbacks across modules
 setUnauthorizedHandler(() => logout());
 setOnPlanChangedHandler(async () => await loadActivePlan());
+setOnBackupRestoredHandler(async () => {
+    await loadActivePlan();
+    showDashboard();
+});
 setUsersSwitchTab((tabId) => switchSettingsTab(tabId));
 setTestsuiteSwitchTab((tabId) => switchSettingsTab(tabId));
 state.onDirtyChange = () => updateDraftStatusBadge();
@@ -43,10 +48,12 @@ export function showDashboard() {
             if (elements.tabBtnUsers) elements.tabBtnUsers.classList.remove("hidden");
             if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.remove("hidden");
             if (elements.tabBtnTestsuite) elements.tabBtnTestsuite.classList.remove("hidden");
+            if (elements.cardAutomatedBackups) elements.cardAutomatedBackups.classList.remove("hidden");
         } else {
             if (elements.tabBtnUsers) elements.tabBtnUsers.classList.add("hidden");
             if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.add("hidden");
             if (elements.tabBtnTestsuite) elements.tabBtnTestsuite.classList.add("hidden");
+            if (elements.cardAutomatedBackups) elements.cardAutomatedBackups.classList.add("hidden");
             if (elements.btnSettings) {
                 elements.btnSettings.classList.toggle("hidden", !canExportOrAdmin);
             }
@@ -73,6 +80,10 @@ export function switchSettingsTab(tabId) {
     });
     if (tabId === "tab-settings-users") {
         loadUsersList();
+    }
+    if (tabId === "tab-settings-data" && state.user && state.user.role === "admin") {
+        loadBackupSettings();
+        loadBackupsList();
     }
 }
 

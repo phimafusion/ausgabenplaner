@@ -206,3 +206,40 @@ class FullExportData(BaseModel):
     exported_at: Optional[str] = None
     plans: List[ExportPlanData] = []
 
+
+# --- Backup Engine Schemas ---
+class BackupSettingsResponse(BaseModel):
+    id: int = 1
+    backup_enabled: bool = True
+    backup_frequency: str = "daily"
+    backup_folder: str = "data/backups"
+    retention_count: int = 14
+    auto_backup_time: str = "03:00"
+    last_backup_at: Optional[str] = None
+
+
+class BackupSettingsUpdate(BaseModel):
+    backup_enabled: Optional[bool] = None
+    backup_frequency: Optional[str] = None
+    backup_folder: Optional[str] = None
+    retention_count: Optional[int] = None
+    auto_backup_time: Optional[str] = None
+
+
+class BackupFileInfo(BaseModel):
+    filename: str
+    file_size: int
+    file_size_formatted: str
+    created_at: str
+
+
+class BackupCreateResponse(BaseModel):
+    filename: str
+    path: str
+    file_size: int
+    file_size_formatted: str
+    created_at: str
+    pruned_files: List[str] = []
+    total_backups_count: int = 1
+
+

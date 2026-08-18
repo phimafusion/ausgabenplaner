@@ -83,7 +83,7 @@ export const elements = {
     historyTabTimeline: document.getElementById("history-tab-timeline"),
     historyTabMatrix: document.getElementById("history-tab-matrix"),
     historyTimelineList: document.getElementById("history-timeline-list"),
-    historyContainer: document.getElementById("history-container"),
+    historyContainer: document.getElementById("history-comparison-container") || document.getElementById("history-container"),
 
     // Confirm Delete Version Modal
     modalConfirmDeleteVersion: document.getElementById("modal-confirm-delete-version"),
@@ -139,4 +139,11 @@ export const elements = {
     testsuiteStatusBox: document.getElementById("testsuite-status-box"),
     testsuiteOutput: document.getElementById("testsuite-output"),
     btnReRunTests: document.getElementById("btn-re-run-tests"),
+
+    cardAutomatedBackups: document.getElementById("card-automated-backups"),
+    formBackupSettings: document.getElementById("form-backup-settings"),
+    btnSaveBackupSettings: document.getElementById("btn-save-backup-settings"),
+    btnCreateManualBackup: document.getElementById("btn-create-manual-backup"),
+    backupSettingsMsg: document.getElementById("backup-settings-msg"),
+    backupsListBody: document.getElementById("backups-list-body"),
 };

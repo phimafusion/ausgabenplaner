@@ -9,6 +9,7 @@ import { updateLockControls, updatePositionCalculationPreview, renderVersionDeta
 import { loadHistoryTimeline, loadHistoryComparison, switchHistoryTab } from "./components/history.js";
 import { resetUserForm, loadUsersList } from "./components/users.js";
 import { executeTestsuite } from "./components/testsuite.js";
+import { saveBackupSettings, createManualBackup } from "./components/backups.js";
 
 export function setupEventListeners({
     login,
@@ -651,5 +652,13 @@ export function setupEventListeners({
                 }
             }
         });
+    }
+
+    // Automated Backups & Snapshots (Admin)
+    if (elements.formBackupSettings) {
+        elements.formBackupSettings.addEventListener("submit", saveBackupSettings);
+    }
+    if (elements.btnCreateManualBackup) {
+        elements.btnCreateManualBackup.addEventListener("click", createManualBackup);
     }
 }

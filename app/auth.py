@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 import jwt
 import bcrypt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import sqlite3
 from app.database import get_db
@@ -52,15 +52,16 @@ def decode_access_token(token: str) -> Optional[dict]:
 
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    token_param: Optional[str] = Query(None, alias="token"),
     conn: sqlite3.Connection = Depends(get_db),
 ) -> dict:
-    if not credentials:
+    token = credentials.credentials if credentials else token_param
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Nicht authentifiziert",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = credentials.credentials
     payload = decode_access_token(token)
     if payload is None:
         raise HTTPException(

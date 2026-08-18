@@ -297,6 +297,96 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Card 3: Automatische SQLite-Snapshots & Synology Hyper Backup (Admin) -->
+                        <div id="card-automated-backups" class="settings-card" style="margin-top: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                                <div class="settings-card-header" style="margin-bottom: 0;">
+                                    <span class="settings-card-icon">🛡️</span>
+                                    <div>
+                                        <h4 style="margin: 0; font-size: 1.05rem;">Automatische SQLite-Snapshots & Cloud-Sicherung</h4>
+                                        <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
+                                            Erstellt tägliche, transaktionssichere Momentaufnahmen der SQLite-Datenbank mit automatischer Rotation (Pruning).
+                                        </p>
+                                    </div>
+                                </div>
+                                <button type="button" id="btn-create-manual-backup" class="btn btn-primary btn-sm">
+                                    ⚡ Jetzt Snapshot erstellen
+                                </button>
+                            </div>
+
+                            <div class="alert alert-info" style="font-size: 0.85rem; line-height: 1.5; margin-bottom: 18px;">
+                                🐳 <strong>Docker & Synology Hyper Backup Anbindung:</strong><br>
+                                Die Dumps werden im Host-Verzeichnis <code>./data/backups/</code> gespeichert. Sie können diesen Ordner in <strong>Synology Hyper Backup</strong> direkt als Quelle auswählen, um täglich verschlüsselte Offsite-Backups in die Cloud zu laden.
+                            </div>
+
+                            <form id="form-backup-settings" class="backup-config-card">
+                                <div class="backup-config-top">
+                                    <div class="backup-config-title">
+                                        <span>⚙️ Sicherungs-Zeitplan & Aufbewahrung</span>
+                                    </div>
+                                    <label class="backup-toggle-pill" for="backup-enabled-toggle">
+                                        <input type="checkbox" id="backup-enabled-toggle" checked>
+                                        <span>Automatische Backups aktiv</span>
+                                    </label>
+                                </div>
+
+                                <div class="backup-fields-grid">
+                                    <div class="backup-field-group">
+                                        <label for="backup-frequency-select">Frequenz</label>
+                                        <select id="backup-frequency-select" class="backup-input-styled">
+                                            <option value="daily">Täglich</option>
+                                            <option value="every_12_hours">Alle 12 Stunden</option>
+                                            <option value="every_6_hours">Alle 6 Stunden</option>
+                                            <option value="hourly">Stündlich</option>
+                                            <option value="weekly">Wöchentlich (Mo)</option>
+                                        </select>
+                                    </div>
+                                    <div class="backup-field-group">
+                                        <label for="backup-auto-time">Uhrzeit (HH:MM)</label>
+                                        <input type="time" id="backup-auto-time" class="backup-input-styled" value="03:00" required>
+                                    </div>
+                                    <div class="backup-field-group">
+                                        <label for="backup-retention-count">Aufbewahrung (Dumps)</label>
+                                        <input type="number" id="backup-retention-count" class="backup-input-styled" min="1" max="365" value="14" required>
+                                    </div>
+                                    <div class="backup-field-group">
+                                        <label for="backup-folder-path">Speicherordner</label>
+                                        <input type="text" id="backup-folder-path" class="backup-input-styled" value="data/backups" required>
+                                    </div>
+                                </div>
+
+                                <div class="backup-actions-bar">
+                                    <div id="backup-settings-msg" class="alert alert-success hidden" style="margin: 0; padding: 6px 12px; font-size: 0.85rem;"></div>
+                                    <div style="margin-left: auto;">
+                                        <button type="submit" id="btn-save-backup-settings" class="btn btn-primary btn-sm">
+                                            💾 Einstellungen speichern
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <div>
+                                <h5 style="margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-main);">Vorhandene Datenbank-Snapshots</h5>
+                                <div class="table-responsive">
+                                    <table class="data-table" id="table-backups-list">
+                                        <thead>
+                                            <tr>
+                                                <th>Dateiname</th>
+                                                <th>Erstellt am</th>
+                                                <th>Größe</th>
+                                                <th class="text-right" style="width: 130px;">Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="backups-list-body">
+                                            <tr>
+                                                <td colspan="4" class="text-muted text-center" style="padding: 16px;">Lade Snapshots...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Tab 2: Benutzerverwaltung (Bestehende Benutzer) -->

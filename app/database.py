@@ -34,6 +34,7 @@ def reset_db():
     cursor.execute("DROP TABLE IF EXISTS versions;")
     cursor.execute("DROP TABLE IF EXISTS plans;")
     cursor.execute("DROP TABLE IF EXISTS users;")
+    cursor.execute("DROP TABLE IF EXISTS backup_settings;")
     conn.commit()
     conn.close()
 
@@ -134,6 +135,33 @@ def init_db(seed: Optional[bool] = None):
     );
     """
     )
+
+    # Backup Settings table
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS backup_settings (
+        id INTEGER PRIMARY KEY,
+        backup_enabled INTEGER NOT NULL DEFAULT 1,
+        backup_frequency TEXT NOT NULL DEFAULT 'daily',
+        backup_folder TEXT NOT NULL DEFAULT 'data/backups',
+        retention_count INTEGER NOT NULL DEFAULT 14,
+        auto_backup_time TEXT NOT NULL DEFAULT '03:00',
+        last_backup_at TEXT
+    );
+    """
+    )
+
+    # Migration for backup_settings
+    backup_cols = [row[1] for row in cursor.execute("PRAGMA table_info(backup_settings)").fetchall()]
+    if "backup_frequency" not in backup_cols:
+        cursor.execute("ALTER TABLE backup_settings ADD COLUMN backup_frequency TEXT NOT NULL DEFAULT 'daily'")
+
+    # Ensure default row exists
+    settings_exists = cursor.execute("SELECT id FROM backup_settings WHERE id = 1").fetchone()
+    if not settings_exists:
+        cursor.execute(
+            "INSERT INTO backup_settings (id, backup_enabled, backup_frequency, backup_folder, retention_count, auto_backup_time) VALUES (1, 1, 'daily', 'data/backups', 14, '03:00')"
+        )
 
     conn.commit()
 

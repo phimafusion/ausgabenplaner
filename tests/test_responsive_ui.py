@@ -132,15 +132,24 @@ def test_position_interval_calculation_ui():
 
 
 def test_history_audit_metadata_ui():
-    """Verify that history timeline displays created/updated audit info and styles exist."""
+    """Verify that history timeline displays created/updated audit info, matrix comparison container exists, and styles exist."""
+    html_path = STATIC_DIR / "index.html"
+    content = html_path.read_text(encoding="utf-8")
+    assert 'id="history-comparison-container"' in content
+    assert 'id="modal-history"' in content
+    assert 'id="tab-btn-matrix"' in content
+
     css_path = STATIC_DIR / "styles.css"
     css_content = css_path.read_text(encoding="utf-8")
     assert ".history-card-audit" in css_content
+    assert ".matrix-table" in css_content
 
     js_content = get_all_frontend_js_content()
     assert "formatDateTimeDE" in js_content
     assert "formatGermanDate(v.effective_date)" in js_content
     assert "history-card-audit" in js_content
+    assert "loadHistoryComparison" in js_content
+    assert "history-comparison-container" in js_content
     assert "created_by" in js_content
     assert "updated_by" in js_content
 
@@ -244,3 +253,31 @@ def test_modular_frontend_structure():
     assert (js_dir / "components" / "history.js").exists()
     assert (js_dir / "components" / "users.js").exists()
     assert (js_dir / "components" / "testsuite.js").exists()
+    assert (js_dir / "components" / "backups.js").exists()
+
+
+def test_automated_backups_ui():
+    """Verify that automated backups UI controls, form, and JS bindings exist."""
+    html_path = STATIC_DIR / "index.html"
+    content = html_path.read_text(encoding="utf-8")
+
+    assert 'id="card-automated-backups"' in content
+    assert 'id="form-backup-settings"' in content
+    assert 'id="backup-frequency-select"' in content
+    assert 'id="backup-retention-count"' in content
+    assert 'id="backup-auto-time"' in content
+    assert 'id="backup-folder-path"' in content
+    assert 'id="backup-enabled-toggle"' in content
+    assert 'id="btn-create-manual-backup"' in content
+    assert 'id="table-backups-list"' in content
+
+    js_content = get_all_frontend_js_content()
+    assert "loadBackupSettings" in js_content
+    assert "saveBackupSettings" in js_content
+    assert "loadBackupsList" in js_content
+    assert "createManualBackup" in js_content
+    assert "downloadBackup" in js_content
+    assert "restoreBackup" in js_content
+    assert "deleteBackup" in js_content
+    assert "/api/admin/backups" in js_content
+

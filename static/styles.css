@@ -848,12 +848,38 @@ body {
     max-width: 1100px;
 }
 
-/* Settings Modal Styles */
+/* Settings Modal Styles & Fixed Dimensions */
+.modal-settings-dialog {
+    width: 100%;
+    max-width: 680px;
+    min-height: 520px;
+    height: 540px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#modal-settings .modal-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#modal-settings .settings-tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    min-height: 0;
+}
+
 .settings-tabs-bar {
     display: flex;
     gap: 8px;
     margin-bottom: 20px;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .settings-tab-btn {

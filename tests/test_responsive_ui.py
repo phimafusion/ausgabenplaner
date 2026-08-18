@@ -188,6 +188,7 @@ def test_settings_overlay_menu_ui():
     # CSS styles
     css_path = STATIC_DIR / "styles.css"
     css_content = css_path.read_text(encoding="utf-8")
+    assert ".modal-settings-dialog" in css_content
     assert ".settings-tabs-bar" in css_content
     assert ".settings-tab-btn" in css_content
     assert ".settings-card" in css_content

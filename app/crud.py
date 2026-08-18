@@ -433,6 +433,10 @@ def export_full_data(conn: sqlite3.Connection) -> Dict[str, Any]:
                     "title": v_dict["title"],
                     "effective_date": v_dict["effective_date"],
                     "is_active": v_dict["is_active"],
+                    "created_at": v_dict.get("created_at"),
+                    "created_by": v_dict.get("created_by"),
+                    "updated_at": v_dict.get("updated_at"),
+                    "updated_by": v_dict.get("updated_by"),
                     "positions": positions,
                     "contributions": contributions,
                 }
@@ -477,8 +481,17 @@ def import_full_data(conn: sqlite3.Connection, data: Dict[str, Any], overwrite: 
         versions = p.get("versions", [])
         for v in versions:
             cursor.execute(
-                "INSERT INTO versions (plan_id, title, effective_date, is_active) VALUES (?, ?, ?, ?)",
-                (plan_id, v["title"], v.get("effective_date"), v.get("is_active", 1)),
+                "INSERT INTO versions (plan_id, title, effective_date, is_active, created_at, created_by, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    plan_id,
+                    v["title"],
+                    v.get("effective_date"),
+                    v.get("is_active", 1),
+                    v.get("created_at") or datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    v.get("created_by") or "Administrator",
+                    v.get("updated_at"),
+                    v.get("updated_by"),
+                ),
             )
             version_id = cursor.lastrowid
             versions_imported += 1

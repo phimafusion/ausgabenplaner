@@ -855,6 +855,33 @@ body {
     background: rgba(15, 23, 42, 0.4);
     border-radius: 8px;
     border: 1px solid var(--border-color);
+    gap: 12px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-name-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.user-badges-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.user-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* Spinner */

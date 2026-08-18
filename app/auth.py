@@ -72,11 +72,13 @@ def get_current_user(
     if username is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ungültiges Token")
 
-    user_row = conn.execute("SELECT id, username, name, role FROM users WHERE username = ?", (username,)).fetchone()
+    user_row = conn.execute("SELECT id, username, name, role, can_export FROM users WHERE username = ?", (username,)).fetchone()
     if user_row is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Benutzer nicht gefunden")
 
-    return dict(user_row)
+    res = dict(user_row)
+    res["can_export"] = bool(res.get("can_export", 1))
+    return res
 
 
 def get_current_admin(current_user: dict = Depends(get_current_user)) -> dict:

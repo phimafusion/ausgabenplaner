@@ -87,3 +87,66 @@ def test_export_and_import_flow():
     assert restored_ver["contributions"][0]["person_name"] == "Alex"
     assert restored_ver["contributions"][0]["amount"] == 500.0
     assert restored_ver["totals"]["net_balance"] == -500.0
+
+
+def test_export_includes_entire_history_and_restores_all_versions():
+    # Login admin
+    login_resp = client.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
+    headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
+
+    plan_resp = client.get("/api/plans/active", headers=headers).json()
+    plan_id = plan_resp["id"]
+
+    # Save Version 2 (Stand 01.10.2026)
+    client.post(
+        f"/api/plans/{plan_id}/save-version",
+        json={
+            "title": "Stand ab 01.10.2026",
+            "effective_date": "2026-10-01",
+            "positions": [{"title": "Strom", "amount": -80.0}],
+            "contributions": [{"person_name": "Phil", "amount": 80.0}],
+        },
+        headers=headers,
+    )
+
+    # Save Version 3 (Stand 01.11.2026)
+    client.post(
+        f"/api/plans/{plan_id}/save-version",
+        json={
+            "title": "Stand ab 01.11.2026",
+            "effective_date": "2026-11-01",
+            "positions": [{"title": "Gas", "amount": -120.0}],
+            "contributions": [{"person_name": "Sabrina", "amount": 120.0}],
+        },
+        headers=headers,
+    )
+
+    # Export
+    export_resp = client.get("/api/data/export", headers=headers)
+    assert export_resp.status_code == 200
+    export_data = export_resp.json()
+
+    # Verify all 3 historical versions are included in export
+    versions = export_data["plans"][0]["versions"]
+    assert len(versions) == 3
+    version_titles = [v["title"] for v in versions]
+    assert "Stand ab 01.09.2026" in version_titles
+    assert "Stand ab 01.10.2026" in version_titles
+    assert "Stand ab 01.11.2026" in version_titles
+
+    # Reset DB & restore
+    reset_db()
+    init_db(seed=False)
+
+    import_resp = client.post("/api/data/import", json=export_data, headers=headers)
+    assert import_resp.status_code == 200
+    assert import_resp.json()["versions_imported"] == 3
+
+    # Check restored history
+    restored_plan = client.get("/api/plans/active", headers=headers).json()
+    restored_plan_id = restored_plan["id"]
+    history_resp = client.get(f"/api/plans/{restored_plan_id}/history", headers=headers)
+    assert history_resp.status_code == 200
+    restored_history = history_resp.json()
+    assert len(restored_history) == 3
+

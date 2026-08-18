@@ -472,30 +472,45 @@
 
     <!-- Modal: User Management (Admin) -->
     <div id="modal-users" class="modal-overlay hidden">
-        <div class="modal-dialog glass-panel">
+        <div class="modal-dialog glass-panel" style="max-width: 580px;">
             <div class="modal-header">
-                <h3>👥 Benutzerverwaltung</h3>
+                <h3>👥 Benutzerverwaltung & Berechtigungen</h3>
                 <button class="modal-close" data-close="modal-users">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="form-user-create" class="user-create-box">
-                    <h4>Neuen Benutzer anlegen</h4>
+                    <input type="hidden" id="user-edit-id">
+                    <h4 id="user-form-heading">Neuen Benutzer anlegen</h4>
                     <div class="form-group">
-                        <input type="text" id="user-username" required placeholder="Benutzername">
+                        <label for="user-username" class="form-label-sm">Benutzername (Login)</label>
+                        <input type="text" id="user-username" required placeholder="z.B. sabrina">
                     </div>
                     <div class="form-group">
+                        <label for="user-name" class="form-label-sm">Anzeigename</label>
                         <input type="text" id="user-name" required placeholder="Name (z.B. Sabrina)">
                     </div>
                     <div class="form-group">
+                        <label for="user-password" id="user-password-label" class="form-label-sm">Passwort</label>
                         <input type="password" id="user-password" required placeholder="Passwort">
+                        <small id="user-password-help" class="form-help hidden" style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 4px;">Leer lassen, um das bisherige Passwort beizubehalten.</small>
                     </div>
                     <div class="form-group">
+                        <label for="user-role" class="form-label-sm">Rolle</label>
                         <select id="user-role" class="form-select">
                             <option value="user">Benutzer</option>
                             <option value="admin">Administrator</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-sm btn-primary">Benutzer erstellen</button>
+                    <div class="form-group" style="margin-top: 10px; margin-bottom: 14px;">
+                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                            <input type="checkbox" id="user-can-export" checked style="width: 17px; height: 17px; cursor: pointer;">
+                            <span>💾 <strong>Export-Recht erteilen</strong> (Darf Plan-Daten exportieren/sichern)</span>
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="submit" id="btn-submit-user" class="btn btn-sm btn-primary">Benutzer erstellen</button>
+                        <button type="button" id="btn-cancel-user-edit" class="btn btn-sm btn-outline hidden">Abbrechen</button>
+                    </div>
                 </form>
 
                 <div class="users-list-box">

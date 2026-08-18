@@ -12,6 +12,14 @@ class UserCreate(BaseModel):
     password: str
     name: str
     role: str = "user"
+    can_export: bool = True
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+    password: Optional[str] = None
+    can_export: Optional[bool] = None
 
 
 class UserResponse(BaseModel):
@@ -19,6 +27,7 @@ class UserResponse(BaseModel):
     username: str
     name: str
     role: str
+    can_export: bool = True
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -178,6 +187,10 @@ class ExportVersionData(BaseModel):
     title: str
     effective_date: Optional[str] = None
     is_active: Optional[int] = 1
+    created_at: Optional[str] = None
+    created_by: Optional[str] = None
+    updated_at: Optional[str] = None
+    updated_by: Optional[str] = None
     positions: List[ExportPositionData] = []
     contributions: List[ExportContributionData] = []
 

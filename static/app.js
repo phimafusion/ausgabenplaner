@@ -116,6 +116,17 @@ const elements = {
 
     modalUsers: document.getElementById("modal-users"),
     formUserCreate: document.getElementById("form-user-create"),
+    userEditId: document.getElementById("user-edit-id"),
+    userUsername: document.getElementById("user-username"),
+    userName: document.getElementById("user-name"),
+    userPassword: document.getElementById("user-password"),
+    userPasswordLabel: document.getElementById("user-password-label"),
+    userPasswordHelp: document.getElementById("user-password-help"),
+    userRole: document.getElementById("user-role"),
+    userCanExport: document.getElementById("user-can-export"),
+    userFormHeading: document.getElementById("user-form-heading"),
+    btnSubmitUser: document.getElementById("btn-submit-user"),
+    btnCancelUserEdit: document.getElementById("btn-cancel-user-edit"),
     usersList: document.getElementById("users-list"),
 
     btnExportJson: document.getElementById("btn-export-json"),
@@ -804,9 +815,16 @@ function setupEventListeners() {
 
     // User Management (Admin)
     elements.btnUserMgmt.addEventListener("click", async () => {
+        resetUserForm();
         await loadUsersList();
         openModal("modal-users");
     });
+
+    if (elements.btnCancelUserEdit) {
+        elements.btnCancelUserEdit.addEventListener("click", () => {
+            resetUserForm();
+        });
+    }
 
     // Testsuite Runner (Admin)
     elements.btnRunTests.addEventListener("click", executeTestsuite);
@@ -814,22 +832,51 @@ function setupEventListeners() {
 
     elements.formUserCreate.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const username = document.getElementById("user-username").value.trim();
-        const name = document.getElementById("user-name").value.trim();
-        const password = document.getElementById("user-password").value;
-        const role = document.getElementById("user-role").value;
+        const editId = elements.userEditId ? elements.userEditId.value : "";
+        const username = elements.userUsername.value.trim();
+        const name = elements.userName.value.trim();
+        const password = elements.userPassword.value;
+        const role = elements.userRole.value;
+        const can_export = elements.userCanExport ? elements.userCanExport.checked : true;
 
-        const resp = await apiFetch("/api/users", {
-            method: "POST",
-            body: { username, name, password, role },
-        });
-
-        if (resp.ok) {
-            elements.formUserCreate.reset();
-            await loadUsersList();
+        if (editId) {
+            // Update existing user
+            const payload = { name, role, can_export };
+            if (password && password.trim()) {
+                payload.password = password.trim();
+            }
+            const resp = await apiFetch(`/api/users/${editId}`, {
+                method: "PATCH",
+                body: payload,
+            });
+            if (resp.ok) {
+                resetUserForm();
+                await loadUsersList();
+                // If editing self, update state
+                if (state.user && String(state.user.id) === String(editId)) {
+                    state.user.name = name;
+                    state.user.role = role;
+                    state.user.can_export = can_export;
+                    showDashboard();
+                }
+            } else {
+                const errData = await resp.json();
+                alert(errData.detail || "Fehler beim Aktualisieren des Benutzers");
+            }
         } else {
-            const errData = await resp.json();
-            alert(errData.detail || "Fehler beim Erstellen des Benutzers");
+            // Create new user
+            const resp = await apiFetch("/api/users", {
+                method: "POST",
+                body: { username, name, password, role, can_export },
+            });
+
+            if (resp.ok) {
+                resetUserForm();
+                await loadUsersList();
+            } else {
+                const errData = await resp.json();
+                alert(errData.detail || "Fehler beim Erstellen des Benutzers");
+            }
         }
     });
 }
@@ -910,13 +957,22 @@ function showDashboard() {
 
     if (state.user) {
         elements.userDisplayName.textContent = state.user.name || state.user.username;
-        elements.userRoleBadge.textContent = state.user.role === "admin" ? "Admin" : "User";
+        elements.userRoleBadge.textContent = state.user.role === "admin" ? "Admin" : "Benutzer";
         if (state.user.role === "admin") {
             elements.btnUserMgmt.classList.remove("hidden");
             elements.btnRunTests.classList.remove("hidden");
+            elements.btnExportJson.classList.remove("hidden");
+            elements.btnImportJson.classList.remove("hidden");
         } else {
             elements.btnUserMgmt.classList.add("hidden");
             elements.btnRunTests.classList.add("hidden");
+            if (state.user.can_export) {
+                elements.btnExportJson.classList.remove("hidden");
+                elements.btnImportJson.classList.remove("hidden");
+            } else {
+                elements.btnExportJson.classList.add("hidden");
+                elements.btnImportJson.classList.add("hidden");
+            }
         }
     }
 }
@@ -1388,7 +1444,67 @@ async function loadHistoryComparison() {
     elements.historyContainer.innerHTML = html;
 }
 
-// Users List
+// User Management Form & List Handlers
+function resetUserForm() {
+    if (elements.formUserCreate) elements.formUserCreate.reset();
+    if (elements.userEditId) elements.userEditId.value = "";
+    if (elements.userUsername) {
+        elements.userUsername.disabled = false;
+        elements.userUsername.value = "";
+    }
+    if (elements.userName) elements.userName.value = "";
+    if (elements.userPassword) {
+        elements.userPassword.value = "";
+        elements.userPassword.required = true;
+    }
+    if (elements.userPasswordHelp) elements.userPasswordHelp.classList.add("hidden");
+    if (elements.userRole) elements.userRole.value = "user";
+    if (elements.userCanExport) elements.userCanExport.checked = true;
+    if (elements.userFormHeading) elements.userFormHeading.textContent = "Neuen Benutzer anlegen";
+    if (elements.btnSubmitUser) elements.btnSubmitUser.textContent = "Benutzer erstellen";
+    if (elements.btnCancelUserEdit) elements.btnCancelUserEdit.classList.add("hidden");
+}
+
+window.startEditUser = (user) => {
+    if (typeof user === "string") {
+        try { user = JSON.parse(user); } catch (e) {}
+    }
+    if (!user) return;
+    if (elements.userEditId) elements.userEditId.value = user.id;
+    if (elements.userUsername) {
+        elements.userUsername.value = user.username;
+        elements.userUsername.disabled = true;
+    }
+    if (elements.userName) elements.userName.value = user.name;
+    if (elements.userPassword) {
+        elements.userPassword.value = "";
+        elements.userPassword.required = false;
+    }
+    if (elements.userPasswordHelp) elements.userPasswordHelp.classList.remove("hidden");
+    if (elements.userRole) elements.userRole.value = user.role;
+    if (elements.userCanExport) elements.userCanExport.checked = !!user.can_export;
+    if (elements.userFormHeading) elements.userFormHeading.textContent = `Benutzer „${user.username}“ bearbeiten`;
+    if (elements.btnSubmitUser) elements.btnSubmitUser.textContent = "💾 Änderungen speichern";
+    if (elements.btnCancelUserEdit) elements.btnCancelUserEdit.classList.remove("hidden");
+};
+
+window.deleteUser = async (userId, username) => {
+    if (!confirm(`Möchten Sie den Benutzer „${username}“ wirklich löschen?`)) {
+        return;
+    }
+    try {
+        const resp = await apiFetch(`/api/users/${userId}`, { method: "DELETE" });
+        if (!resp.ok) {
+            const errData = await resp.json();
+            throw new Error(errData.detail || "Fehler beim Löschen des Benutzers");
+        }
+        await loadUsersList();
+    } catch (err) {
+        alert(err.message || "Fehler beim Löschen des Benutzers");
+    }
+};
+
+// Users List Loader
 async function loadUsersList() {
     const resp = await apiFetch("/api/users");
     if (!resp.ok) return;
@@ -1396,11 +1512,23 @@ async function loadUsersList() {
     elements.usersList.innerHTML = "";
     users.forEach((u) => {
         const li = document.createElement("li");
+        li.className = "user-list-item";
+        const uJson = JSON.stringify(u).replace(/'/g, "&#39;");
         li.innerHTML = `
-            <div>
-                <strong>${escapeHtml(u.name)}</strong> (${escapeHtml(u.username)})
+            <div class="user-info">
+                <div class="user-name-line">
+                    <strong>${escapeHtml(u.name)}</strong>
+                    <span class="text-muted" style="font-size: 0.85rem;">(@${escapeHtml(u.username)})</span>
+                </div>
+                <div class="user-badges-line">
+                    <span class="badge ${u.role === "admin" ? "badge-admin" : "badge-user"}">${u.role === "admin" ? "👑 Administrator" : "👤 Benutzer"}</span>
+                    <span class="badge ${u.can_export ? "badge-saved" : "badge-archived"}">${u.can_export ? "💾 Export erlaubt" : "🔒 Kein Export"}</span>
+                </div>
             </div>
-            <span class="badge ${u.role === "admin" ? "badge-admin" : "badge-user"}">${escapeHtml(u.role)}</span>
+            <div class="user-item-actions">
+                <button type="button" class="btn btn-sm btn-outline btn-icon" onclick='startEditUser(${uJson})' title="Benutzer bearbeiten">✏️</button>
+                ${u.username !== "admin" ? `<button type="button" class="btn btn-sm btn-danger btn-icon" onclick="deleteUser(${u.id}, '${escapeHtml(u.username)}')" title="Benutzer löschen">🗑️</button>` : ''}
+            </div>
         `;
         elements.usersList.appendChild(li);
     });

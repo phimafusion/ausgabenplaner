@@ -54,10 +54,16 @@ def init_db(seed: Optional[bool] = None):
         password_hash TEXT NOT NULL,
         name TEXT NOT NULL,
         role TEXT NOT NULL DEFAULT 'user',
+        can_export INTEGER NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """
     )
+
+    # Migration for users table
+    user_cols = [row[1] for row in cursor.execute("PRAGMA table_info(users)").fetchall()]
+    if "can_export" not in user_cols:
+        cursor.execute("ALTER TABLE users ADD COLUMN can_export INTEGER NOT NULL DEFAULT 1")
 
     # Plans table
     cursor.execute(
@@ -138,7 +144,7 @@ def init_db(seed: Optional[bool] = None):
     if not admin_exists:
         admin_pass = os.getenv("ADMIN_PASSWORD", "admin123")
         cursor.execute(
-            "INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)",
+            "INSERT INTO users (username, password_hash, name, role, can_export) VALUES (?, ?, ?, ?, 1)",
             ("admin", get_password_hash(admin_pass), "Administrator", "admin"),
         )
         conn.commit()

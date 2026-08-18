@@ -51,6 +51,7 @@ def login(req: schemas.LoginRequest, conn: sqlite3.Connection = Depends(get_db))
             "username": user["username"],
             "name": user["name"],
             "role": user["role"],
+            "can_export": bool(user.get("can_export", 1)),
         },
     }
 
@@ -73,14 +74,15 @@ def create_user(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Benutzername existiert bereits")
 
     hashed_pw = get_password_hash(req.password)
+    can_export_val = 1 if req.can_export else 0
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)",
-        (req.username, hashed_pw, req.name, req.role),
+        "INSERT INTO users (username, password_hash, name, role, can_export) VALUES (?, ?, ?, ?, ?)",
+        (req.username, hashed_pw, req.name, req.role, can_export_val),
     )
     conn.commit()
     user_id = cursor.lastrowid
-    return {"id": user_id, "username": req.username, "name": req.name, "role": req.role}
+    return {"id": user_id, "username": req.username, "name": req.name, "role": req.role, "can_export": bool(can_export_val)}
 
 
 @app.get("/api/users")
@@ -88,8 +90,77 @@ def list_users(
     current_admin: dict = Depends(get_current_admin),
     conn: sqlite3.Connection = Depends(get_db),
 ):
-    rows = conn.execute("SELECT id, username, name, role, created_at FROM users ORDER BY id ASC").fetchall()
-    return [dict(r) for r in rows]
+    rows = conn.execute("SELECT id, username, name, role, can_export, created_at FROM users ORDER BY id ASC").fetchall()
+    res = []
+    for r in rows:
+        d = dict(r)
+        d["can_export"] = bool(d.get("can_export", 1))
+        res.append(d)
+    return res
+
+
+@app.patch("/api/users/{user_id}", response_model=schemas.UserResponse)
+def update_user_route(
+    user_id: int,
+    req: schemas.UserUpdate,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    existing = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Benutzer nicht gefunden")
+
+    current = dict(existing)
+    new_name = req.name if req.name is not None else current["name"]
+    new_role = req.role if req.role is not None else current["role"]
+    new_can_export = (1 if req.can_export else 0) if req.can_export is not None else current.get("can_export", 1)
+
+    # Admin safety: If demoting admin, ensure at least one other admin remains
+    if current["role"] == "admin" and new_role != "admin":
+        admin_count = conn.execute("SELECT COUNT(*) as cnt FROM users WHERE role = 'admin'").fetchone()["cnt"]
+        if admin_count <= 1:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Der letzte Administrator kann nicht herabgestuft werden.")
+
+    if req.password and req.password.strip():
+        new_pw_hash = get_password_hash(req.password.strip())
+        conn.execute(
+            "UPDATE users SET name = ?, role = ?, can_export = ?, password_hash = ? WHERE id = ?",
+            (new_name, new_role, new_can_export, new_pw_hash, user_id),
+        )
+    else:
+        conn.execute(
+            "UPDATE users SET name = ?, role = ?, can_export = ? WHERE id = ?",
+            (new_name, new_role, new_can_export, user_id),
+        )
+    conn.commit()
+
+    updated = conn.execute("SELECT id, username, name, role, can_export FROM users WHERE id = ?", (user_id,)).fetchone()
+    res = dict(updated)
+    res["can_export"] = bool(res.get("can_export", 1))
+    return res
+
+
+@app.delete("/api/users/{user_id}")
+def delete_user_route(
+    user_id: int,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    existing = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Benutzer nicht gefunden")
+
+    if existing["id"] == current_admin["id"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sie können Ihren eigenen Administrator-Account nicht löschen.")
+
+    if existing["role"] == "admin":
+        admin_count = conn.execute("SELECT COUNT(*) as cnt FROM users WHERE role = 'admin'").fetchone()["cnt"]
+        if admin_count <= 1:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Der letzte Administrator kann nicht gelöscht werden.")
+
+    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    return {"message": "Benutzer gelöscht"}
 
 
 @app.post("/api/admin/run-tests")
@@ -443,6 +514,8 @@ def export_data_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    if current_user.get("role") != "admin" and not current_user.get("can_export"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sie besitzen keine Berechtigung zum Exportieren der Daten.")
     return crud.export_full_data(conn)
 
 
@@ -452,6 +525,8 @@ def import_data_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    if current_user.get("role") != "admin" and not current_user.get("can_export"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sie besitzen keine Berechtigung zum Importieren der Daten.")
     data = req.model_dump()
     return crud.import_full_data(conn, data, overwrite=True)
 

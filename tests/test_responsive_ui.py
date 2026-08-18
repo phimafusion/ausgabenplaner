@@ -138,3 +138,20 @@ def test_history_audit_metadata_ui():
     assert "updated_by" in js_content
 
 
+def test_user_management_edit_and_export_permissions_ui():
+    """Verify that user management modal contains export checkbox, edit controls, and JS handlers."""
+    html_path = STATIC_DIR / "index.html"
+    content = html_path.read_text(encoding="utf-8")
+
+    assert 'id="user-can-export"' in content
+    assert 'id="user-edit-id"' in content
+    assert 'id="btn-cancel-user-edit"' in content
+
+    js_path = STATIC_DIR / "app.js"
+    js_content = js_path.read_text(encoding="utf-8")
+    assert "startEditUser" in js_content
+    assert "resetUserForm" in js_content
+    assert "userCanExport" in js_content
+    assert "Export erlaubt" in js_content
+
+

@@ -24,7 +24,7 @@ const elements = {
     userDisplayName: document.getElementById("user-display-name"),
     userRoleBadge: document.getElementById("user-role-badge"),
     btnRunTests: document.getElementById("btn-run-tests"),
-    btnUserMgmt: document.getElementById("btn-user-mgmt"),
+    btnSettings: document.getElementById("btn-settings"),
     btnLogout: document.getElementById("btn-logout"),
 
     planTitle: document.getElementById("plan-title"),
@@ -114,7 +114,8 @@ const elements = {
     btnDiscardUnsaved: document.getElementById("btn-discard-unsaved"),
     btnSaveBeforeAction: document.getElementById("btn-save-before-action"),
 
-    modalUsers: document.getElementById("modal-users"),
+    modalSettings: document.getElementById("modal-settings"),
+    tabBtnUsers: document.getElementById("tab-btn-users"),
     formUserCreate: document.getElementById("form-user-create"),
     userEditId: document.getElementById("user-edit-id"),
     userUsername: document.getElementById("user-username"),
@@ -132,8 +133,6 @@ const elements = {
     btnExportJson: document.getElementById("btn-export-json"),
     btnExportXlsx: document.getElementById("btn-export-xlsx"),
     btnImportJson: document.getElementById("btn-import-json"),
-    dropdownImportExport: document.getElementById("dropdown-import-export"),
-    btnImportExportMenu: document.getElementById("btn-import-export-menu"),
 
     modalImport: document.getElementById("modal-import"),
     formImportJson: document.getElementById("form-import-json"),
@@ -757,23 +756,37 @@ function setupEventListeners() {
         elements.btnSaveVersion.click();
     });
 
-    // Import / Export Dropdown Click / Hover Interactivity
-    if (elements.btnImportExportMenu && elements.dropdownImportExport) {
-        elements.btnImportExportMenu.addEventListener("click", (e) => {
-            e.stopPropagation();
-            elements.dropdownImportExport.classList.toggle("is-open");
-        });
-        document.addEventListener("click", (e) => {
-            if (!elements.dropdownImportExport.contains(e.target)) {
-                elements.dropdownImportExport.classList.remove("is-open");
+    // Settings Modal Open
+    if (elements.btnSettings) {
+        elements.btnSettings.addEventListener("click", async () => {
+            resetUserForm();
+            if (state.user && state.user.role !== "admin") {
+                const tabDataBtn = document.querySelector('.settings-tab-btn[data-tab="tab-settings-data"]');
+                if (tabDataBtn) tabDataBtn.click();
+            } else {
+                const activeTab = document.querySelector('.settings-tab-btn.active');
+                if (activeTab && activeTab.getAttribute("data-tab") === "tab-settings-users") {
+                    await loadUsersList();
+                }
             }
-        });
-        elements.dropdownImportExport.querySelectorAll(".dropdown-item").forEach((item) => {
-            item.addEventListener("click", () => {
-                elements.dropdownImportExport.classList.remove("is-open");
-            });
+            openModal("modal-settings");
         });
     }
+
+    // Settings Tab Switching
+    document.querySelectorAll(".settings-tab-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+            const targetId = btn.getAttribute("data-tab");
+            document.querySelectorAll(".settings-tab-btn").forEach((b) => b.classList.remove("active"));
+            document.querySelectorAll(".settings-tab-content").forEach((c) => c.classList.add("hidden"));
+            btn.classList.add("active");
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) targetEl.classList.remove("hidden");
+            if (targetId === "tab-settings-users") {
+                await loadUsersList();
+            }
+        });
+    });
 
     // Export JSON
     if (elements.btnExportJson) {
@@ -821,13 +834,14 @@ function setupEventListeners() {
         });
     }
 
-
     // Import JSON
-    elements.btnImportJson.addEventListener("click", () => {
-        elements.formImportJson.reset();
-        elements.importError.classList.add("hidden");
-        openModal("modal-import");
-    });
+    if (elements.btnImportJson) {
+        elements.btnImportJson.addEventListener("click", () => {
+            elements.formImportJson.reset();
+            elements.importError.classList.add("hidden");
+            openModal("modal-import");
+        });
+    }
 
     elements.formImportJson.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -850,6 +864,7 @@ function setupEventListeners() {
             }
 
             closeModal("modal-import");
+            closeModal("modal-settings");
             setDirty(false);
             await loadActivePlan();
             alert("Daten erfolgreich wiederhergestellt!");
@@ -859,18 +874,12 @@ function setupEventListeners() {
         }
     });
 
-    // User Management (Admin)
-    elements.btnUserMgmt.addEventListener("click", async () => {
-        resetUserForm();
-        await loadUsersList();
-        openModal("modal-users");
-    });
-
     if (elements.btnCancelUserEdit) {
         elements.btnCancelUserEdit.addEventListener("click", () => {
             resetUserForm();
         });
     }
+
 
     // Testsuite Runner (Admin)
     elements.btnRunTests.addEventListener("click", executeTestsuite);
@@ -1007,18 +1016,18 @@ function showDashboard() {
         const canExportOrAdmin = state.user.role === "admin" || !!state.user.can_export;
 
         if (state.user.role === "admin") {
-            elements.btnUserMgmt.classList.remove("hidden");
             elements.btnRunTests.classList.remove("hidden");
+            if (elements.btnSettings) elements.btnSettings.classList.remove("hidden");
+            if (elements.tabBtnUsers) elements.tabBtnUsers.classList.remove("hidden");
         } else {
-            elements.btnUserMgmt.classList.add("hidden");
             elements.btnRunTests.classList.add("hidden");
-        }
-
-        if (elements.dropdownImportExport) {
-            if (canExportOrAdmin) {
-                elements.dropdownImportExport.classList.remove("hidden");
-            } else {
-                elements.dropdownImportExport.classList.add("hidden");
+            if (elements.tabBtnUsers) elements.tabBtnUsers.classList.add("hidden");
+            if (elements.btnSettings) {
+                if (canExportOrAdmin) {
+                    elements.btnSettings.classList.remove("hidden");
+                } else {
+                    elements.btnSettings.classList.add("hidden");
+                }
             }
         }
 

@@ -848,6 +848,120 @@ body {
     max-width: 1100px;
 }
 
+/* Settings Modal Styles */
+.settings-tabs-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    font-family: var(--font-heading);
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.settings-tab-btn:hover {
+    color: var(--text-main);
+}
+
+.settings-tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.settings-card {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 18px;
+    transition: border-color 0.2s ease;
+}
+
+.settings-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.settings-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.settings-card-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.settings-card-header h4 {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.user-create-box {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 18px;
+}
+
+.users-list-box {
+    margin-top: 20px;
+}
+
+.users-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    gap: 10px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.user-name-title {
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.user-badge-role {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .modal-header {
     display: flex;
     align-items: center;

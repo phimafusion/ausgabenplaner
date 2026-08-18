@@ -155,33 +155,50 @@ def test_user_management_edit_and_export_permissions_ui():
     assert "Export erlaubt" in js_content
 
 
-def test_import_export_dropdown_menu_ui():
-    """Verify that import/export hover dropdown menu exists with JSON export, JSON import and XLSX export."""
+def test_settings_overlay_menu_ui():
+    """Verify that settings overlay with gear icon exists, containing data backup (JSON/XLSX export, JSON import) and user management tabs."""
     html_path = STATIC_DIR / "index.html"
     content = html_path.read_text(encoding="utf-8")
 
-    assert 'id="dropdown-import-export"' in content
-    assert 'id="btn-import-export-menu"' in content
-    assert 'Import / Export' in content
+    # Navbar gear button
+    assert 'id="btn-settings"' in content
+    assert '⚙️ Einstellungen' in content
+
+    # Settings overlay modal
+    assert 'id="modal-settings"' in content
+    assert 'settings-tabs-bar' in content
+    assert 'data-tab="tab-settings-data"' in content
+    assert 'id="tab-btn-users"' in content
+    assert 'data-tab="tab-settings-users"' in content
+
+    # Data export / import actions inside settings
     assert 'id="btn-export-json"' in content
     assert 'JSON exportieren' in content
-    assert 'id="btn-import-json"' in content
-    assert 'JSON importieren' in content
     assert 'id="btn-export-xlsx"' in content
     assert 'XLSX exportieren' in content
+    assert 'id="btn-import-json"' in content
 
+    # User management inside settings
+    assert 'id="form-user-create"' in content
+    assert 'id="users-list"' in content
+
+    # CSS styles
     css_path = STATIC_DIR / "styles.css"
     css_content = css_path.read_text(encoding="utf-8")
-    assert ".dropdown" in css_content
-    assert ".dropdown-menu" in css_content
-    assert ".dropdown:hover .dropdown-menu" in css_content
-    assert ".dropdown-item" in css_content
+    assert ".settings-tabs-bar" in css_content
+    assert ".settings-tab-btn" in css_content
+    assert ".settings-card" in css_content
 
+    # JS bindings
     js_path = STATIC_DIR / "app.js"
     js_content = js_path.read_text(encoding="utf-8")
+    assert "btnSettings" in js_content
+    assert "modalSettings" in js_content
+    assert "tabBtnUsers" in js_content
     assert "btnExportXlsx" in js_content
-    assert "btnImportExportMenu" in js_content
+    assert "modal-settings" in js_content
     assert "/api/data/export-xlsx" in js_content
+
 
 
 

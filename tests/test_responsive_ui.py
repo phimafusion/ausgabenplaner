@@ -155,23 +155,26 @@ def test_user_management_edit_and_export_permissions_ui():
     assert "Export erlaubt" in js_content
 
 
-def test_settings_overlay_menu_ui():
-    """Verify that settings overlay with gear icon exists, containing data backup, user management (existing users), and separate new user tabs."""
+def test_settings_view_and_testsuite_tab_ui():
+    """Verify that settings full-page view exists with back button, 4 tabs (data backup, user mgmt, new user, testsuite)."""
     html_path = STATIC_DIR / "index.html"
     content = html_path.read_text(encoding="utf-8")
 
-    # Navbar gear button
+    # Navbar gear button & back button
     assert 'id="btn-settings"' in content
     assert '⚙️ Einstellungen' in content
+    assert 'id="btn-back-to-dashboard"' in content
 
-    # Settings overlay modal
-    assert 'id="modal-settings"' in content
+    # Settings full-page view container
+    assert 'id="settings-view"' in content
     assert 'settings-tabs-bar' in content
     assert 'data-tab="tab-settings-data"' in content
     assert 'id="tab-btn-users"' in content
     assert 'data-tab="tab-settings-users"' in content
     assert 'id="tab-btn-new-user"' in content
     assert 'data-tab="tab-settings-new-user"' in content
+    assert 'id="tab-btn-testsuite"' in content
+    assert 'data-tab="tab-settings-testsuite"' in content
 
     # Data export / import actions inside settings
     assert 'id="btn-export-json"' in content
@@ -185,10 +188,15 @@ def test_settings_overlay_menu_ui():
     assert 'id="form-user-create"' in content
     assert 'Neuen Benutzer anlegen' in content
 
+    # Testsuite tab inside settings
+    assert 'id="tab-settings-testsuite"' in content
+    assert 'id="testsuite-output"' in content
+    assert 'id="testsuite-progress-bar"' in content
+
     # CSS styles
     css_path = STATIC_DIR / "styles.css"
     css_content = css_path.read_text(encoding="utf-8")
-    assert ".modal-settings-dialog" in css_content
+    assert ".settings-page-header" in css_content
     assert ".settings-tabs-bar" in css_content
     assert ".settings-tab-btn" in css_content
     assert ".settings-card" in css_content
@@ -197,13 +205,16 @@ def test_settings_overlay_menu_ui():
     js_path = STATIC_DIR / "app.js"
     js_content = js_path.read_text(encoding="utf-8")
     assert "btnSettings" in js_content
-    assert "modalSettings" in js_content
+    assert "settingsView" in js_content
+    assert "showSettings" in js_content
+    assert "showDashboardView" in js_content
     assert "tabBtnUsers" in js_content
     assert "tabBtnNewUser" in js_content
+    assert "tabBtnTestsuite" in js_content
     assert "switchSettingsTab" in js_content
     assert "btnExportXlsx" in js_content
-    assert "modal-settings" in js_content
     assert "/api/data/export-xlsx" in js_content
+
 
 
 

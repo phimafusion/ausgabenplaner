@@ -114,9 +114,17 @@ const elements = {
     btnDiscardUnsaved: document.getElementById("btn-discard-unsaved"),
     btnSaveBeforeAction: document.getElementById("btn-save-before-action"),
 
-    modalSettings: document.getElementById("modal-settings"),
+    settingsView: document.getElementById("settings-view"),
+    settingsUserDisplayName: document.getElementById("settings-user-display-name"),
+    settingsUserRoleBadge: document.getElementById("settings-user-role-badge"),
+    btnBackToDashboard: document.getElementById("btn-back-to-dashboard"),
+    btnBackToDashboardTop: document.getElementById("btn-back-to-dashboard-top"),
+    btnBrandLogoSettings: document.getElementById("btn-brand-logo-settings"),
+    btnLogoutSettings: document.getElementById("btn-logout-settings"),
+
     tabBtnUsers: document.getElementById("tab-btn-users"),
     tabBtnNewUser: document.getElementById("tab-btn-new-user"),
+    tabBtnTestsuite: document.getElementById("tab-btn-testsuite"),
     btnSwitchToNewUser: document.getElementById("btn-switch-to-new-user"),
     formUserCreate: document.getElementById("form-user-create"),
     userEditId: document.getElementById("user-edit-id"),
@@ -141,7 +149,6 @@ const elements = {
     importFileInput: document.getElementById("import-file-input"),
     importError: document.getElementById("import-error"),
 
-    modalTestsuite: document.getElementById("modal-testsuite"),
     testsuiteStatusBox: document.getElementById("testsuite-status-box"),
     testsuiteOutput: document.getElementById("testsuite-output"),
     btnReRunTests: document.getElementById("btn-re-run-tests"),
@@ -770,18 +777,65 @@ function switchSettingsTab(tabId) {
     }
 }
 
-    // Settings Modal Open
+function showSettings(targetTab) {
+    if (elements.dashboardView) elements.dashboardView.classList.add("hidden");
+    if (elements.loginView) elements.loginView.classList.add("hidden");
+    if (elements.settingsView) elements.settingsView.classList.remove("hidden");
+
+    if (state.user) {
+        if (elements.settingsUserDisplayName) {
+            elements.settingsUserDisplayName.textContent = state.user.name || state.user.username;
+        }
+        if (elements.settingsUserRoleBadge) {
+            elements.settingsUserRoleBadge.textContent = state.user.role === "admin" ? "Admin" : "Benutzer";
+        }
+    }
+
+    if (state.user && state.user.role !== "admin") {
+        switchSettingsTab("tab-settings-data");
+    } else if (targetTab) {
+        switchSettingsTab(targetTab);
+    } else {
+        const activeTab = document.querySelector('.settings-tab-btn.active');
+        const defaultTab = activeTab ? activeTab.getAttribute("data-tab") : "tab-settings-data";
+        switchSettingsTab(defaultTab);
+    }
+}
+
+function showDashboardView() {
+    if (elements.settingsView) elements.settingsView.classList.add("hidden");
+    if (elements.loginView) elements.loginView.classList.add("hidden");
+    if (elements.dashboardView) elements.dashboardView.classList.remove("hidden");
+}
+
+    // Settings Navigation Open & Close
     if (elements.btnSettings) {
-        elements.btnSettings.addEventListener("click", async () => {
-            resetUserForm();
-            if (state.user && state.user.role !== "admin") {
-                switchSettingsTab("tab-settings-data");
-            } else {
-                const activeTab = document.querySelector('.settings-tab-btn.active');
-                const targetTab = activeTab ? activeTab.getAttribute("data-tab") : "tab-settings-data";
-                switchSettingsTab(targetTab);
-            }
-            openModal("modal-settings");
+        elements.btnSettings.addEventListener("click", () => {
+            showSettings();
+        });
+    }
+
+    if (elements.btnBackToDashboard) {
+        elements.btnBackToDashboard.addEventListener("click", () => {
+            showDashboardView();
+        });
+    }
+
+    if (elements.btnBackToDashboardTop) {
+        elements.btnBackToDashboardTop.addEventListener("click", () => {
+            showDashboardView();
+        });
+    }
+
+    if (elements.btnBrandLogoSettings) {
+        elements.btnBrandLogoSettings.addEventListener("click", () => {
+            showDashboardView();
+        });
+    }
+
+    if (elements.btnLogoutSettings) {
+        elements.btnLogoutSettings.addEventListener("click", () => {
+            logout();
         });
     }
 
@@ -901,8 +955,9 @@ function switchSettingsTab(tabId) {
     }
 
     // Testsuite Runner (Admin)
-    elements.btnRunTests.addEventListener("click", executeTestsuite);
-    elements.btnReRunTests.addEventListener("click", executeTestsuite);
+    if (elements.btnReRunTests) {
+        elements.btnReRunTests.addEventListener("click", executeTestsuite);
+    }
 
     elements.formUserCreate.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -1025,26 +1080,34 @@ function logout() {
 function showLogin() {
     elements.loginView.classList.remove("hidden");
     elements.dashboardView.classList.add("hidden");
+    if (elements.settingsView) elements.settingsView.classList.add("hidden");
 }
 
 function showDashboard() {
     elements.loginView.classList.add("hidden");
+    if (elements.settingsView) elements.settingsView.classList.add("hidden");
     elements.dashboardView.classList.remove("hidden");
 
     if (state.user) {
         elements.userDisplayName.textContent = state.user.name || state.user.username;
         elements.userRoleBadge.textContent = state.user.role === "admin" ? "Admin" : "Benutzer";
+        if (elements.settingsUserDisplayName) {
+            elements.settingsUserDisplayName.textContent = state.user.name || state.user.username;
+        }
+        if (elements.settingsUserRoleBadge) {
+            elements.settingsUserRoleBadge.textContent = state.user.role === "admin" ? "Admin" : "Benutzer";
+        }
         const canExportOrAdmin = state.user.role === "admin" || !!state.user.can_export;
 
         if (state.user.role === "admin") {
-            elements.btnRunTests.classList.remove("hidden");
             if (elements.btnSettings) elements.btnSettings.classList.remove("hidden");
             if (elements.tabBtnUsers) elements.tabBtnUsers.classList.remove("hidden");
             if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.remove("hidden");
+            if (elements.tabBtnTestsuite) elements.tabBtnTestsuite.classList.remove("hidden");
         } else {
-            elements.btnRunTests.classList.add("hidden");
             if (elements.tabBtnUsers) elements.tabBtnUsers.classList.add("hidden");
             if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.add("hidden");
+            if (elements.tabBtnTestsuite) elements.tabBtnTestsuite.classList.add("hidden");
             if (elements.btnSettings) {
                 if (canExportOrAdmin) {
                     elements.btnSettings.classList.remove("hidden");
@@ -1069,7 +1132,7 @@ function showDashboard() {
 let activeEventSource = null;
 
 async function executeTestsuite() {
-    openModal("modal-testsuite");
+    showSettings("tab-settings-testsuite");
 
     if (activeEventSource) {
         activeEventSource.close();

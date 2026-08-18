@@ -201,6 +201,186 @@
                 </div>
             </main>
         </div>
+
+        <!-- Main Settings View (Full Page) -->
+        <div id="settings-view" class="view hidden">
+            <!-- Top Navbar -->
+            <header class="navbar glass-header">
+                <div class="navbar-brand brand-clickable" id="btn-brand-logo-settings" style="cursor: pointer;" title="Zurück zum Dashboard">
+                    <span class="brand-logo">📊</span>
+                    <span class="brand-name">Ausgabenplaner</span>
+                </div>
+                <div class="navbar-actions">
+                    <div class="user-badge glass-badge">
+                        <span id="settings-user-display-name">Admin</span>
+                        <span id="settings-user-role-badge" class="badge badge-admin">Admin</span>
+                    </div>
+                    <button id="btn-back-to-dashboard" class="btn btn-primary btn-sm">
+                        ⬅️ Zurück zum Plan
+                    </button>
+                    <button id="btn-logout-settings" class="btn btn-outline btn-sm">
+                        🚪 Abmelden
+                    </button>
+                </div>
+            </header>
+
+            <!-- Settings Content -->
+            <main class="content-container">
+                <div class="settings-page-header glass-panel">
+                    <div class="settings-header-title-box">
+                        <h2>⚙️ Einstellungen & Verwaltung</h2>
+                        <p class="text-muted" style="margin-top: 4px; font-size: 0.9rem;">
+                            Verwalten Sie Datensicherungen, Exporte, Benutzerkonten und führen Sie Systemtests durch.
+                        </p>
+                    </div>
+                    <div class="settings-header-actions">
+                        <button type="button" id="btn-back-to-dashboard-top" class="btn btn-outline">
+                            ⬅️ Zurück zum Plan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-page-card glass-panel" style="margin-top: 20px; padding: 24px;">
+                    <!-- Settings Tabs Bar -->
+                    <div class="settings-tabs-bar">
+                        <button type="button" class="settings-tab-btn active" data-tab="tab-settings-data">
+                            📦 Daten & Backup
+                        </button>
+                        <button type="button" class="settings-tab-btn" id="tab-btn-users" data-tab="tab-settings-users">
+                            👥 Benutzerverwaltung
+                        </button>
+                        <button type="button" class="settings-tab-btn" id="tab-btn-new-user" data-tab="tab-settings-new-user">
+                            ➕ Neuer Benutzer
+                        </button>
+                        <button type="button" class="settings-tab-btn" id="tab-btn-testsuite" data-tab="tab-settings-testsuite">
+                            🧪 Automatische Testsuite
+                        </button>
+                    </div>
+
+                    <!-- Tab 1: Daten & Backup -->
+                    <div id="tab-settings-data" class="settings-tab-content">
+                        <div class="settings-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 10px;">
+                            <div class="settings-card">
+                                <div class="settings-card-header">
+                                    <span class="settings-card-icon">💾</span>
+                                    <div>
+                                        <h4>Daten exportieren & sichern</h4>
+                                        <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
+                                            Laden Sie eine vollständige JSON-Sicherung oder eine aufbereitete Excel-Arbeitsmappe (.xlsx) herunter.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="settings-btn-group" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px;">
+                                    <button type="button" id="btn-export-json" class="btn btn-outline btn-sm">
+                                        📥 JSON exportieren
+                                    </button>
+                                    <button type="button" id="btn-export-xlsx" class="btn btn-outline btn-sm">
+                                        📊 XLSX exportieren (Excel)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="settings-card">
+                                <div class="settings-card-header">
+                                    <span class="settings-card-icon">📤</span>
+                                    <div>
+                                        <h4>Daten wiederherstellen (JSON Import)</h4>
+                                        <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
+                                            Stellen Sie alle Pläne, Stände, Positionen und Beiträge aus einer zuvor gesicherten JSON-Datei wieder her.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 18px;">
+                                    <button type="button" id="btn-import-json" class="btn btn-outline btn-sm">
+                                        📤 JSON-Datei auswählen & importieren...
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Benutzerverwaltung (Bestehende Benutzer) -->
+                    <div id="tab-settings-users" class="settings-tab-content hidden">
+                        <div class="user-management-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h4 style="margin: 0; font-size: 1.05rem;">👥 Bestehende Benutzer & Rollen</h4>
+                            <button type="button" id="btn-switch-to-new-user" class="btn btn-sm btn-primary">
+                                ➕ Neuer Benutzer
+                            </button>
+                        </div>
+
+                        <div class="users-list-box">
+                            <ul id="users-list" class="users-list"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Neuer Benutzer (Admin) -->
+                    <div id="tab-settings-new-user" class="settings-tab-content hidden">
+                        <form id="form-user-create" class="user-create-box" style="max-width: 600px;">
+                            <input type="hidden" id="user-edit-id">
+                            <h4 id="user-form-heading">Neuen Benutzer anlegen</h4>
+                            <div class="form-group">
+                                <label for="user-username" class="form-label-sm">Benutzername (Login)</label>
+                                <input type="text" id="user-username" required placeholder="z.B. hotzenplotz">
+                            </div>
+                            <div class="form-group">
+                                <label for="user-name" class="form-label-sm">Anzeigename</label>
+                                <input type="text" id="user-name" required placeholder="Name (z.B. Hotzenplotz)">
+                            </div>
+                            <div class="form-group">
+                                <label for="user-password" id="user-password-label" class="form-label-sm">Passwort</label>
+                                <input type="password" id="user-password" required placeholder="Passwort">
+                                <small id="user-password-help" class="form-help hidden" style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 4px;">Leer lassen, um das bisherige Passwort beizubehalten.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="user-role" class="form-label-sm">Rolle</label>
+                                <select id="user-role" class="form-select">
+                                    <option value="user">Benutzer</option>
+                                    <option value="admin">Administrator</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-top: 10px; margin-bottom: 14px;">
+                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                                    <input type="checkbox" id="user-can-export" checked style="width: 17px; height: 17px; cursor: pointer;">
+                                    <span>💾 <strong>Export-Recht erteilen</strong> (Darf Plan-Daten exportieren/sichern)</span>
+                                </label>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="submit" id="btn-submit-user" class="btn btn-sm btn-primary">Benutzer erstellen</button>
+                                <button type="button" id="btn-cancel-user-edit" class="btn btn-sm btn-outline">Abbrechen</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Tab 4: Automatische Testsuite (Admin) -->
+                    <div id="tab-settings-testsuite" class="settings-tab-content hidden">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <h4 style="margin: 0; font-size: 1.05rem;">🧪 Automatische Testsuite (TDD Verification)</h4>
+                                <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
+                                    Führt alle 38 Backend- und Integrationstests live aus und validiert Datenintegrität und Sicherheitsregeln.
+                                </p>
+                            </div>
+                            <button id="btn-re-run-tests" class="btn btn-primary btn-sm">
+                                🔄 Testsuite ausführen
+                            </button>
+                        </div>
+
+                        <div id="testsuite-status-box" class="alert alert-info">
+                            Klicken Sie auf „Testsuite ausführen“, um die automatische Überprüfung auszuführen.
+                        </div>
+                        <div class="progress-container" style="margin-top: 14px;">
+                            <div class="progress-bar-wrap">
+                                <div id="testsuite-progress-bar" class="progress-bar" style="width: 0%;"></div>
+                            </div>
+                            <span id="testsuite-progress-percent" class="progress-percent">0%</span>
+                        </div>
+                        <div class="testsuite-log-box" style="margin-top: 14px;">
+                            <pre id="testsuite-output">Warte auf Testausführung...</pre>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
 
     <!-- Modal: Add / Edit Position -->
@@ -459,186 +639,6 @@
                 <button id="btn-save-before-action" type="button" class="btn btn-primary">💾 Zuerst speichern</button>
             </div>
         </div>
-    </div>
-
-    <!-- Main Settings View (Full Page) -->
-    <div id="settings-view" class="view hidden">
-        <!-- Top Navbar -->
-        <header class="navbar glass-header">
-            <div class="navbar-brand brand-clickable" id="btn-brand-logo-settings" style="cursor: pointer;" title="Zurück zum Dashboard">
-                <span class="brand-logo">📊</span>
-                <span class="brand-name">Ausgabenplaner</span>
-            </div>
-            <div class="navbar-actions">
-                <div class="user-badge glass-badge">
-                    <span id="settings-user-display-name">Admin</span>
-                    <span id="settings-user-role-badge" class="badge badge-admin">Admin</span>
-                </div>
-                <button id="btn-back-to-dashboard" class="btn btn-primary btn-sm">
-                    ⬅️ Zurück zum Plan
-                </button>
-                <button id="btn-logout-settings" class="btn btn-outline btn-sm">
-                    🚪 Abmelden
-                </button>
-            </div>
-        </header>
-
-        <!-- Settings Content -->
-        <main class="content-container">
-            <div class="settings-page-header glass-panel">
-                <div class="settings-header-title-box">
-                    <h2>⚙️ Einstellungen & Verwaltung</h2>
-                    <p class="text-muted" style="margin-top: 4px; font-size: 0.9rem;">
-                        Verwalten Sie Datensicherungen, Exporte, Benutzerkonten und führen Sie Systemtests durch.
-                    </p>
-                </div>
-                <div class="settings-header-actions">
-                    <button type="button" id="btn-back-to-dashboard-top" class="btn btn-outline">
-                        ⬅️ Zurück zum Plan
-                    </button>
-                </div>
-            </div>
-
-            <div class="settings-page-card glass-panel" style="margin-top: 20px; padding: 24px;">
-                <!-- Settings Tabs Bar -->
-                <div class="settings-tabs-bar">
-                    <button type="button" class="settings-tab-btn active" data-tab="tab-settings-data">
-                        📦 Daten & Backup
-                    </button>
-                    <button type="button" class="settings-tab-btn" id="tab-btn-users" data-tab="tab-settings-users">
-                        👥 Benutzerverwaltung
-                    </button>
-                    <button type="button" class="settings-tab-btn" id="tab-btn-new-user" data-tab="tab-settings-new-user">
-                        ➕ Neuer Benutzer
-                    </button>
-                    <button type="button" class="settings-tab-btn" id="tab-btn-testsuite" data-tab="tab-settings-testsuite">
-                        🧪 Automatische Testsuite
-                    </button>
-                </div>
-
-                <!-- Tab 1: Daten & Backup -->
-                <div id="tab-settings-data" class="settings-tab-content">
-                    <div class="settings-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 10px;">
-                        <div class="settings-card">
-                            <div class="settings-card-header">
-                                <span class="settings-card-icon">💾</span>
-                                <div>
-                                    <h4>Daten exportieren & sichern</h4>
-                                    <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
-                                        Laden Sie eine vollständige JSON-Sicherung oder eine aufbereitete Excel-Arbeitsmappe (.xlsx) herunter.
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="settings-btn-group" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px;">
-                                <button type="button" id="btn-export-json" class="btn btn-outline btn-sm">
-                                    📥 JSON exportieren
-                                </button>
-                                <button type="button" id="btn-export-xlsx" class="btn btn-outline btn-sm">
-                                    📊 XLSX exportieren (Excel)
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="settings-card">
-                            <div class="settings-card-header">
-                                <span class="settings-card-icon">📤</span>
-                                <div>
-                                    <h4>Daten wiederherstellen (JSON Import)</h4>
-                                    <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
-                                        Stellen Sie alle Pläne, Stände, Positionen und Beiträge aus einer zuvor gesicherten JSON-Datei wieder her.
-                                    </p>
-                                </div>
-                            </div>
-                            <div style="margin-top: 18px;">
-                                <button type="button" id="btn-import-json" class="btn btn-outline btn-sm">
-                                    📤 JSON-Datei auswählen & importieren...
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab 2: Benutzerverwaltung (Bestehende Benutzer) -->
-                <div id="tab-settings-users" class="settings-tab-content hidden">
-                    <div class="user-management-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <h4 style="margin: 0; font-size: 1.05rem;">👥 Bestehende Benutzer & Rollen</h4>
-                        <button type="button" id="btn-switch-to-new-user" class="btn btn-sm btn-primary">
-                            ➕ Neuer Benutzer
-                        </button>
-                    </div>
-
-                    <div class="users-list-box">
-                        <ul id="users-list" class="users-list"></ul>
-                    </div>
-                </div>
-
-                <!-- Tab 3: Neuer Benutzer (Admin) -->
-                <div id="tab-settings-new-user" class="settings-tab-content hidden">
-                    <form id="form-user-create" class="user-create-box" style="max-width: 600px;">
-                        <input type="hidden" id="user-edit-id">
-                        <h4 id="user-form-heading">Neuen Benutzer anlegen</h4>
-                        <div class="form-group">
-                            <label for="user-username" class="form-label-sm">Benutzername (Login)</label>
-                            <input type="text" id="user-username" required placeholder="z.B. hotzenplotz">
-                        </div>
-                        <div class="form-group">
-                            <label for="user-name" class="form-label-sm">Anzeigename</label>
-                            <input type="text" id="user-name" required placeholder="Name (z.B. Hotzenplotz)">
-                        </div>
-                        <div class="form-group">
-                            <label for="user-password" id="user-password-label" class="form-label-sm">Passwort</label>
-                            <input type="password" id="user-password" required placeholder="Passwort">
-                            <small id="user-password-help" class="form-help hidden" style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 4px;">Leer lassen, um das bisherige Passwort beizubehalten.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="user-role" class="form-label-sm">Rolle</label>
-                            <select id="user-role" class="form-select">
-                                <option value="user">Benutzer</option>
-                                <option value="admin">Administrator</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin-top: 10px; margin-bottom: 14px;">
-                            <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
-                                <input type="checkbox" id="user-can-export" checked style="width: 17px; height: 17px; cursor: pointer;">
-                                <span>💾 <strong>Export-Recht erteilen</strong> (Darf Plan-Daten exportieren/sichern)</span>
-                            </label>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button type="submit" id="btn-submit-user" class="btn btn-sm btn-primary">Benutzer erstellen</button>
-                            <button type="button" id="btn-cancel-user-edit" class="btn btn-sm btn-outline">Abbrechen</button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Tab 4: Automatische Testsuite (Admin) -->
-                <div id="tab-settings-testsuite" class="settings-tab-content hidden">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-                        <div>
-                            <h4 style="margin: 0; font-size: 1.05rem;">🧪 Automatische Testsuite (TDD Verification)</h4>
-                            <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
-                                Führt alle 38 Backend- und Integrationstests live aus und validiert Datenintegrität und Sicherheitsregeln.
-                            </p>
-                        </div>
-                        <button id="btn-re-run-tests" class="btn btn-primary btn-sm">
-                            🔄 Testsuite ausführen
-                        </button>
-                    </div>
-
-                    <div id="testsuite-status-box" class="alert alert-info">
-                        Klicken Sie auf „Testsuite ausführen“, um die automatische Überprüfung auszuführen.
-                    </div>
-                    <div class="progress-container" style="margin-top: 14px;">
-                        <div class="progress-bar-wrap">
-                            <div id="testsuite-progress-bar" class="progress-bar" style="width: 0%;"></div>
-                        </div>
-                        <span id="testsuite-progress-percent" class="progress-percent">0%</span>
-                    </div>
-                    <div class="testsuite-log-box" style="margin-top: 14px;">
-                        <pre id="testsuite-output">Warte auf Testausführung...</pre>
-                    </div>
-                </div>
-            </div>
-        </main>
     </div>
 
     <!-- Import Modal -->

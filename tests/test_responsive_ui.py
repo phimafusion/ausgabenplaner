@@ -216,10 +216,14 @@ def test_settings_view_and_testsuite_tab_ui():
     assert "tabBtnNewUser" in js_content
     assert "tabBtnTestsuite" in js_content
     assert "switchSettingsTab" in js_content
+    assert "window.switchSettingsTab = switchSettingsTab" in js_content
+    assert "window.showSettings = showSettings" in js_content
+    assert "window.executeTestsuite = executeTestsuite" in js_content
     assert "user-profile-card" in js_content
     assert "avatar-admin" in js_content
     assert "btnExportXlsx" in js_content
     assert "/api/data/export-xlsx" in js_content
+
 
 
 

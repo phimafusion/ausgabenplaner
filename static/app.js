@@ -765,49 +765,6 @@ function setupEventListeners() {
         elements.btnSaveVersion.click();
     });
 
-function switchSettingsTab(tabId) {
-    document.querySelectorAll(".settings-tab-btn").forEach((b) => {
-        b.classList.toggle("active", b.getAttribute("data-tab") === tabId);
-    });
-    document.querySelectorAll(".settings-tab-content").forEach((c) => {
-        c.classList.toggle("hidden", c.id !== tabId);
-    });
-    if (tabId === "tab-settings-users") {
-        loadUsersList();
-    }
-}
-
-function showSettings(targetTab) {
-    if (elements.dashboardView) elements.dashboardView.classList.add("hidden");
-    if (elements.loginView) elements.loginView.classList.add("hidden");
-    if (elements.settingsView) elements.settingsView.classList.remove("hidden");
-
-    if (state.user) {
-        if (elements.settingsUserDisplayName) {
-            elements.settingsUserDisplayName.textContent = state.user.name || state.user.username;
-        }
-        if (elements.settingsUserRoleBadge) {
-            elements.settingsUserRoleBadge.textContent = state.user.role === "admin" ? "Admin" : "Benutzer";
-        }
-    }
-
-    if (state.user && state.user.role !== "admin") {
-        switchSettingsTab("tab-settings-data");
-    } else if (targetTab) {
-        switchSettingsTab(targetTab);
-    } else {
-        const activeTab = document.querySelector('.settings-tab-btn.active');
-        const defaultTab = activeTab ? activeTab.getAttribute("data-tab") : "tab-settings-data";
-        switchSettingsTab(defaultTab);
-    }
-}
-
-function showDashboardView() {
-    if (elements.settingsView) elements.settingsView.classList.add("hidden");
-    if (elements.loginView) elements.loginView.classList.add("hidden");
-    if (elements.dashboardView) elements.dashboardView.classList.remove("hidden");
-}
-
     // Settings Navigation Open & Close
     if (elements.btnSettings) {
         elements.btnSettings.addEventListener("click", () => {
@@ -1128,6 +1085,53 @@ function showDashboard() {
         }
     }
 }
+
+function showDashboardView() {
+    if (elements.settingsView) elements.settingsView.classList.add("hidden");
+    if (elements.loginView) elements.loginView.classList.add("hidden");
+    if (elements.dashboardView) elements.dashboardView.classList.remove("hidden");
+}
+
+function switchSettingsTab(tabId) {
+    document.querySelectorAll(".settings-tab-btn").forEach((b) => {
+        b.classList.toggle("active", b.getAttribute("data-tab") === tabId);
+    });
+    document.querySelectorAll(".settings-tab-content").forEach((c) => {
+        c.classList.toggle("hidden", c.id !== tabId);
+    });
+    if (tabId === "tab-settings-users") {
+        loadUsersList();
+    }
+}
+
+function showSettings(targetTab) {
+    if (elements.dashboardView) elements.dashboardView.classList.add("hidden");
+    if (elements.loginView) elements.loginView.classList.add("hidden");
+    if (elements.settingsView) elements.settingsView.classList.remove("hidden");
+
+    if (state.user) {
+        if (elements.settingsUserDisplayName) {
+            elements.settingsUserDisplayName.textContent = state.user.name || state.user.username;
+        }
+        if (elements.settingsUserRoleBadge) {
+            elements.settingsUserRoleBadge.textContent = state.user.role === "admin" ? "Admin" : "Benutzer";
+        }
+    }
+
+    if (state.user && state.user.role !== "admin") {
+        switchSettingsTab("tab-settings-data");
+    } else if (targetTab) {
+        switchSettingsTab(targetTab);
+    } else {
+        const activeTab = document.querySelector('.settings-tab-btn.active');
+        const defaultTab = activeTab ? activeTab.getAttribute("data-tab") : "tab-settings-data";
+        switchSettingsTab(defaultTab);
+    }
+}
+
+window.switchSettingsTab = switchSettingsTab;
+window.showSettings = showSettings;
+window.showDashboardView = showDashboardView;
 
 let activeEventSource = null;
 

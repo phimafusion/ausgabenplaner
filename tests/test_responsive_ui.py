@@ -7,6 +7,14 @@ client = TestClient(app)
 STATIC_DIR = Path(__file__).parent.parent / "static"
 
 
+def get_all_frontend_js_content() -> str:
+    """Helper to collect all JS code across app.js and modular components."""
+    parts = []
+    for js_file in STATIC_DIR.glob("**/*.js"):
+        parts.append(js_file.read_text(encoding="utf-8"))
+    return "\n".join(parts)
+
+
 def test_index_html_viewport_and_mobile_nav():
     """Verify that index.html contains modern viewport settings and mobile navigation elements."""
     html_path = STATIC_DIR / "index.html"
@@ -23,6 +31,10 @@ def test_index_html_viewport_and_mobile_nav():
 
     # Navbar actions container
     assert 'id="navbar-actions"' in content
+
+    # Modular ES6 entry point
+    assert 'type="module"' in content
+    assert '/static/app.js' in content
 
 
 def test_styles_css_responsive_rules():
@@ -57,10 +69,8 @@ def test_styles_css_responsive_rules():
 
 
 def test_app_js_mobile_interaction_and_data_labels():
-    """Verify that app.js wires up the mobile menu toggle and sets data-label attributes."""
-    js_path = STATIC_DIR / "app.js"
-    assert js_path.exists(), "app.js must exist"
-    content = js_path.read_text(encoding="utf-8")
+    """Verify that frontend modules wire up the mobile menu toggle and set data-label attributes."""
+    content = get_all_frontend_js_content()
 
     # Mobile elements wired
     assert "btnMobileMenu" in content
@@ -99,8 +109,7 @@ def test_table_lock_toggle_ui():
     assert 'id="btn-toggle-unlock-contributions"' in content
     assert 'class="text-right th-actions hidden"' in content
 
-    js_path = STATIC_DIR / "app.js"
-    js_content = js_path.read_text(encoding="utf-8")
+    js_content = get_all_frontend_js_content()
     assert "btnToggleUnlockPositions" in js_content
     assert "updateLockControls" in js_content
 
@@ -117,8 +126,7 @@ def test_position_interval_calculation_ui():
     assert 'id="pos-raw-amount"' in content
     assert 'id="pos-calculated-monthly-val"' in content
 
-    js_path = STATIC_DIR / "app.js"
-    js_content = js_path.read_text(encoding="utf-8")
+    js_content = get_all_frontend_js_content()
     assert "posInterval" in js_content
     assert "updatePositionCalculationPreview" in js_content
 
@@ -129,8 +137,7 @@ def test_history_audit_metadata_ui():
     css_content = css_path.read_text(encoding="utf-8")
     assert ".history-card-audit" in css_content
 
-    js_path = STATIC_DIR / "app.js"
-    js_content = js_path.read_text(encoding="utf-8")
+    js_content = get_all_frontend_js_content()
     assert "formatDateTimeDE" in js_content
     assert "formatGermanDate(v.effective_date)" in js_content
     assert "history-card-audit" in js_content
@@ -147,8 +154,7 @@ def test_user_management_edit_and_export_permissions_ui():
     assert 'id="user-edit-id"' in content
     assert 'id="btn-cancel-user-edit"' in content
 
-    js_path = STATIC_DIR / "app.js"
-    js_content = js_path.read_text(encoding="utf-8")
+    js_content = get_all_frontend_js_content()
     assert "startEditUser" in js_content
     assert "resetUserForm" in js_content
     assert "userCanExport" in js_content
@@ -206,8 +212,7 @@ def test_settings_view_and_testsuite_tab_ui():
     assert ".user-avatar" in css_content
 
     # JS bindings
-    js_path = STATIC_DIR / "app.js"
-    js_content = js_path.read_text(encoding="utf-8")
+    js_content = get_all_frontend_js_content()
     assert "btnSettings" in js_content
     assert "settingsView" in js_content
     assert "showSettings" in js_content
@@ -225,7 +230,17 @@ def test_settings_view_and_testsuite_tab_ui():
     assert "/api/data/export-xlsx" in js_content
 
 
-
-
-
-
+def test_modular_frontend_structure():
+    """Verify that the modular frontend files exist and are properly structured."""
+    js_dir = STATIC_DIR / "js"
+    assert (js_dir / "state.js").exists()
+    assert (js_dir / "dom.js").exists()
+    assert (js_dir / "formatters.js").exists()
+    assert (js_dir / "api.js").exists()
+    assert (js_dir / "events.js").exists()
+    assert (js_dir / "components" / "modals.js").exists()
+    assert (js_dir / "components" / "kpi.js").exists()
+    assert (js_dir / "components" / "tables.js").exists()
+    assert (js_dir / "components" / "history.js").exists()
+    assert (js_dir / "components" / "users.js").exists()
+    assert (js_dir / "components" / "testsuite.js").exists()

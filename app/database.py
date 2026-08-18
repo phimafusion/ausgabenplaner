@@ -81,10 +81,22 @@ def init_db(seed: Optional[bool] = None):
         effective_date TEXT,
         is_active INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_by TEXT DEFAULT 'Administrator',
+        updated_at TIMESTAMP,
+        updated_by TEXT,
         FOREIGN KEY (plan_id) REFERENCES plans (id) ON DELETE CASCADE
     );
     """
     )
+
+    # Migration for existing databases
+    ver_cols = [row[1] for row in cursor.execute("PRAGMA table_info(versions)").fetchall()]
+    if "created_by" not in ver_cols:
+        cursor.execute("ALTER TABLE versions ADD COLUMN created_by TEXT DEFAULT 'Administrator'")
+    if "updated_at" not in ver_cols:
+        cursor.execute("ALTER TABLE versions ADD COLUMN updated_at TIMESTAMP")
+    if "updated_by" not in ver_cols:
+        cursor.execute("ALTER TABLE versions ADD COLUMN updated_by TEXT")
 
     # Positions table
     cursor.execute(
@@ -137,7 +149,7 @@ def init_db(seed: Optional[bool] = None):
         cursor.execute("INSERT INTO plans (title, description) VALUES (?, ?)", ("Tütingstraße 22", "Haushalts-Ausgabenplaner"))
         plan_id = cursor.lastrowid
         cursor.execute(
-            "INSERT INTO versions (plan_id, title, effective_date, is_active) VALUES (?, ?, ?, 1)",
+            "INSERT INTO versions (plan_id, title, effective_date, is_active, created_by) VALUES (?, ?, ?, 1, 'Administrator')",
             (plan_id, "Stand ab 01.09.2026", "2026-09-01"),
         )
         version_id = cursor.lastrowid

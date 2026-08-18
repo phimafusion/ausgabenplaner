@@ -174,6 +174,20 @@ function formatGermanDate(isoStr) {
     return isoStr;
 }
 
+// Format German Date-Time Helper for Audit Metadata
+function formatDateTimeDE(dtStr) {
+    if (!dtStr) return "";
+    try {
+        const d = new Date(dtStr.replace(" ", "T"));
+        if (isNaN(d.getTime())) return dtStr;
+        const datePart = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+        const timePart = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+        return `${datePart}, ${timePart} Uhr`;
+    } catch {
+        return dtStr;
+    }
+}
+
 function formatVersionDropdownLabel(v) {
     if (!v.effective_date) return v.title;
     const deDate = formatGermanDate(v.effective_date);
@@ -1152,9 +1166,13 @@ async function loadHistoryTimeline() {
                     ${isUnlocked ? '<span class="badge badge-dirty">🔓 Entsperrt</span>' : ''}
                 </div>
                 <div class="history-card-meta">
-                    <span>📅 Gültig ab: <strong>${escapeHtml(v.effective_date || "ohne Datum")}</strong></span>
+                    <span>📅 Gültig ab: <strong>${escapeHtml(v.effective_date ? formatGermanDate(v.effective_date) : "ohne Datum")}</strong></span>
                     <span>📑 ${v.positions_count} Positionen</span>
                     <span>👥 ${v.contributions_count} Beitragszahler</span>
+                </div>
+                <div class="history-card-audit">
+                    <span>👤 Angelegt von: <strong>${escapeHtml(v.created_by || "Administrator")}</strong> (${formatDateTimeDE(v.created_at)})</span>
+                    ${v.updated_at ? `<span>✏️ Zuletzt geändert von: <strong>${escapeHtml(v.updated_by || "Administrator")}</strong> (${formatDateTimeDE(v.updated_at)})</span>` : ''}
                 </div>
             </div>
 
@@ -1353,6 +1371,17 @@ async function loadHistoryComparison() {
         const formatted = tot ? tot.net_balance_formatted : "-";
         const valClass = formatted && formatted.trim().startsWith("-") ? "text-neg" : (formatted !== "-" ? "text-pos" : "");
         html += `<td class="${valClass}"><strong>${formatted}</strong></td>`;
+    });
+    html += `</tr>`;
+
+    // Audit Info Row
+    html += `<tr>
+        <td class="text-muted" style="font-size: 0.78rem;"><em>👤 Zuletzt bearbeitet</em></td>
+        <td></td>`;
+    versions.forEach((v) => {
+        const author = v.updated_by || v.created_by || "Administrator";
+        const dt = v.updated_at || v.created_at;
+        html += `<td class="text-muted" style="font-size: 0.78rem;">${escapeHtml(author)}<br><span style="opacity:0.8;">${formatDateTimeDE(dt)}</span></td>`;
     });
     html += `</tr></tbody></table>`;
 

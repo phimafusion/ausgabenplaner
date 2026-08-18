@@ -234,3 +234,58 @@ def test_update_plan_title_and_stand_title(client, auth_headers):
     assert active_after["active_version"]["effective_date"] == "2026-10-01"
 
 
+def test_version_history_audit_metadata(client, auth_headers):
+    # Fetch active plan
+    resp = client.get("/api/plans/active", headers=auth_headers)
+    plan_id = resp.json()["id"]
+
+    # 1. Save new version
+    save_resp = client.post(
+        f"/api/plans/{plan_id}/save-version",
+        json={
+            "title": "Stand ab 01.11.2026",
+            "effective_date": "2026-11-01",
+            "positions": [{"title": "Internet", "amount": -40.0, "category": "Medien"}],
+            "contributions": [{"person_name": "Phil", "amount": 40.0}],
+        },
+        headers=auth_headers,
+    )
+    assert save_resp.status_code == 201
+    created_ver = save_resp.json()
+    assert created_ver["created_by"] == "Administrator"
+    assert created_ver["created_at"] is not None
+    assert created_ver["updated_at"] is None
+    assert created_ver["updated_by"] is None
+
+    # 2. Update version (rename/date)
+    ver_id = created_ver["id"]
+    update_resp = client.patch(
+        f"/api/versions/{ver_id}",
+        json={"title": "Stand ab 01.11.2026 (Final)"},
+        headers=auth_headers,
+    )
+    assert update_resp.status_code == 200
+    updated_ver = update_resp.json()
+    assert updated_ver["created_by"] == "Administrator"
+    assert updated_ver["updated_by"] == "Administrator"
+    assert updated_ver["updated_at"] is not None
+
+    # 3. Verify history list includes audit fields
+    hist_resp = client.get(f"/api/plans/{plan_id}/history", headers=auth_headers)
+    assert hist_resp.status_code == 200
+    history = hist_resp.json()
+    matched = next(v for v in history if v["id"] == ver_id)
+    assert matched["created_by"] == "Administrator"
+    assert matched["updated_by"] == "Administrator"
+    assert matched["updated_at"] is not None
+
+    # 4. Verify history comparison includes audit fields
+    comp_resp = client.get(f"/api/plans/{plan_id}/history-comparison", headers=auth_headers)
+    assert comp_resp.status_code == 200
+    comp_data = comp_resp.json()
+    comp_ver = next(v for v in comp_data["versions"] if v["id"] == ver_id)
+    assert comp_ver["created_by"] == "Administrator"
+    assert comp_ver["updated_by"] == "Administrator"
+
+
+

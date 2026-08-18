@@ -99,6 +99,9 @@ class VersionResponse(BaseModel):
     effective_date: Optional[str] = None
     is_active: int
     created_at: Optional[str] = None
+    created_by: Optional[str] = None
+    updated_at: Optional[str] = None
+    updated_by: Optional[str] = None
     positions: List[PositionResponse] = []
     contributions: List[ContributionResponse] = []
     totals: Dict[str, Any] = {}
@@ -118,6 +121,9 @@ class HistoryVersionSummary(BaseModel):
     effective_date: Optional[str] = None
     is_active: int
     created_at: Optional[str] = None
+    created_by: Optional[str] = None
+    updated_at: Optional[str] = None
+    updated_by: Optional[str] = None
     positions_count: int
     contributions_count: int
     totals: Dict[str, Any] = {}

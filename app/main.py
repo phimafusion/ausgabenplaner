@@ -233,6 +233,7 @@ def save_version_route(
 ):
     positions_data = [p.model_dump() for p in req.positions]
     contributions_data = [c.model_dump() for c in req.contributions]
+    user_name = current_user.get("name") or current_user.get("username") or "Administrator"
     ver = crud.save_new_version(
         conn,
         plan_id=plan_id,
@@ -240,6 +241,7 @@ def save_version_route(
         effective_date=req.effective_date,
         positions=positions_data,
         contributions=contributions_data,
+        created_by=user_name,
     )
     return ver
 
@@ -275,7 +277,14 @@ def update_version_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
-    updated = crud.update_version(conn, version_id=version_id, title=req.title, effective_date=req.effective_date)
+    user_name = current_user.get("name") or current_user.get("username") or "Administrator"
+    updated = crud.update_version(
+        conn,
+        version_id=version_id,
+        title=req.title,
+        effective_date=req.effective_date,
+        updated_by=user_name,
+    )
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
     return updated

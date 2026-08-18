@@ -46,7 +46,10 @@ def get_active_plan(conn: sqlite3.Connection) -> Optional[Dict[str, Any]]:
     plan = dict(plan_row)
     plan_id = plan["id"]
 
-    ver_rows = conn.execute("SELECT id, title, effective_date, is_active, created_at FROM versions WHERE plan_id = ? ORDER BY id DESC", (plan_id,)).fetchall()
+    ver_rows = conn.execute(
+        "SELECT id, title, effective_date, is_active, created_at, created_by, updated_at, updated_by FROM versions WHERE plan_id = ? ORDER BY id DESC",
+        (plan_id,),
+    ).fetchall()
     versions = [dict(v) for v in ver_rows]
     plan["versions"] = versions
 
@@ -175,15 +178,16 @@ def save_new_version(
     effective_date: Optional[str] = None,
     positions: Optional[List[Dict[str, Any]]] = None,
     contributions: Optional[List[Dict[str, Any]]] = None,
+    created_by: Optional[str] = "Administrator",
 ) -> Dict[str, Any]:
     cursor = conn.cursor()
     # Deactivate existing active versions for this plan
     cursor.execute("UPDATE versions SET is_active = 0 WHERE plan_id = ?", (plan_id,))
 
-    # Insert new active version
+    # Insert new active version with created_by audit metadata
     cursor.execute(
-        "INSERT INTO versions (plan_id, title, effective_date, is_active) VALUES (?, ?, ?, 1)",
-        (plan_id, title, effective_date),
+        "INSERT INTO versions (plan_id, title, effective_date, is_active, created_by) VALUES (?, ?, ?, 1, ?)",
+        (plan_id, title, effective_date, created_by or "Administrator"),
     )
     new_ver_id = cursor.lastrowid
     if new_ver_id is None:
@@ -221,67 +225,12 @@ def save_new_version(
     return details
 
 
-def save_new_version(
-    conn: sqlite3.Connection,
-    plan_id: int,
-    title: str,
-    effective_date: Optional[str],
-    positions: List[Dict[str, Any]],
-    contributions: List[Dict[str, Any]],
-) -> Dict[str, Any]:
-    cursor = conn.cursor()
-    # Deactivate other versions for this plan
-    cursor.execute("UPDATE versions SET is_active = 0 WHERE plan_id = ?", (plan_id,))
-
-    # Insert new active version
-    cursor.execute(
-        "INSERT INTO versions (plan_id, title, effective_date, is_active) VALUES (?, ?, ?, 1)",
-        (plan_id, title, effective_date),
-    )
-    new_ver_id = cursor.lastrowid
-    if new_ver_id is None:
-        raise ValueError("Fehler beim Erstellen der Version")
-
-    # Insert positions
-    for idx, pos in enumerate(positions):
-        cursor.execute(
-            "INSERT INTO positions (version_id, title, amount, comment, category, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
-            (
-                new_ver_id,
-                pos["title"],
-                float(pos["amount"]),
-                pos.get("comment"),
-                pos.get("category"),
-                pos.get("sort_order", idx),
-            ),
-        )
-
-    # Insert contributions
-    for idx, c in enumerate(contributions):
-        cursor.execute(
-            "INSERT INTO contributions (version_id, person_name, amount, comment, sort_order) VALUES (?, ?, ?, ?, ?)",
-            (
-                new_ver_id,
-                c["person_name"],
-                float(c["amount"]),
-                c.get("comment"),
-                c.get("sort_order", idx),
-            ),
-        )
-
-    conn.commit()
-    details = get_version_details(conn, new_ver_id)
-    if details is None:
-        raise ValueError("Fehler beim Abrufen der erstellten Version")
-    return details
-
-
-
 def update_version(
     conn: sqlite3.Connection,
     version_id: int,
     title: Optional[str] = None,
     effective_date: Optional[str] = None,
+    updated_by: Optional[str] = "Administrator",
 ) -> Optional[Dict[str, Any]]:
     existing = conn.execute("SELECT * FROM versions WHERE id = ?", (version_id,)).fetchone()
     if not existing:
@@ -290,10 +239,11 @@ def update_version(
     current = dict(existing)
     new_title = title if title is not None else current["title"]
     new_date = effective_date if effective_date is not None else current["effective_date"]
+    now_iso = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     conn.execute(
-        "UPDATE versions SET title = ?, effective_date = ? WHERE id = ?",
-        (new_title, new_date, version_id),
+        "UPDATE versions SET title = ?, effective_date = ?, updated_at = ?, updated_by = ? WHERE id = ?",
+        (new_title, new_date, now_iso, updated_by or "Administrator", version_id),
     )
     conn.commit()
     return get_version_details(conn, version_id)
@@ -338,10 +288,9 @@ def activate_version(conn: sqlite3.Connection, plan_id: int, version_id: int) ->
     return get_version_details(conn, version_id)
 
 
-
 def get_plan_history(conn: sqlite3.Connection, plan_id: int) -> List[Dict[str, Any]]:
     ver_rows = conn.execute(
-        "SELECT id, plan_id, title, effective_date, is_active, created_at FROM versions WHERE plan_id = ? ORDER BY id DESC",
+        "SELECT id, plan_id, title, effective_date, is_active, created_at, created_by, updated_at, updated_by FROM versions WHERE plan_id = ? ORDER BY id DESC",
         (plan_id,),
     ).fetchall()
 
@@ -398,7 +347,7 @@ def create_version_snapshot(conn: sqlite3.Connection, plan_id: int, title: str, 
 
 def get_history_comparison(conn: sqlite3.Connection, plan_id: int) -> Dict[str, Any]:
     ver_rows = conn.execute(
-        "SELECT id, title, effective_date, created_at FROM versions WHERE plan_id = ? ORDER BY id ASC",
+        "SELECT id, title, effective_date, created_at, created_by, updated_at, updated_by FROM versions WHERE plan_id = ? ORDER BY id ASC",
         (plan_id,),
     ).fetchall()
 

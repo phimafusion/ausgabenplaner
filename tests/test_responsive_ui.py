@@ -123,3 +123,18 @@ def test_position_interval_calculation_ui():
     assert "updatePositionCalculationPreview" in js_content
 
 
+def test_history_audit_metadata_ui():
+    """Verify that history timeline displays created/updated audit info and styles exist."""
+    css_path = STATIC_DIR / "styles.css"
+    css_content = css_path.read_text(encoding="utf-8")
+    assert ".history-card-audit" in css_content
+
+    js_path = STATIC_DIR / "app.js"
+    js_content = js_path.read_text(encoding="utf-8")
+    assert "formatDateTimeDE" in js_content
+    assert "formatGermanDate(v.effective_date)" in js_content
+    assert "history-card-audit" in js_content
+    assert "created_by" in js_content
+    assert "updated_by" in js_content
+
+

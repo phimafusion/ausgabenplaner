@@ -1,18 +1,20 @@
 import os
+import sys
+import json
+import re
+import subprocess
+import sqlite3
+import datetime
 from typing import List, Optional, Dict, Any
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, Response
-
-import sqlite3
-import datetime
-
-
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 
 from app.database import get_db, init_db
-from app.auth import verify_password, create_access_token, get_current_user, get_current_admin, get_password_hash
+from app.auth import verify_password, create_access_token, get_current_user, get_current_admin, get_password_hash, decode_access_token
 from app import schemas, crud
 
 
@@ -169,9 +171,6 @@ def delete_user_route(
 
 @app.post("/api/admin/run-tests")
 def run_test_suite_route(current_admin: dict = Depends(get_current_admin)):
-    import subprocess
-    import sys
-
     env = os.environ.copy()
     env["TESTING"] = "1"
 
@@ -200,13 +199,6 @@ def run_tests_stream_route(
     token: Optional[str] = None,
     conn: sqlite3.Connection = Depends(get_db),
 ):
-    from fastapi.responses import StreamingResponse
-    import subprocess
-    import sys
-    import json
-    import re
-    from app.auth import decode_access_token
-
     if not token:
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
 

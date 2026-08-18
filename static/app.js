@@ -1134,34 +1134,97 @@ let activeEventSource = null;
 async function executeTestsuite() {
     switchSettingsTab("tab-settings-testsuite");
 
-    if (activeEventSource) {
-        try { activeEventSource.close(); } catch (e) {}
-        activeEventSource = null;
-    }
-
+    const runBtn = document.getElementById("btn-re-run-tests") || elements.btnReRunTests;
     const progressBar = document.getElementById("testsuite-progress-bar");
     const progressPercent = document.getElementById("testsuite-progress-percent");
     const statusBox = document.getElementById("testsuite-status-box") || elements.testsuiteStatusBox;
     const outputBox = document.getElementById("testsuite-output") || elements.testsuiteOutput;
 
+    if (runBtn) {
+        runBtn.disabled = true;
+        runBtn.textContent = "⏳ Tests laufen...";
+    }
+
     if (progressBar) progressBar.style.width = "0%";
     if (progressPercent) progressPercent.textContent = "0%";
     if (statusBox) {
         statusBox.className = "alert alert-info";
-        statusBox.textContent = "⏳ Verbinde zur Testsuite...";
+        statusBox.textContent = "⏳ Testsuite wird ausgeführt... (38 Tests werden überprüft)";
     }
-    if (outputBox) outputBox.textContent = "";
+    if (outputBox) outputBox.textContent = "Initialisiere Testsuite...\n";
+
+    if (activeEventSource) {
+        try { activeEventSource.close(); } catch (e) {}
+        activeEventSource = null;
+    }
 
     const token = state.token || localStorage.getItem("token") || "";
-    let receivedAnyMessage = false;
+    if (!token) {
+        if (statusBox) {
+            statusBox.className = "alert alert-danger";
+            statusBox.textContent = "❌ Keine aktive Sitzung gefunden. Bitte erneut anmelden.";
+        }
+        if (runBtn) {
+            runBtn.disabled = false;
+            runBtn.textContent = "🔄 Testsuite ausführen";
+        }
+        return;
+    }
+
+    let isCompleted = false;
+
+    const finishSuccess = () => {
+        if (isCompleted) return;
+        isCompleted = true;
+        if (progressBar) progressBar.style.width = "100%";
+        if (progressPercent) progressPercent.textContent = "100%";
+        if (statusBox) {
+            statusBox.className = "alert alert-success";
+            statusBox.textContent = "✅ Alle 38 Tests erfolgreich bestanden (100% Green)!";
+        }
+        if (runBtn) {
+            runBtn.disabled = false;
+            runBtn.textContent = "🔄 Testsuite erneut ausführen";
+        }
+    };
+
+    const finishFailure = (errMsg) => {
+        if (isCompleted) return;
+        isCompleted = true;
+        if (statusBox) {
+            statusBox.className = "alert alert-danger";
+            statusBox.textContent = errMsg || "❌ Einige Tests sind fehlgeschlagen.";
+        }
+        if (runBtn) {
+            runBtn.disabled = false;
+            runBtn.textContent = "🔄 Testsuite erneut ausführen";
+        }
+    };
+
+    const runFallbackPost = async () => {
+        try {
+            const resp = await apiFetch("/api/admin/run-tests", { method: "POST" });
+            const resData = await resp.json();
+            if (outputBox) outputBox.textContent = resData.output || "";
+            if (resData.passed) {
+                finishSuccess();
+            } else {
+                finishFailure("❌ Testsuite fehlgeschlagen: " + (resData.output ? "Fehlerhafte Tests" : "Unbekannt"));
+            }
+        } catch (err) {
+            finishFailure("❌ Fehler bei Testausführung: " + (err.message || "Netzwerkfehler"));
+        }
+    };
 
     try {
         const url = `/api/admin/run-tests-stream?token=${encodeURIComponent(token)}`;
         const evtSource = new EventSource(url);
         activeEventSource = evtSource;
 
+        let gotAnyData = false;
+
         evtSource.onmessage = (event) => {
-            receivedAnyMessage = true;
+            gotAnyData = true;
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === "start") {
@@ -1172,6 +1235,9 @@ async function executeTestsuite() {
                         progressPercent.textContent = `${data.progress}%`;
                     }
                     if (outputBox) {
+                        if (outputBox.textContent === "Initialisiere Testsuite...\n") {
+                            outputBox.textContent = "";
+                        }
                         outputBox.textContent += data.line;
                         const logBox = document.querySelector(".testsuite-log-box");
                         if (logBox) logBox.scrollTop = logBox.scrollHeight;
@@ -1179,16 +1245,10 @@ async function executeTestsuite() {
                 } else if (data.type === "complete") {
                     evtSource.close();
                     activeEventSource = null;
-                    if (progressBar) progressBar.style.width = "100%";
-                    if (progressPercent) progressPercent.textContent = "100%";
-                    if (statusBox) {
-                        if (data.passed) {
-                            statusBox.className = "alert alert-success";
-                            statusBox.textContent = "✅ Alle 38 Tests erfolgreich bestanden (100% Green)!";
-                        } else {
-                            statusBox.className = "alert alert-danger";
-                            statusBox.textContent = "❌ Einige Tests sind fehlgeschlagen.";
-                        }
+                    if (data.passed) {
+                        finishSuccess();
+                    } else {
+                        finishFailure();
                     }
                 }
             } catch (e) {
@@ -1199,45 +1259,15 @@ async function executeTestsuite() {
         evtSource.onerror = async () => {
             evtSource.close();
             activeEventSource = null;
-            if (!receivedAnyMessage) {
-                // Fallback to regular POST run-tests endpoint
-                if (statusBox) {
-                    statusBox.className = "alert alert-info";
-                    statusBox.textContent = "⏳ Führe Testsuite über API aus...";
-                }
-                try {
-                    const resp = await apiFetch("/api/admin/run-tests", { method: "POST" });
-                    const resData = await resp.json();
-                    if (progressBar) progressBar.style.width = "100%";
-                    if (progressPercent) progressPercent.textContent = "100%";
-                    if (outputBox) outputBox.textContent = resData.output || "";
-                    if (statusBox) {
-                        if (resData.passed) {
-                            statusBox.className = "alert alert-success";
-                            statusBox.textContent = "✅ Alle Tests erfolgreich bestanden (100% Green)!";
-                        } else {
-                            statusBox.className = "alert alert-danger";
-                            statusBox.textContent = "❌ Testsuite fehlgeschlagen.";
-                        }
-                    }
-                } catch (err) {
-                    if (statusBox) {
-                        statusBox.className = "alert alert-danger";
-                        statusBox.textContent = "❌ Fehler bei der Testausführung: " + (err.message || "Unbekannter Fehler");
-                    }
-                }
-            } else if (progressBar && progressBar.style.width !== "100%") {
-                if (statusBox) {
-                    statusBox.className = "alert alert-danger";
-                    statusBox.textContent = "❌ Verbindung zur Testsuite unterbrochen.";
-                }
+            if (!gotAnyData) {
+                // Instantly run fallback via POST endpoint
+                await runFallbackPost();
+            } else if (!isCompleted) {
+                finishFailure("❌ Stream unterbrochen.");
             }
         };
     } catch (err) {
-        if (statusBox) {
-            statusBox.className = "alert alert-danger";
-            statusBox.textContent = "❌ Testsuite-Aufruf fehlgeschlagen: " + err.message;
-        }
+        await runFallbackPost();
     }
 }
 window.executeTestsuite = executeTestsuite;

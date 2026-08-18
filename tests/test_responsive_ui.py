@@ -156,7 +156,7 @@ def test_user_management_edit_and_export_permissions_ui():
 
 
 def test_settings_overlay_menu_ui():
-    """Verify that settings overlay with gear icon exists, containing data backup (JSON/XLSX export, JSON import) and user management tabs."""
+    """Verify that settings overlay with gear icon exists, containing data backup, user management (existing users), and separate new user tabs."""
     html_path = STATIC_DIR / "index.html"
     content = html_path.read_text(encoding="utf-8")
 
@@ -170,6 +170,8 @@ def test_settings_overlay_menu_ui():
     assert 'data-tab="tab-settings-data"' in content
     assert 'id="tab-btn-users"' in content
     assert 'data-tab="tab-settings-users"' in content
+    assert 'id="tab-btn-new-user"' in content
+    assert 'data-tab="tab-settings-new-user"' in content
 
     # Data export / import actions inside settings
     assert 'id="btn-export-json"' in content
@@ -179,10 +181,9 @@ def test_settings_overlay_menu_ui():
     assert 'id="btn-import-json"' in content
 
     # User management inside settings
-    assert 'id="btn-show-create-user"' in content
-    assert 'Neuen Benutzer anlegen' in content
-    assert 'id="form-user-create"' in content
     assert 'id="users-list"' in content
+    assert 'id="form-user-create"' in content
+    assert 'Neuen Benutzer anlegen' in content
 
     # CSS styles
     css_path = STATIC_DIR / "styles.css"
@@ -197,6 +198,8 @@ def test_settings_overlay_menu_ui():
     assert "btnSettings" in js_content
     assert "modalSettings" in js_content
     assert "tabBtnUsers" in js_content
+    assert "tabBtnNewUser" in js_content
+    assert "switchSettingsTab" in js_content
     assert "btnExportXlsx" in js_content
     assert "modal-settings" in js_content
     assert "/api/data/export-xlsx" in js_content

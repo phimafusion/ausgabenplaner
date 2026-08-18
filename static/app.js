@@ -116,7 +116,8 @@ const elements = {
 
     modalSettings: document.getElementById("modal-settings"),
     tabBtnUsers: document.getElementById("tab-btn-users"),
-    btnShowCreateUser: document.getElementById("btn-show-create-user"),
+    tabBtnNewUser: document.getElementById("tab-btn-new-user"),
+    btnSwitchToNewUser: document.getElementById("btn-switch-to-new-user"),
     formUserCreate: document.getElementById("form-user-create"),
     userEditId: document.getElementById("user-edit-id"),
     userUsername: document.getElementById("user-username"),
@@ -757,18 +758,28 @@ function setupEventListeners() {
         elements.btnSaveVersion.click();
     });
 
+function switchSettingsTab(tabId) {
+    document.querySelectorAll(".settings-tab-btn").forEach((b) => {
+        b.classList.toggle("active", b.getAttribute("data-tab") === tabId);
+    });
+    document.querySelectorAll(".settings-tab-content").forEach((c) => {
+        c.classList.toggle("hidden", c.id !== tabId);
+    });
+    if (tabId === "tab-settings-users") {
+        loadUsersList();
+    }
+}
+
     // Settings Modal Open
     if (elements.btnSettings) {
         elements.btnSettings.addEventListener("click", async () => {
             resetUserForm();
             if (state.user && state.user.role !== "admin") {
-                const tabDataBtn = document.querySelector('.settings-tab-btn[data-tab="tab-settings-data"]');
-                if (tabDataBtn) tabDataBtn.click();
+                switchSettingsTab("tab-settings-data");
             } else {
                 const activeTab = document.querySelector('.settings-tab-btn.active');
-                if (activeTab && activeTab.getAttribute("data-tab") === "tab-settings-users") {
-                    await loadUsersList();
-                }
+                const targetTab = activeTab ? activeTab.getAttribute("data-tab") : "tab-settings-data";
+                switchSettingsTab(targetTab);
             }
             openModal("modal-settings");
         });
@@ -776,18 +787,25 @@ function setupEventListeners() {
 
     // Settings Tab Switching
     document.querySelectorAll(".settings-tab-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
+        btn.addEventListener("click", () => {
             const targetId = btn.getAttribute("data-tab");
-            document.querySelectorAll(".settings-tab-btn").forEach((b) => b.classList.remove("active"));
-            document.querySelectorAll(".settings-tab-content").forEach((c) => c.classList.add("hidden"));
-            btn.classList.add("active");
-            const targetEl = document.getElementById(targetId);
-            if (targetEl) targetEl.classList.remove("hidden");
-            if (targetId === "tab-settings-users") {
-                await loadUsersList();
+            if (targetId === "tab-settings-new-user" && (!elements.userEditId || !elements.userEditId.value)) {
+                resetUserForm();
+            }
+            switchSettingsTab(targetId);
+            if (targetId === "tab-settings-new-user" && elements.userUsername) {
+                elements.userUsername.focus();
             }
         });
     });
+
+    if (elements.btnSwitchToNewUser) {
+        elements.btnSwitchToNewUser.addEventListener("click", () => {
+            resetUserForm();
+            switchSettingsTab("tab-settings-new-user");
+            if (elements.userUsername) elements.userUsername.focus();
+        });
+    }
 
     // Export JSON
     if (elements.btnExportJson) {
@@ -875,23 +893,12 @@ function setupEventListeners() {
         }
     });
 
-    if (elements.btnShowCreateUser) {
-        elements.btnShowCreateUser.addEventListener("click", () => {
-            resetUserForm();
-            if (elements.formUserCreate) elements.formUserCreate.classList.remove("hidden");
-            if (elements.btnShowCreateUser) elements.btnShowCreateUser.classList.add("hidden");
-            if (elements.btnCancelUserEdit) elements.btnCancelUserEdit.classList.remove("hidden");
-            if (elements.userUsername) elements.userUsername.focus();
-        });
-    }
-
     if (elements.btnCancelUserEdit) {
         elements.btnCancelUserEdit.addEventListener("click", () => {
             resetUserForm();
+            switchSettingsTab("tab-settings-users");
         });
     }
-
-
 
     // Testsuite Runner (Admin)
     elements.btnRunTests.addEventListener("click", executeTestsuite);
@@ -919,6 +926,7 @@ function setupEventListeners() {
             if (resp.ok) {
                 resetUserForm();
                 await loadUsersList();
+                switchSettingsTab("tab-settings-users");
                 // If editing self, update state
                 if (state.user && String(state.user.id) === String(editId)) {
                     state.user.name = name;
@@ -940,6 +948,7 @@ function setupEventListeners() {
             if (resp.ok) {
                 resetUserForm();
                 await loadUsersList();
+                switchSettingsTab("tab-settings-users");
             } else {
                 const errData = await resp.json();
                 alert(errData.detail || "Fehler beim Erstellen des Benutzers");
@@ -1031,9 +1040,11 @@ function showDashboard() {
             elements.btnRunTests.classList.remove("hidden");
             if (elements.btnSettings) elements.btnSettings.classList.remove("hidden");
             if (elements.tabBtnUsers) elements.tabBtnUsers.classList.remove("hidden");
+            if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.remove("hidden");
         } else {
             elements.btnRunTests.classList.add("hidden");
             if (elements.tabBtnUsers) elements.tabBtnUsers.classList.add("hidden");
+            if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.add("hidden");
             if (elements.btnSettings) {
                 if (canExportOrAdmin) {
                     elements.btnSettings.classList.remove("hidden");
@@ -1524,11 +1535,7 @@ async function loadHistoryComparison() {
 
 // User Management Form & List Handlers
 function resetUserForm() {
-    if (elements.formUserCreate) {
-        elements.formUserCreate.reset();
-        elements.formUserCreate.classList.add("hidden");
-    }
-    if (elements.btnShowCreateUser) elements.btnShowCreateUser.classList.remove("hidden");
+    if (elements.formUserCreate) elements.formUserCreate.reset();
     if (elements.userEditId) elements.userEditId.value = "";
     if (elements.userUsername) {
         elements.userUsername.disabled = false;
@@ -1544,7 +1551,7 @@ function resetUserForm() {
     if (elements.userCanExport) elements.userCanExport.checked = true;
     if (elements.userFormHeading) elements.userFormHeading.textContent = "Neuen Benutzer anlegen";
     if (elements.btnSubmitUser) elements.btnSubmitUser.textContent = "Benutzer erstellen";
-    if (elements.btnCancelUserEdit) elements.btnCancelUserEdit.classList.add("hidden");
+    if (elements.btnCancelUserEdit) elements.btnCancelUserEdit.textContent = "Abbrechen";
 }
 
 window.startEditUser = (user) => {
@@ -1552,8 +1559,7 @@ window.startEditUser = (user) => {
         try { user = JSON.parse(user); } catch (e) {}
     }
     if (!user) return;
-    if (elements.formUserCreate) elements.formUserCreate.classList.remove("hidden");
-    if (elements.btnShowCreateUser) elements.btnShowCreateUser.classList.add("hidden");
+    switchSettingsTab("tab-settings-new-user");
     if (elements.userEditId) elements.userEditId.value = user.id;
     if (elements.userUsername) {
         elements.userUsername.value = user.username;
@@ -1569,7 +1575,6 @@ window.startEditUser = (user) => {
     if (elements.userCanExport) elements.userCanExport.checked = !!user.can_export;
     if (elements.userFormHeading) elements.userFormHeading.textContent = `Benutzer „${user.username}“ bearbeiten`;
     if (elements.btnSubmitUser) elements.btnSubmitUser.textContent = "💾 Änderungen speichern";
-    if (elements.btnCancelUserEdit) elements.btnCancelUserEdit.classList.remove("hidden");
     if (elements.userName) elements.userName.focus();
 };
 

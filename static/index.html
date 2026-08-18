@@ -480,6 +480,9 @@
                     <button type="button" class="settings-tab-btn" id="tab-btn-users" data-tab="tab-settings-users">
                         👥 Benutzerverwaltung
                     </button>
+                    <button type="button" class="settings-tab-btn" id="tab-btn-new-user" data-tab="tab-settings-new-user">
+                        ➕ Neuer Benutzer
+                    </button>
                 </div>
 
                 <!-- Tab 1: Daten & Backup -->
@@ -522,16 +525,23 @@
                     </div>
                 </div>
 
-                <!-- Tab 2: Benutzerverwaltung (Admin) -->
+                <!-- Tab 2: Benutzerverwaltung (Bestehende Benutzer) -->
                 <div id="tab-settings-users" class="settings-tab-content hidden">
                     <div class="user-management-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <h4 style="margin: 0; font-size: 1.05rem;">👥 Benutzer & Berechtigungen</h4>
-                        <button type="button" id="btn-show-create-user" class="btn btn-sm btn-primary">
-                            ➕ Neuen Benutzer anlegen
+                        <h4 style="margin: 0; font-size: 1.05rem;">👥 Bestehende Benutzer</h4>
+                        <button type="button" id="btn-switch-to-new-user" class="btn btn-sm btn-primary">
+                            ➕ Neuer Benutzer
                         </button>
                     </div>
 
-                    <form id="form-user-create" class="user-create-box hidden" style="margin-bottom: 20px;">
+                    <div class="users-list-box">
+                        <ul id="users-list" class="users-list"></ul>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Neuer Benutzer (Admin) -->
+                <div id="tab-settings-new-user" class="settings-tab-content hidden">
+                    <form id="form-user-create" class="user-create-box">
                         <input type="hidden" id="user-edit-id">
                         <h4 id="user-form-heading">Neuen Benutzer anlegen</h4>
                         <div class="form-group">
@@ -565,11 +575,6 @@
                             <button type="button" id="btn-cancel-user-edit" class="btn btn-sm btn-outline">Abbrechen</button>
                         </div>
                     </form>
-
-                    <div class="users-list-box">
-                        <h4 style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 8px;">Bestehende Benutzer</h4>
-                        <ul id="users-list" class="users-list"></ul>
-                    </div>
                 </div>
             </div>
         </div>

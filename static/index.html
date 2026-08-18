@@ -524,7 +524,14 @@
 
                 <!-- Tab 2: Benutzerverwaltung (Admin) -->
                 <div id="tab-settings-users" class="settings-tab-content hidden">
-                    <form id="form-user-create" class="user-create-box">
+                    <div class="user-management-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h4 style="margin: 0; font-size: 1.05rem;">👥 Benutzer & Berechtigungen</h4>
+                        <button type="button" id="btn-show-create-user" class="btn btn-sm btn-primary">
+                            ➕ Neuen Benutzer anlegen
+                        </button>
+                    </div>
+
+                    <form id="form-user-create" class="user-create-box hidden" style="margin-bottom: 20px;">
                         <input type="hidden" id="user-edit-id">
                         <h4 id="user-form-heading">Neuen Benutzer anlegen</h4>
                         <div class="form-group">
@@ -555,12 +562,12 @@
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <button type="submit" id="btn-submit-user" class="btn btn-sm btn-primary">Benutzer erstellen</button>
-                            <button type="button" id="btn-cancel-user-edit" class="btn btn-sm btn-outline hidden">Abbrechen</button>
+                            <button type="button" id="btn-cancel-user-edit" class="btn btn-sm btn-outline">Abbrechen</button>
                         </div>
                     </form>
 
-                    <div class="users-list-box" style="margin-top: 20px;">
-                        <h4>Bestehende Benutzer</h4>
+                    <div class="users-list-box">
+                        <h4 style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 8px;">Bestehende Benutzer</h4>
                         <ul id="users-list" class="users-list"></ul>
                     </div>
                 </div>

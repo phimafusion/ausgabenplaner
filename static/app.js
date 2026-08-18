@@ -116,6 +116,7 @@ const elements = {
 
     modalSettings: document.getElementById("modal-settings"),
     tabBtnUsers: document.getElementById("tab-btn-users"),
+    btnShowCreateUser: document.getElementById("btn-show-create-user"),
     formUserCreate: document.getElementById("form-user-create"),
     userEditId: document.getElementById("user-edit-id"),
     userUsername: document.getElementById("user-username"),
@@ -874,11 +875,22 @@ function setupEventListeners() {
         }
     });
 
+    if (elements.btnShowCreateUser) {
+        elements.btnShowCreateUser.addEventListener("click", () => {
+            resetUserForm();
+            if (elements.formUserCreate) elements.formUserCreate.classList.remove("hidden");
+            if (elements.btnShowCreateUser) elements.btnShowCreateUser.classList.add("hidden");
+            if (elements.btnCancelUserEdit) elements.btnCancelUserEdit.classList.remove("hidden");
+            if (elements.userUsername) elements.userUsername.focus();
+        });
+    }
+
     if (elements.btnCancelUserEdit) {
         elements.btnCancelUserEdit.addEventListener("click", () => {
             resetUserForm();
         });
     }
+
 
 
     // Testsuite Runner (Admin)
@@ -1512,7 +1524,11 @@ async function loadHistoryComparison() {
 
 // User Management Form & List Handlers
 function resetUserForm() {
-    if (elements.formUserCreate) elements.formUserCreate.reset();
+    if (elements.formUserCreate) {
+        elements.formUserCreate.reset();
+        elements.formUserCreate.classList.add("hidden");
+    }
+    if (elements.btnShowCreateUser) elements.btnShowCreateUser.classList.remove("hidden");
     if (elements.userEditId) elements.userEditId.value = "";
     if (elements.userUsername) {
         elements.userUsername.disabled = false;
@@ -1536,6 +1552,8 @@ window.startEditUser = (user) => {
         try { user = JSON.parse(user); } catch (e) {}
     }
     if (!user) return;
+    if (elements.formUserCreate) elements.formUserCreate.classList.remove("hidden");
+    if (elements.btnShowCreateUser) elements.btnShowCreateUser.classList.add("hidden");
     if (elements.userEditId) elements.userEditId.value = user.id;
     if (elements.userUsername) {
         elements.userUsername.value = user.username;
@@ -1552,7 +1570,9 @@ window.startEditUser = (user) => {
     if (elements.userFormHeading) elements.userFormHeading.textContent = `Benutzer „${user.username}“ bearbeiten`;
     if (elements.btnSubmitUser) elements.btnSubmitUser.textContent = "💾 Änderungen speichern";
     if (elements.btnCancelUserEdit) elements.btnCancelUserEdit.classList.remove("hidden");
+    if (elements.userName) elements.userName.focus();
 };
+
 
 window.deleteUser = async (userId, username) => {
     if (!confirm(`Möchten Sie den Benutzer „${username}“ wirklich löschen?`)) {

@@ -179,6 +179,8 @@ def test_settings_overlay_menu_ui():
     assert 'id="btn-import-json"' in content
 
     # User management inside settings
+    assert 'id="btn-show-create-user"' in content
+    assert 'Neuen Benutzer anlegen' in content
     assert 'id="form-user-create"' in content
     assert 'id="users-list"' in content
 

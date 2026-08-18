@@ -1,35 +1,56 @@
 # Ausgabenplaner 📊💰
 
-Ein moderner, transparenter Budget- und Ausgabenplaner zur Verwaltung von monatlichen Einnahmen, Fixkosten, Abonnements, Sparzielen und variablen Ausgaben – ideal für Haushalte, Paare und Einzelpersonen.
+Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Verwaltung von Hausgeldern, Liegenschaftskosten, Haushaltsbudgets und Beitragszahlungen mit integrierter **Versionshistorie (Stände-Management)**, **Excel-Export**, **Live-Matrix-Vergleich** und **Echtzeit-Testsuite**.
 
 ---
 
-## 🚀 Features
+## 🚀 Kernfunktionen
 
-- **Übersichtliches Dashboard**: Gesamteinnahmen, Fixkosten, Sparrate und verfügbares Budget auf einen Blick.
-- **Kategoriensystem**:
-  - 🏠 **Fixkosten** (Miete, Strom, Internet etc.)
-  - 📱 **Abos & Verträge** (Streaming, Mitgliedschaften etc.)
-  - 🐖 **Sparen & Rücklagen** (Notgroschen, Urlaub, Notfallfond etc.)
-  - 📈 **Investitionen & ETF-Sparpläne** (Altersvorsorge, Wertpapiere etc.)
-- **Dynamische Aufteilung**: Automatische Berechnung von Kostenanteilen (z. B. nach prozentualem Gehaltsverhältnis bei Paaren/WGs).
-- **Sicherheit & Authentifizierung**:
-  - JWT-basierte Authentifizierung mit sicherem Session-Handling.
-  - Rollen- und Benutzerverwaltung via SQLite.
-- **Backup & Datensicherung**:
-  - Vollständiger **JSON-Export** aller Daten (Kategorien, Einträge, Einstellungen).
-  - Zuverlässiger **JSON-Import** mit Validierung zur Wiederherstellung von Snapshots.
-- **Leichtgewichtig & Schnell**: FastAPI-Backend mit nativer SQLite-Datenbank und responsivem Vanilla-CSS/JS-Frontend ohne schwerfällige Frameworks.
+- **📊 Modernes Glassmorphism Dashboard**:
+  - Echtzeit-KPI-Karten für Gesamtausgaben, Beitragszahlungen und Rest-Saldo.
+  - Dynamische Farbkodierung (positiver/negativer Saldo).
+  - Touch-freundliches, voll responsives Layout für Desktop, Tablet und Smartphone.
+- **📜 Versionshistorie & Stände-Management**:
+  - Git-ähnliches Arbeiten mit versionierten Ständen (z. B. *„Stand ab 01.09.2026“*).
+  - **In-Memory-Entwurfsmodus**: Sicheres Experimentieren mit Dirty-Tracking und Warnungen bei ungespeicherten Änderungen.
+  - **Schreibschutz & Entsperren**: Gezieltes Freischalten von Tabellenzeilen für Bearbeitung oder Löschung.
+  - **Audit-Metadaten**: Lückenlose Nachvollziehbarkeit, wer welchen Stand wann erstellt oder geändert hat.
+- **🔍 Historische Matrix-Vergleichsansicht**:
+  - Side-by-Side Pivot-Vergleich aller historischen Stände nebeneinander mit dynamischer Kosten- und Beitragsentwicklung.
+- **⏱️ Live-Intervall-Berechnungsengine**:
+  - Automatische Monatskosten-Umrechnung für quartalsweise und jährliche Zahlungen.
+- **👥 Benutzer- & Rechteverwaltung (RBAC)**:
+  - Rollenbasiertes Rechtesystem (Administrator vs. Benutzer).
+  - Granulare Rechtevergabe (z. B. Export-Rechte für Benutzer).
+  - Sichere Passwort-Verwaltung mit Hash-Verfahren.
+- **💾 Datensicherung & Export**:
+  - **JSON-Export & Import**: Vollständige Sicherung und 1-Klick-Wiederherstellung aller Pläne, Stände und Positionen.
+  - **Excel-Export (.xlsx)**: Professionell aufbereitete Arbeitsmappe mit formatierter Datums- und Währungsdarstellung.
+- **🧪 Integrierte Live-Testsuite (Admin)**:
+  - Führt die Pytest-Suite direkt aus der Web-App aus.
+  - Live Server-Sent Events (SSE) Streaming mit Fortschrittsanzeige in Echtzeit.
 
 ---
 
-## 🛠 Tech-Stack
+## 🛠 Tech-Stack & Architektur
 
-- **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12+)
-- **Datenbank**: SQLite (lokal gespeichert, wartungsarm)
-- **Frontend**: Modernes Vanilla HTML5, CSS3 (Modernes Glassmorphism-UI / Dark Accent Theme) & JavaScript
-- **Containerisierung**: Docker & Docker Compose
-- **Testing**: `pytest`, `pytest-cov`, `httpx`
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Ausgabenplaner Architektur               │
+├──────────────────────────────┬──────────────────────────────┤
+│ Backend:                     │ Frontend (Modular ES6):      │
+│ • Python 3.12+ / FastAPI     │ • state.js (Reactive Store)  │
+│ • SQLite3 (lokal & atomar)   │ • api.js (Auth & Endpoints)  │
+│ • openpyxl (Excel-Engine)    │ • formatters.js (DE Formats) │
+│ • SSE Subprocess Test Runner │ • 6 UI-Komponenten-Module    │
+└──────────────────────────────┴──────────────────────────────┘
+```
+
+- **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12+), SQLite3
+- **Frontend**: Vanilla ES6-Module (`<script type="module">`), CSS3 (Glassmorphism), HTML5
+- **Datenexport**: `openpyxl` (Excel), JSON-Engine
+- **Testing**: `pytest`, `pytest-cov`, `httpx` (39 automatisierte Tests)
+- **Container**: Docker & Docker Compose
 
 ---
 
@@ -43,7 +64,7 @@ Ein moderner, transparenter Budget- und Ausgabenplaner zur Verwaltung von monatl
    cd ausgabenplaner
    ```
 
-2. **Virtuelle Umgebung erstellen und aktivieren**:
+2. **Virtuelle Umgebung erstellen & aktivieren**:
    ```bash
    # Windows (PowerShell)
    python -m venv .venv
@@ -65,6 +86,7 @@ Ein moderner, transparenter Budget- und Ausgabenplaner zur Verwaltung von monatl
    ```
 
    Öffne danach [http://localhost:3000](http://localhost:3000) im Browser.
+   - Standard-Admin: `admin` / `admin123`
 
 ---
 
@@ -80,11 +102,11 @@ Die Anwendung ist anschließend unter `http://localhost:3000` erreichbar. Die Da
 
 ## 🧪 Tests ausführen
 
-Das Projekt verfügt über umfassende automatisierte Tests für Domainlogik, CRUD-Endpunkte, Authentifizierung, Edge Cases und den JSON-Export/Import.
+Das Projekt verfügt über eine vollständige Testabdeckung mit 39 automatisierten Tests:
 
 ```bash
 # Tests ausführen
-pytest
+pytest tests -v
 
 # Tests mit Coverage-Report
 pytest --cov=app --cov-report=term-missing
@@ -97,34 +119,48 @@ pytest --cov=app --cov-report=term-missing
 ```text
 ausgabenplaner/
 ├── app/
-│   ├── auth.py          # Authentifizierung & Token-Handling (JWT / Passwords)
-│   ├── crud.py          # Datenbankoperationen & Import/Export
-│   ├── database.py      # SQLite-Verbindung & Schema-Initialisierung
-│   ├── domain.py        # Business-Logik & Berechnungen
-│   ├── main.py          # FastAPI App & Endpunkte
-│   └── schemas.py       # Pydantic Modelle & Datenvalidierung
+│   ├── auth.py                  # JWT-Token & Passwort-Hashing
+│   ├── crud.py                  # SQLite CRUD & Snapshot-Operationen
+│   ├── database.py              # DB-Initialisierung & Seed-Daten
+│   ├── domain.py                # Business-Logik & Intervall-Berechnungen
+│   ├── main.py                  # FastAPI Endpunkte & SSE Test Runner
+│   └── schemas.py               # Pydantic Modelle & Validierung
 ├── static/
-│   ├── app.js           # Frontend App Logik & API-Interaktionen
-│   ├── index.html       # Hauptseite
-│   └── styles.css       # Design & Styling
-├── tests/               # Pytest Testsuite
-├── data/                # Lokales SQLite-Datenbankverzeichnis (persistent)
-├── docker-compose.yml   # Docker Compose Konfiguration
-├── Dockerfile           # Multi-Stage Dockerfile
-├── requirements.txt     # Python Dependencies
-└── README.md            # Dokumentation
+│   ├── js/                      # Modulare Frontend-Architektur (ES6)
+│   │   ├── state.js             # Anwendungs-Zustand & Dirty-Tracking
+│   │   ├── dom.js               # DOM-Elemente Cache
+│   │   ├── formatters.js        # Währungs- & Datumshelfer (DE)
+│   │   ├── api.js               # Central API Client
+│   │   ├── events.js            # Event-Listener Wiring
+│   │   └── components/
+│   │       ├── modals.js        # Dialoge & Guards
+│   │       ├── kpi.js           # KPI-Rendering & Summenberechnung
+│   │       ├── tables.js        # Positions- & Beitrags-Tabellen
+│   │       ├── history.js       # Timeline & Matrix-Vergleich
+│   │       ├── users.js         # Benutzerverwaltung & Rechte
+│   │       └── testsuite.js     # SSE Testsuite-Runner
+│   ├── app.js                   # Haupt-Einstiegspunkt & Bootstrapping
+│   ├── index.html               # Responsive Single-Page UI
+│   └── styles.css               # Modernes Glassmorphism-Design
+├── tests/                       # 39 Pytest-Tests (Domain, Auth, UI, History)
+├── data/                        # Lokales SQLite-Datenbankverzeichnis
+├── docker-compose.yml           # Docker Compose Konfiguration
+├── Dockerfile                   # Multi-Stage Dockerfile
+├── requirements.txt             # Python Dependencies
+├── TODO.md                      # Roadmap & Feature Backlog
+└── README.md                    # Dokumentation
 ```
 
 ---
 
-## 📌 Roadmap / To-Do
+## 📌 Roadmap & Geplante Features
 
-- [ ] **1. Historienmodul integrieren**:
-  - Archivierung und Auswertung historischer Monatsabschlüsse.
-  - Langzeitvergleich von Einnahmen, Ausgaben und Sparquoten über Monate und Jahre hinweg (Diagramme & Trends).
-- [x] **2. Mobile Ansicht (Responsive Design)**:
-  - Optimierung der Benutzeroberfläche für Smartphones und Tablets.
-  - Touch-freundliche Navigation (Hamburger-Menü & Touch-Targets), responsive Tabellenkarten und mobile Dialoge für kompakte Displays.
+Zukünftige Erweiterungen und Vorschläge sind im [TODO.md](TODO.md) dokumentiert:
+- 📊 Interaktive Diagramme (Kostenverteilung nach Kategorien & Trendverlauf)
+- 🏢 Multi-Plan-Verwaltung (Mehrere Liegenschaften/Objekte parallel)
+- 📑 Druckfertiger PDF-Bericht für Versammlungen
+- 🏷️ Eigenes Kategorien-Management mit Farb-Tags
+- ⚡ Drag-and-Drop Sortierung & Inline-Editing
 
 ---
 

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles.css?v=3.0">
 </head>
 <body>
     <div id="app" class="app-container">
@@ -360,7 +360,7 @@
                                     Führt alle 38 Backend- und Integrationstests live aus und validiert Datenintegrität und Sicherheitsregeln.
                                 </p>
                             </div>
-                            <button id="btn-re-run-tests" class="btn btn-primary btn-sm" onclick="executeTestsuite()">
+                            <button type="button" id="btn-re-run-tests" class="btn btn-primary btn-sm" onclick="executeTestsuite()">
                                 🔄 Testsuite ausführen
                             </button>
                         </div>
@@ -667,6 +667,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=3.0"></script>
 </body>
 </html>

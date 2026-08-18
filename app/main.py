@@ -586,5 +586,12 @@ def serve_spa(full_path: str):
         raise HTTPException(status_code=404, detail="API route not found")
     index_file = os.path.join(static_dir, "index.html")
     if os.path.exists(index_file):
-        return FileResponse(index_file)
+        return FileResponse(
+            index_file,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
     return JSONResponse({"message": "Ausgabenplaner API running"})

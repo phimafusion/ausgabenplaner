@@ -185,6 +185,7 @@ def test_settings_view_and_testsuite_tab_ui():
 
     # User management inside settings
     assert 'id="users-list"' in content
+    assert 'class="users-grid"' in content
     assert 'id="form-user-create"' in content
     assert 'Neuen Benutzer anlegen' in content
 
@@ -200,6 +201,9 @@ def test_settings_view_and_testsuite_tab_ui():
     assert ".settings-tabs-bar" in css_content
     assert ".settings-tab-btn" in css_content
     assert ".settings-card" in css_content
+    assert ".users-grid" in css_content
+    assert ".user-profile-card" in css_content
+    assert ".user-avatar" in css_content
 
     # JS bindings
     js_path = STATIC_DIR / "app.js"
@@ -212,6 +216,8 @@ def test_settings_view_and_testsuite_tab_ui():
     assert "tabBtnNewUser" in js_content
     assert "tabBtnTestsuite" in js_content
     assert "switchSettingsTab" in js_content
+    assert "user-profile-card" in js_content
+    assert "avatar-admin" in js_content
     assert "btnExportXlsx" in js_content
     assert "/api/data/export-xlsx" in js_content
 

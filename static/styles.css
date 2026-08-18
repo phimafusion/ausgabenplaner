@@ -51,7 +51,6 @@ body {
 .glass-header {
     background: rgba(15, 23, 42, 0.95);
     border-bottom: 1px solid var(--card-border);
-    contain: paint;
 }
 
 .glass-card {
@@ -342,7 +341,8 @@ body {
     padding: 14px 28px;
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
+    overflow: visible;
 }
 
 .navbar-brand {
@@ -408,6 +408,7 @@ body {
     display: flex;
     align-items: center;
     gap: 14px;
+    overflow: visible;
 }
 
 .user-badge {
@@ -477,7 +478,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    z-index: 150;
+    z-index: 1050;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;

@@ -1,7 +1,9 @@
 import datetime
+import io
 import sqlite3
 from typing import List, Dict, Any, Optional
 from app.domain import calculate_plan_totals, format_currency_de
+
 
 
 def get_version_details(conn: sqlite3.Connection, version_id: int) -> Optional[Dict[str, Any]]:
@@ -455,6 +457,352 @@ def export_full_data(conn: sqlite3.Connection) -> Dict[str, Any]:
         "exported_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "plans": plans,
     }
+
+
+def export_full_data_xlsx(conn: sqlite3.Connection) -> bytes:
+    """Export complete plan, active version details and historical snapshots to an Excel (.xlsx) workbook."""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    wb = openpyxl.Workbook()
+    # Remove default sheet
+    wb.remove(wb.active)
+
+    # Styles
+    font_title = Font(name="Calibri", size=16, bold=True, color="1E293B")
+    font_subtitle = Font(name="Calibri", size=11, italic=True, color="64748B")
+    font_section_header = Font(name="Calibri", size=12, bold=True, color="FFFFFF")
+    font_tbl_header = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    font_bold = Font(name="Calibri", size=11, bold=True)
+    font_regular = Font(name="Calibri", size=11)
+    font_kpi_num = Font(name="Calibri", size=14, bold=True)
+
+    fill_navy = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
+    fill_indigo = PatternFill(start_color="4F46E5", end_color="4F46E5", fill_type="solid")
+    fill_emerald = PatternFill(start_color="059669", end_color="059669", fill_type="solid")
+    fill_slate_header = PatternFill(start_color="334155", end_color="334155", fill_type="solid")
+    fill_zebra = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+    fill_total = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+    fill_kpi_box = PatternFill(start_color="EEF2FF", end_color="EEF2FF", fill_type="solid")
+
+    thin_border_side = Side(border_style="thin", color="CBD5E1")
+    double_border_bottom = Side(border_style="double", color="334155")
+    cell_border = Border(left=thin_border_side, right=thin_border_side, top=thin_border_side, bottom=thin_border_side)
+    total_border = Border(top=thin_border_side, bottom=double_border_bottom)
+
+    align_left = Alignment(horizontal="left", vertical="center")
+    align_right = Alignment(horizontal="right", vertical="center")
+    align_center = Alignment(horizontal="center", vertical="center")
+
+    currency_fmt = '#,##0.00\\ \\€'
+
+    full_data = export_full_data(conn)
+    plans = full_data.get("plans", [])
+
+    for p_idx, plan in enumerate(plans):
+        plan_title = plan.get("title", f"Plan {p_idx+1}")
+        versions = plan.get("versions", [])
+
+        # Find active version or latest
+        active_ver = next((v for v in versions if v.get("is_active")), versions[-1] if versions else None)
+
+        if active_ver:
+            # Sheet 1: Active Overview
+            sheet_title = f"Aktuell - {plan_title}"[:31].replace(":", "-").replace("/", "-").replace("\\", "-").replace("?", "").replace("*", "")
+            ws = wb.create_sheet(title=sheet_title)
+            ws.views.sheetView[0].showGridLines = True
+
+            # Plan Title & Subtitle
+            ws["A1"] = f"📊 Ausgabenplaner: {plan_title}"
+            ws["A1"].font = font_title
+            ws["A2"] = f"Stand: {active_ver.get('title')} | Gültig ab: {active_ver.get('effective_date') or '-'} | Exportiert am: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}"
+            ws["A2"].font = font_subtitle
+
+            # Section: Positions (Ausgaben)
+            cur_row = 4
+            ws.cell(row=cur_row, column=1, value="💸 Monatliche Ausgaben (Positionen)").font = font_section_header
+            ws.cell(row=cur_row, column=1).fill = fill_indigo
+            for col in range(2, 6):
+                ws.cell(row=cur_row, column=col).fill = fill_indigo
+            ws.merge_cells(start_row=cur_row, start_column=1, end_row=cur_row, end_column=5)
+
+            cur_row += 1
+            pos_headers = ["Nr.", "Position / Ausgabezweck", "Kategorie", "Monatlicher Betrag (€)", "Kommentar / Intervall"]
+            for c_idx, h in enumerate(pos_headers, 1):
+                c = ws.cell(row=cur_row, column=c_idx, value=h)
+                c.font = font_tbl_header
+                c.fill = fill_slate_header
+                c.alignment = align_center if c_idx == 1 else (align_right if c_idx == 4 else align_left)
+                c.border = cell_border
+
+            pos_start_row = cur_row + 1
+            positions = active_ver.get("positions", [])
+            for idx, pos in enumerate(positions, 1):
+                cur_row += 1
+                r_fill = fill_zebra if idx % 2 == 0 else None
+
+                c1 = ws.cell(row=cur_row, column=1, value=idx)
+                c1.alignment = align_center
+                c1.font = font_regular
+                c1.border = cell_border
+                if r_fill: c1.fill = r_fill
+
+                c2 = ws.cell(row=cur_row, column=2, value=pos.get("title", ""))
+                c2.alignment = align_left
+                c2.font = font_regular
+                c2.border = cell_border
+                if r_fill: c2.fill = r_fill
+
+                c3 = ws.cell(row=cur_row, column=3, value=pos.get("category", "") or "-")
+                c3.alignment = align_left
+                c3.font = font_regular
+                c3.border = cell_border
+                if r_fill: c3.fill = r_fill
+
+                c4 = ws.cell(row=cur_row, column=4, value=float(pos.get("amount", 0.0)))
+                c4.alignment = align_right
+                c4.font = font_regular
+                c4.number_format = currency_fmt
+                c4.border = cell_border
+                if r_fill: c4.fill = r_fill
+
+                c5 = ws.cell(row=cur_row, column=5, value=pos.get("comment", "") or "")
+                c5.alignment = align_left
+                c5.font = font_regular
+                c5.border = cell_border
+                if r_fill: c5.fill = r_fill
+
+            # Total row for Positions
+            cur_row += 1
+            ws.cell(row=cur_row, column=1, value="").border = total_border
+            ws.cell(row=cur_row, column=1).fill = fill_total
+            c_pos_label = ws.cell(row=cur_row, column=2, value="Gesamtausgaben:")
+            c_pos_label.font = font_bold
+            c_pos_label.border = total_border
+            c_pos_label.fill = fill_total
+
+            ws.cell(row=cur_row, column=3, value="").border = total_border
+            ws.cell(row=cur_row, column=3).fill = fill_total
+
+            c_pos_sum = ws.cell(row=cur_row, column=4)
+            if positions:
+                c_pos_sum.value = f"=SUM(D{pos_start_row}:D{cur_row-1})"
+            else:
+                c_pos_sum.value = 0.0
+            c_pos_sum.font = font_bold
+            c_pos_sum.alignment = align_right
+            c_pos_sum.number_format = currency_fmt
+            c_pos_sum.border = total_border
+            c_pos_sum.fill = fill_total
+            pos_sum_cell_ref = f"D{cur_row}"
+
+            ws.cell(row=cur_row, column=5, value="").border = total_border
+            ws.cell(row=cur_row, column=5).fill = fill_total
+
+            # Section: Contributions (Beiträge)
+            cur_row += 3
+            ws.cell(row=cur_row, column=1, value="💰 Monatliche Beiträge & Einnahmen").font = font_section_header
+            ws.cell(row=cur_row, column=1).fill = fill_emerald
+            for col in range(2, 5):
+                ws.cell(row=cur_row, column=col).fill = fill_emerald
+            ws.merge_cells(start_row=cur_row, start_column=1, end_row=cur_row, end_column=4)
+
+            cur_row += 1
+            contrib_headers = ["Nr.", "Person / Quelle", "Monatlicher Beitrag (€)", "Notiz / Kommentar"]
+            for c_idx, h in enumerate(contrib_headers, 1):
+                c = ws.cell(row=cur_row, column=c_idx, value=h)
+                c.font = font_tbl_header
+                c.fill = fill_slate_header
+                c.alignment = align_center if c_idx == 1 else (align_right if c_idx == 3 else align_left)
+                c.border = cell_border
+
+            contrib_start_row = cur_row + 1
+            contributions = active_ver.get("contributions", [])
+            for idx, con in enumerate(contributions, 1):
+                cur_row += 1
+                r_fill = fill_zebra if idx % 2 == 0 else None
+
+                c1 = ws.cell(row=cur_row, column=1, value=idx)
+                c1.alignment = align_center
+                c1.font = font_regular
+                c1.border = cell_border
+                if r_fill: c1.fill = r_fill
+
+                c2 = ws.cell(row=cur_row, column=2, value=con.get("person_name", ""))
+                c2.alignment = align_left
+                c2.font = font_regular
+                c2.border = cell_border
+                if r_fill: c2.fill = r_fill
+
+                c3 = ws.cell(row=cur_row, column=3, value=float(con.get("amount", 0.0)))
+                c3.alignment = align_right
+                c3.font = font_regular
+                c3.number_format = currency_fmt
+                c3.border = cell_border
+                if r_fill: c3.fill = r_fill
+
+                c4 = ws.cell(row=cur_row, column=4, value=con.get("comment", "") or "")
+                c4.alignment = align_left
+                c4.font = font_regular
+                c4.border = cell_border
+                if r_fill: c4.fill = r_fill
+
+            # Total row for Contributions
+            cur_row += 1
+            ws.cell(row=cur_row, column=1, value="").border = total_border
+            ws.cell(row=cur_row, column=1).fill = fill_total
+            c_con_label = ws.cell(row=cur_row, column=2, value="Gesamtbeiträge:")
+            c_con_label.font = font_bold
+            c_con_label.border = total_border
+            c_con_label.fill = fill_total
+
+            c_con_sum = ws.cell(row=cur_row, column=3)
+            if contributions:
+                c_con_sum.value = f"=SUM(C{contrib_start_row}:C{cur_row-1})"
+            else:
+                c_con_sum.value = 0.0
+            c_con_sum.font = font_bold
+            c_con_sum.alignment = align_right
+            c_con_sum.number_format = currency_fmt
+            c_con_sum.border = total_border
+            c_con_sum.fill = fill_total
+            con_sum_cell_ref = f"C{cur_row}"
+
+            ws.cell(row=cur_row, column=4, value="").border = total_border
+            ws.cell(row=cur_row, column=4).fill = fill_total
+
+            # Summary Saldo Block
+            cur_row += 3
+            ws.cell(row=cur_row, column=1, value="📈 Zusammenfassung & Saldo").font = font_section_header
+            ws.cell(row=cur_row, column=1).fill = fill_navy
+            for col in range(2, 4):
+                ws.cell(row=cur_row, column=col).fill = fill_navy
+            ws.merge_cells(start_row=cur_row, start_column=1, end_row=cur_row, end_column=3)
+
+            cur_row += 1
+            ws.cell(row=cur_row, column=1, value="Gesamtausgaben").font = font_regular
+            ws.cell(row=cur_row, column=1).border = cell_border
+            ws.cell(row=cur_row, column=2, value="").border = cell_border
+            ws.merge_cells(start_row=cur_row, start_column=1, end_row=cur_row, end_column=2)
+            c_tot_exp = ws.cell(row=cur_row, column=3, value=f"={pos_sum_cell_ref}")
+            c_tot_exp.font = font_bold
+            c_tot_exp.alignment = align_right
+            c_tot_exp.number_format = currency_fmt
+            c_tot_exp.border = cell_border
+
+            cur_row += 1
+            ws.cell(row=cur_row, column=1, value="Gesamtbeiträge").font = font_regular
+            ws.cell(row=cur_row, column=1).border = cell_border
+            ws.cell(row=cur_row, column=2, value="").border = cell_border
+            ws.merge_cells(start_row=cur_row, start_column=1, end_row=cur_row, end_column=2)
+            c_tot_inc = ws.cell(row=cur_row, column=3, value=f"={con_sum_cell_ref}")
+            c_tot_inc.font = font_bold
+            c_tot_inc.alignment = align_right
+            c_tot_inc.number_format = currency_fmt
+            c_tot_inc.border = cell_border
+
+            cur_row += 1
+            c_sal_lbl = ws.cell(row=cur_row, column=1, value="Saldo / Differenz")
+            c_sal_lbl.font = font_bold
+            c_sal_lbl.fill = fill_kpi_box
+            c_sal_lbl.border = total_border
+            ws.cell(row=cur_row, column=2, value="").fill = fill_kpi_box
+            ws.cell(row=cur_row, column=2).border = total_border
+            ws.merge_cells(start_row=cur_row, start_column=1, end_row=cur_row, end_column=2)
+
+            c_sal_val = ws.cell(row=cur_row, column=3, value=f"=C{cur_row-1}+C{cur_row-2}")
+            c_sal_val.font = font_kpi_num
+            c_sal_val.alignment = align_right
+            c_sal_val.number_format = currency_fmt
+            c_sal_val.fill = fill_kpi_box
+            c_sal_val.border = total_border
+
+            # Adjust column widths
+            for col in ws.columns:
+                max_len = 0
+                col_letter = get_column_letter(col[0].column)
+                for cell in col:
+                    if cell.value:
+                        val_str = str(cell.value)
+                        if not val_str.startswith("="):
+                            max_len = max(max_len, len(val_str))
+                ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+            ws.column_dimensions["B"].width = max(ws.column_dimensions["B"].width, 36)
+            ws.column_dimensions["D"].width = max(ws.column_dimensions["D"].width, 24)
+            ws.column_dimensions["E"].width = max(ws.column_dimensions["E"].width, 32)
+
+    # Sheet 2: Versions History (Alle Stände)
+    ws_hist = wb.create_sheet(title="Historie & Stände")
+    ws_hist.views.sheetView[0].showGridLines = True
+
+    ws_hist["A1"] = "📜 Historienübersicht aller Versionen & Stände"
+    ws_hist["A1"].font = font_title
+    ws_hist["A2"] = f"Exportiert am: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}"
+    ws_hist["A2"].font = font_subtitle
+
+    hist_headers = ["Plan", "Stand-Name", "Gültig ab", "Status", "Erstellt von", "Erstellt am", "Geändert von", "Geändert am", "Ausgaben (€)", "Beiträge (€)", "Saldo (€)"]
+    h_row = 4
+    for c_idx, h in enumerate(hist_headers, 1):
+        c = ws_hist.cell(row=h_row, column=c_idx, value=h)
+        c.font = font_tbl_header
+        c.fill = fill_navy
+        c.alignment = align_center if c_idx in [3, 4, 6, 8] else (align_right if c_idx in [9, 10, 11] else align_left)
+        c.border = cell_border
+
+    row_idx = h_row
+    item_count = 0
+    for plan in plans:
+        plan_title = plan.get("title", "")
+        for v in plan.get("versions", []):
+            row_idx += 1
+            item_count += 1
+            r_fill = fill_zebra if item_count % 2 == 0 else None
+
+            v_positions = v.get("positions", [])
+            v_contributions = v.get("contributions", [])
+            exp_sum = sum(float(p.get("amount", 0.0)) for p in v_positions)
+            inc_sum = sum(float(c.get("amount", 0.0)) for c in v_contributions)
+            saldo = exp_sum + inc_sum
+
+            vals = [
+                (plan_title, align_left, font_regular, None),
+                (v.get("title", ""), align_left, font_bold, None),
+                (v.get("effective_date") or "-", align_center, font_regular, None),
+                ("Aktiv" if v.get("is_active") else "Historisch", align_center, font_regular, None),
+                (v.get("created_by") or "-", align_left, font_regular, None),
+                (v.get("created_at") or "-", align_center, font_regular, None),
+                (v.get("updated_by") or "-", align_left, font_regular, None),
+                (v.get("updated_at") or "-", align_center, font_regular, None),
+                (exp_sum, align_right, font_regular, currency_fmt),
+                (inc_sum, align_right, font_regular, currency_fmt),
+                (saldo, align_right, font_bold, currency_fmt),
+            ]
+
+            for c_idx, (val, align, fnt, num_fmt) in enumerate(vals, 1):
+                c = ws_hist.cell(row=row_idx, column=c_idx, value=val)
+                c.alignment = align
+                c.font = fnt
+                c.border = cell_border
+                if num_fmt:
+                    c.number_format = num_fmt
+                if r_fill:
+                    c.fill = r_fill
+
+    # Adjust hist columns
+    for col in ws_hist.columns:
+        max_len = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            if cell.value:
+                val_str = str(cell.value)
+                max_len = max(max_len, len(val_str))
+        ws_hist.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output.getvalue()
 
 
 def import_full_data(conn: sqlite3.Connection, data: Dict[str, Any], overwrite: bool = True) -> Dict[str, Any]:

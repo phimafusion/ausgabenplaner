@@ -130,7 +130,10 @@ const elements = {
     usersList: document.getElementById("users-list"),
 
     btnExportJson: document.getElementById("btn-export-json"),
+    btnExportXlsx: document.getElementById("btn-export-xlsx"),
     btnImportJson: document.getElementById("btn-import-json"),
+    dropdownImportExport: document.getElementById("dropdown-import-export"),
+    btnImportExportMenu: document.getElementById("btn-import-export-menu"),
 
     modalImport: document.getElementById("modal-import"),
     formImportJson: document.getElementById("form-import-json"),
@@ -754,27 +757,70 @@ function setupEventListeners() {
         elements.btnSaveVersion.click();
     });
 
+    // Import / Export Dropdown Click / Hover Interactivity
+    if (elements.btnImportExportMenu && elements.dropdownImportExport) {
+        elements.btnImportExportMenu.addEventListener("click", (e) => {
+            e.stopPropagation();
+            elements.dropdownImportExport.classList.toggle("is-open");
+        });
+        document.addEventListener("click", (e) => {
+            if (!elements.dropdownImportExport.contains(e.target)) {
+                elements.dropdownImportExport.classList.remove("is-open");
+            }
+        });
+        elements.dropdownImportExport.querySelectorAll(".dropdown-item").forEach((item) => {
+            item.addEventListener("click", () => {
+                elements.dropdownImportExport.classList.remove("is-open");
+            });
+        });
+    }
+
     // Export JSON
-    elements.btnExportJson.addEventListener("click", async () => {
-        try {
-            const resp = await apiFetch("/api/data/export");
-            if (!resp.ok) throw new Error("Export fehlgeschlagen");
-            const data = await resp.json();
-            const jsonStr = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            const dateStr = new Date().toISOString().split("T")[0];
-            a.href = url;
-            a.download = `ausgabenplaner_export_${dateStr}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } catch (err) {
-            alert(err.message || "Fehler beim Exportieren der Daten");
-        }
-    });
+    if (elements.btnExportJson) {
+        elements.btnExportJson.addEventListener("click", async () => {
+            try {
+                const resp = await apiFetch("/api/data/export");
+                if (!resp.ok) throw new Error("Export fehlgeschlagen");
+                const data = await resp.json();
+                const jsonStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                const dateStr = new Date().toISOString().split("T")[0];
+                a.href = url;
+                a.download = `ausgabenplaner_export_${dateStr}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                alert(err.message || "Fehler beim Exportieren der Daten");
+            }
+        });
+    }
+
+    // Export XLSX
+    if (elements.btnExportXlsx) {
+        elements.btnExportXlsx.addEventListener("click", async () => {
+            try {
+                const resp = await apiFetch("/api/data/export-xlsx");
+                if (!resp.ok) throw new Error("Excel-Export fehlgeschlagen");
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                const dateStr = new Date().toISOString().split("T")[0];
+                a.href = url;
+                a.download = `ausgabenplaner_export_${dateStr}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                alert(err.message || "Fehler beim Exportieren der Excel-Datei");
+            }
+        });
+    }
+
 
     // Import JSON
     elements.btnImportJson.addEventListener("click", () => {
@@ -958,21 +1004,32 @@ function showDashboard() {
     if (state.user) {
         elements.userDisplayName.textContent = state.user.name || state.user.username;
         elements.userRoleBadge.textContent = state.user.role === "admin" ? "Admin" : "Benutzer";
+        const canExportOrAdmin = state.user.role === "admin" || !!state.user.can_export;
+
         if (state.user.role === "admin") {
             elements.btnUserMgmt.classList.remove("hidden");
             elements.btnRunTests.classList.remove("hidden");
-            elements.btnExportJson.classList.remove("hidden");
-            elements.btnImportJson.classList.remove("hidden");
         } else {
             elements.btnUserMgmt.classList.add("hidden");
             elements.btnRunTests.classList.add("hidden");
-            if (state.user.can_export) {
-                elements.btnExportJson.classList.remove("hidden");
-                elements.btnImportJson.classList.remove("hidden");
+        }
+
+        if (elements.dropdownImportExport) {
+            if (canExportOrAdmin) {
+                elements.dropdownImportExport.classList.remove("hidden");
             } else {
-                elements.btnExportJson.classList.add("hidden");
-                elements.btnImportJson.classList.add("hidden");
+                elements.dropdownImportExport.classList.add("hidden");
             }
+        }
+
+        if (elements.btnExportJson) {
+            elements.btnExportJson.classList.toggle("hidden", !canExportOrAdmin);
+        }
+        if (elements.btnExportXlsx) {
+            elements.btnExportXlsx.classList.toggle("hidden", !canExportOrAdmin);
+        }
+        if (elements.btnImportJson) {
+            elements.btnImportJson.classList.toggle("hidden", !canExportOrAdmin);
         }
     }
 }

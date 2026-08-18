@@ -62,12 +62,26 @@
                         <span id="user-display-name">Admin</span>
                         <span id="user-role-badge" class="badge badge-admin">Admin</span>
                     </div>
-                    <button id="btn-export-json" class="btn btn-outline btn-sm">
-                        📥 Export (JSON)
-                    </button>
-                    <button id="btn-import-json" class="btn btn-outline btn-sm">
-                        📤 Import (JSON)
-                    </button>
+                    <div class="dropdown" id="dropdown-import-export">
+                        <button id="btn-import-export-menu" class="btn btn-outline btn-sm dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+                            📦 Import / Export <span class="dropdown-caret">▾</span>
+                        </button>
+                        <div class="dropdown-menu glass-dropdown" role="menu">
+                            <button id="btn-export-json" class="dropdown-item" role="menuitem">
+                                <span class="dropdown-item-icon">📥</span>
+                                <span class="dropdown-item-text">JSON exportieren</span>
+                            </button>
+                            <button id="btn-import-json" class="dropdown-item" role="menuitem">
+                                <span class="dropdown-item-icon">📤</span>
+                                <span class="dropdown-item-text">JSON importieren</span>
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button id="btn-export-xlsx" class="dropdown-item" role="menuitem">
+                                <span class="dropdown-item-icon">📊</span>
+                                <span class="dropdown-item-text">XLSX exportieren</span>
+                            </button>
+                        </div>
+                    </div>
                     <button id="btn-run-tests" class="btn btn-accent btn-sm hidden">
                         🧪 Testsuite
                     </button>

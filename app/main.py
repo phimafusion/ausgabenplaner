@@ -4,8 +4,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
+
 import sqlite3
+import datetime
+
+
 
 from app.database import get_db, init_db
 from app.auth import verify_password, create_access_token, get_current_user, get_current_admin, get_password_hash
@@ -517,6 +521,25 @@ def export_data_route(
     if current_user.get("role") != "admin" and not current_user.get("can_export"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sie besitzen keine Berechtigung zum Exportieren der Daten.")
     return crud.export_full_data(conn)
+
+
+@app.get("/api/data/export-xlsx")
+@app.get("/api/data/export/xlsx")
+def export_data_xlsx_route(
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    if current_user.get("role") != "admin" and not current_user.get("can_export"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sie besitzen keine Berechtigung zum Exportieren der Daten.")
+    xlsx_bytes = crud.export_full_data_xlsx(conn)
+    date_str = datetime.date.today().isoformat()
+    filename = f"ausgabenplaner_export_{date_str}.xlsx"
+    return Response(
+        content=xlsx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
 
 
 @app.post("/api/data/import")

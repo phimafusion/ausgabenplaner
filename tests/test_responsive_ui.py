@@ -155,3 +155,33 @@ def test_user_management_edit_and_export_permissions_ui():
     assert "Export erlaubt" in js_content
 
 
+def test_import_export_dropdown_menu_ui():
+    """Verify that import/export hover dropdown menu exists with JSON export, JSON import and XLSX export."""
+    html_path = STATIC_DIR / "index.html"
+    content = html_path.read_text(encoding="utf-8")
+
+    assert 'id="dropdown-import-export"' in content
+    assert 'id="btn-import-export-menu"' in content
+    assert 'Import / Export' in content
+    assert 'id="btn-export-json"' in content
+    assert 'JSON exportieren' in content
+    assert 'id="btn-import-json"' in content
+    assert 'JSON importieren' in content
+    assert 'id="btn-export-xlsx"' in content
+    assert 'XLSX exportieren' in content
+
+    css_path = STATIC_DIR / "styles.css"
+    css_content = css_path.read_text(encoding="utf-8")
+    assert ".dropdown" in css_content
+    assert ".dropdown-menu" in css_content
+    assert ".dropdown:hover .dropdown-menu" in css_content
+    assert ".dropdown-item" in css_content
+
+    js_path = STATIC_DIR / "app.js"
+    js_content = js_path.read_text(encoding="utf-8")
+    assert "btnExportXlsx" in js_content
+    assert "btnImportExportMenu" in js_content
+    assert "/api/data/export-xlsx" in js_content
+
+
+

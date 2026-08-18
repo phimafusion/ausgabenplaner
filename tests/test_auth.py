@@ -101,10 +101,13 @@ def test_user_export_permissions_and_editing():
     assert sabrina_login["user"]["can_export"] is False
     sabrina_headers = {"Authorization": f"Bearer {sabrina_login['access_token']}"}
 
-    # 3. Sabrina tries to export data -> 403 Forbidden
+    # 3. Sabrina tries to export data (JSON & XLSX) -> 403 Forbidden
     export_forbidden = client.get("/api/data/export", headers=sabrina_headers)
     assert export_forbidden.status_code == 403
     assert "Exportieren" in export_forbidden.json()["detail"]
+
+    export_xlsx_forbidden = client.get("/api/data/export-xlsx", headers=sabrina_headers)
+    assert export_xlsx_forbidden.status_code == 403
 
     # 4. Admin edits user Sabrina: grant export permission, update name and new password
     edit_resp = client.patch(
@@ -122,10 +125,15 @@ def test_user_export_permissions_and_editing():
     assert new_login["user"]["can_export"] is True
     new_sabrina_headers = {"Authorization": f"Bearer {new_login['access_token']}"}
 
-    # 6. Now Sabrina can successfully export
+    # 6. Now Sabrina can successfully export (JSON & XLSX)
     export_allowed = client.get("/api/data/export", headers=new_sabrina_headers)
     assert export_allowed.status_code == 200
     assert "plans" in export_allowed.json()
+
+    export_xlsx_allowed = client.get("/api/data/export-xlsx", headers=new_sabrina_headers)
+    assert export_xlsx_allowed.status_code == 200
+    assert len(export_xlsx_allowed.content) > 0
+
 
     # 7. Admin deletes user Sabrina
     del_resp = client.delete(f"/api/users/{sabrina_id}", headers=admin_headers)

@@ -89,14 +89,18 @@
                         <div class="version-selector-container">
                             <label for="select-version">Stand:</label>
                             <select id="select-version" class="form-select"></select>
+                            <span id="draft-status-badge" class="badge badge-saved">✓ Stand aktuell</span>
                         </div>
                     </div>
                     <div class="plan-actions">
-                        <button id="btn-new-snapshot" class="btn btn-secondary">
-                            ➕ Neuer Stand
+                        <button id="btn-discard-draft" class="btn btn-outline btn-discard hidden" title="Verwirft ungespeicherte Änderungen">
+                            ↩️ Entwurf verwerfen
                         </button>
-                        <button id="btn-history-comparison" class="btn btn-accent">
-                            📜 Historischer Vergleich
+                        <button id="btn-save-version" class="btn btn-primary btn-pulse-on-dirty">
+                            💾 Stand speichern
+                        </button>
+                        <button id="btn-open-history" class="btn btn-accent">
+                            📜 Historie
                         </button>
                     </div>
                 </div>
@@ -257,45 +261,184 @@
         </div>
     </div>
 
-    <!-- Modal: New Stand / Snapshot -->
-    <div id="modal-snapshot" class="modal-overlay hidden">
+    <!-- Modal: Save Version / Stand speichern -->
+    <div id="modal-save-version" class="modal-overlay hidden">
         <div class="modal-dialog glass-panel">
             <div class="modal-header">
-                <h3>Neuen Stand / Snapshot anlegen</h3>
-                <button class="modal-close" data-close="modal-snapshot">&times;</button>
+                <h3>💾 Stand als neue Version speichern</h3>
+                <button class="modal-close" data-close="modal-save-version">&times;</button>
             </div>
-            <form id="form-snapshot">
-                <div class="form-group">
-                    <label for="snap-title">Bezeichnung des Stands</label>
-                    <input type="text" id="snap-title" required placeholder="z.B. Stand ab 01.10.2026">
-                </div>
-                <div class="form-group">
-                    <label for="snap-date">Gültig ab (Datum)</label>
-                    <input type="date" id="snap-date">
-                </div>
-                <div class="form-checkbox">
-                    <input type="checkbox" id="snap-copy" checked>
-                    <label for="snap-copy">Positionen & Beiträge vom aktuellen Stand kopieren</label>
+            <form id="form-save-version">
+                <div class="modal-body">
+                    <p class="text-muted" style="margin-bottom: 1rem; font-size: 0.9rem;">
+                        Hierdurch wird der aktuelle Bearbeitungsstand als neuer, aktiver Stand gespeichert. Der vorherige Stand bleibt in der Historie unverändert archiviert.
+                    </p>
+                    <div class="form-group">
+                        <label for="save-version-title">Bezeichnung des Stands</label>
+                        <input type="text" id="save-version-title" required placeholder="z.B. Stand ab 01.10.2026">
+                    </div>
+                    <div class="form-group">
+                        <label for="save-version-date">Gültig ab (Datum)</label>
+                        <input type="date" id="save-version-date">
+                    </div>
+                    
+                    <!-- Preview Summary Box -->
+                    <div class="save-summary-box glass-card" style="padding: 12px 16px; margin-top: 1rem;">
+                        <h4 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-muted);">Zusammenfassung des neuen Stands:</h4>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
+                            <span>Ausgaben (<span id="save-summary-pos-count">0</span> Positionen):</span>
+                            <strong id="save-summary-expenses" class="text-neg">-0,00 €</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
+                            <span>Beiträge (<span id="save-summary-contrib-count">0</span> Personen):</span>
+                            <strong id="save-summary-contributions" class="text-pos">0,00 €</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 6px; margin-top: 6px;">
+                            <span>Saldo (Rest):</span>
+                            <span id="save-summary-balance">0,00 €</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" data-close="modal-snapshot">Abbrechen</button>
-                    <button type="submit" class="btn btn-primary">Stand erstellen</button>
+                    <button type="button" class="btn btn-outline" data-close="modal-save-version">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">💾 Neuen Stand speichern</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal: History Side-by-Side Comparison -->
+    <!-- Modal: Comprehensive History (Timeline & Matrix) -->
     <div id="modal-history" class="modal-overlay hidden">
         <div class="modal-dialog modal-xl glass-panel">
             <div class="modal-header">
-                <h3>📜 Historischer Stände-Vergleich</h3>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <h3>📜 Historie & Versionsverwaltung</h3>
+                </div>
                 <button class="modal-close" data-close="modal-history">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="table-responsive" id="history-comparison-container">
-                    <!-- Rendered dynamically -->
+            <div class="history-tabs-bar">
+                <button id="tab-btn-timeline" class="history-tab-btn active" type="button">
+                    ⏱️ Timeline & Stände-Liste
+                </button>
+                <button id="tab-btn-matrix" class="history-tab-btn" type="button">
+                    📊 Matrix-Vergleich
+                </button>
+            </div>
+            <div class="modal-body" style="padding-top: 1rem;">
+                <!-- Tab 1: Timeline / Version Cards -->
+                <div id="history-tab-timeline" class="history-tab-content">
+                    <div class="history-info-banner">
+                        <span>ℹ️ <strong>Schutz alter Stände:</strong> Historische Stände sind schreibgeschützt. Klicken Sie auf das Schloss-Symbol (🔒), um die Bearbeitung oder Löschung für einen Stand freizuschalten.</span>
+                    </div>
+                    <div id="history-timeline-list" class="history-timeline-container">
+                        <!-- Rendered dynamically -->
+                    </div>
                 </div>
+
+                <!-- Tab 2: Comparison Matrix -->
+                <div id="history-tab-matrix" class="history-tab-content hidden">
+                    <div class="table-responsive" id="history-comparison-container">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Version Metadata (Unlocked State) -->
+    <div id="modal-version-edit" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel">
+            <div class="modal-header">
+                <h3>✏️ Stand-Informationen bearbeiten</h3>
+                <button class="modal-close" data-close="modal-version-edit">&times;</button>
+            </div>
+            <form id="form-version-edit">
+                <input type="hidden" id="edit-ver-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="edit-ver-title">Bezeichnung</label>
+                        <input type="text" id="edit-ver-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-ver-date">Gültig ab</label>
+                        <input type="date" id="edit-ver-date">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-close="modal-version-edit">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Änderungen speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Confirm Delete Version -->
+    <div id="modal-confirm-delete-version" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 style="color: var(--danger-color, #ef4444);">🗑️ Stand unwiderruflich löschen</h3>
+                <button class="modal-close" data-close="modal-confirm-delete-version">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="delete-version-id">
+                <p>
+                    Möchten Sie den Stand <strong id="delete-version-title-display">„...“</strong> wirklich unwiderruflich löschen?
+                </p>
+                <div id="delete-version-active-warning" class="alert alert-warning hidden" style="margin-top: 1rem; font-size: 0.88rem;">
+                    ⚠️ <strong>Hinweis:</strong> Dieser Stand ist aktuell aktiv. Wenn Sie ihn löschen, wird automatisch der neueste verbleibende Stand als aktiv gesetzt.
+                </div>
+                <p style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">
+                    Alle in diesem Stand enthaltenen Positionen und Beitragszahlungen werden endgültig gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+                </p>
+            </div>
+            <div class="modal-footer" style="gap: 8px;">
+                <button type="button" class="btn btn-outline" data-close="modal-confirm-delete-version">Abbrechen</button>
+                <button id="btn-execute-delete-version" type="button" class="btn btn-danger">🗑️ Ja, Stand löschen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Discard Current Draft Confirmation -->
+    <div id="modal-confirm-discard-draft" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 style="color: var(--warning-color, #f59e0b);">↩️ Entwurf verwerfen</h3>
+                <button class="modal-close" data-close="modal-confirm-discard-draft">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Möchten Sie alle ungespeicherten Änderungen am aktuellen Entwurf wirklich verwerfen?
+                </p>
+                <p style="margin-top: 0.5rem; font-size: 0.88rem; color: var(--text-muted);">
+                    Die Eingabemaske wird auf den zuletzt gespeicherten Stand zurückgesetzt.
+                </p>
+            </div>
+            <div class="modal-footer" style="gap: 8px;">
+                <button type="button" class="btn btn-outline" data-close="modal-confirm-discard-draft">Abbrechen</button>
+                <button id="btn-execute-discard-draft" type="button" class="btn btn-danger">↩️ Ja, verwerfen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Unsaved Changes Warning -->
+    <div id="modal-unsaved-warning" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 style="color: var(--warning-color, #f59e0b);">⚠️ Ungespeicherte Änderungen</h3>
+                <button class="modal-close" data-close="modal-unsaved-warning">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Sie haben ungespeicherte Änderungen in Ihrem aktuellen Arbeitsstand. Wenn Sie fortfahren, gehen diese Anpassungen verloren.
+                </p>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                    Möchten Sie den aktuellen Stand zuerst speichern oder die Änderungen verwerfen?
+                </p>
+            </div>
+            <div class="modal-footer" style="gap: 8px;">
+                <button type="button" class="btn btn-outline" data-close="modal-unsaved-warning">Abbrechen</button>
+                <button id="btn-discard-unsaved" type="button" class="btn btn-danger">Änderungen verwerfen</button>
+                <button id="btn-save-before-action" type="button" class="btn btn-primary">💾 Zuerst speichern</button>
             </div>
         </div>
     </div>

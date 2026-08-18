@@ -86,6 +86,12 @@ class VersionCreate(BaseModel):
     copy_from_version_id: Optional[int] = None
 
 
+class VersionUpdate(BaseModel):
+    title: Optional[str] = None
+    effective_date: Optional[str] = None
+
+
+
 class VersionResponse(BaseModel):
     id: int
     plan_id: int
@@ -95,6 +101,25 @@ class VersionResponse(BaseModel):
     created_at: Optional[str] = None
     positions: List[PositionResponse] = []
     contributions: List[ContributionResponse] = []
+    totals: Dict[str, Any] = {}
+
+
+class VersionSaveRequest(BaseModel):
+    title: str
+    effective_date: Optional[str] = None
+    positions: List[PositionCreate] = []
+    contributions: List[ContributionCreate] = []
+
+
+class HistoryVersionSummary(BaseModel):
+    id: int
+    plan_id: int
+    title: str
+    effective_date: Optional[str] = None
+    is_active: int
+    created_at: Optional[str] = None
+    positions_count: int
+    contributions_count: int
     totals: Dict[str, Any] = {}
 
 

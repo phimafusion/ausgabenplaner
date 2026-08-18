@@ -1,4 +1,5 @@
 import os
+from typing import List, Optional, Dict, Any
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,7 @@ import sqlite3
 from app.database import get_db, init_db
 from app.auth import verify_password, create_access_token, get_current_user, get_current_admin, get_password_hash
 from app import schemas, crud
+
 
 
 @asynccontextmanager
@@ -123,7 +125,7 @@ def run_test_suite_route(current_admin: dict = Depends(get_current_admin)):
 
 @app.get("/api/admin/run-tests-stream")
 def run_tests_stream_route(
-    token: str = None,
+    token: Optional[str] = None,
     conn: sqlite3.Connection = Depends(get_db),
 ):
     from fastapi.responses import StreamingResponse
@@ -168,12 +170,14 @@ def run_tests_stream_route(
 
         yield f"data: {json.dumps({'type': 'start', 'message': 'Starte Pytest Testsuite...'})}\n\n"
 
-        for line in proc.stdout:
-            match = pattern.search(line)
-            if match:
-                progress = int(match.group(1))
+        if proc.stdout is not None:
+            for line in proc.stdout:
+                match = pattern.search(line)
+                if match:
+                    progress = int(match.group(1))
 
-            yield f"data: {json.dumps({'type': 'log', 'line': line, 'progress': progress})}\n\n"
+                yield f"data: {json.dumps({'type': 'log', 'line': line, 'progress': progress})}\n\n"
+
 
         proc.wait()
         passed = proc.returncode == 0
@@ -208,6 +212,79 @@ def get_version_route(
     if not ver:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
     return ver
+
+
+@app.post("/api/plans/{plan_id}/save-version", response_model=schemas.VersionResponse, status_code=status.HTTP_201_CREATED)
+def save_version_route(
+    plan_id: int,
+    req: schemas.VersionSaveRequest,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    positions_data = [p.model_dump() for p in req.positions]
+    contributions_data = [c.model_dump() for c in req.contributions]
+    ver = crud.save_new_version(
+        conn,
+        plan_id=plan_id,
+        title=req.title,
+        effective_date=req.effective_date,
+        positions=positions_data,
+        contributions=contributions_data,
+    )
+    return ver
+
+
+@app.get("/api/plans/{plan_id}/history", response_model=List[schemas.HistoryVersionSummary])
+def get_plan_history_route(
+    plan_id: int,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return crud.get_plan_history(conn, plan_id)
+
+
+@app.post("/api/versions/{version_id}/activate", response_model=schemas.VersionResponse)
+def activate_version_route(
+    version_id: int,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    ver = crud.get_version_details(conn, version_id)
+    if not ver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    activated = crud.activate_version(conn, plan_id=ver["plan_id"], version_id=version_id)
+    if not activated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    return activated
+
+
+@app.patch("/api/versions/{version_id}", response_model=schemas.VersionResponse)
+def update_version_route(
+    version_id: int,
+    req: schemas.VersionUpdate,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    updated = crud.update_version(conn, version_id=version_id, title=req.title, effective_date=req.effective_date)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    return updated
+
+
+@app.delete("/api/versions/{version_id}")
+def delete_version_route(
+    version_id: int,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    try:
+        success = crud.delete_version(conn, version_id=version_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    return {"message": "Version erfolgreich gelöscht", "id": version_id}
+
 
 
 @app.post("/api/plans/{plan_id}/snapshots", response_model=schemas.VersionResponse, status_code=status.HTTP_201_CREATED)

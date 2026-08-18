@@ -151,6 +151,201 @@ def delete_contribution(conn: sqlite3.Connection, contribution_id: int) -> bool:
     return cursor.rowcount > 0
 
 
+def save_new_version(
+    conn: sqlite3.Connection,
+    plan_id: int,
+    title: str,
+    effective_date: Optional[str] = None,
+    positions: Optional[List[Dict[str, Any]]] = None,
+    contributions: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    cursor = conn.cursor()
+    # Deactivate existing active versions for this plan
+    cursor.execute("UPDATE versions SET is_active = 0 WHERE plan_id = ?", (plan_id,))
+
+    # Insert new active version
+    cursor.execute(
+        "INSERT INTO versions (plan_id, title, effective_date, is_active) VALUES (?, ?, ?, 1)",
+        (plan_id, title, effective_date),
+    )
+    new_ver_id = cursor.lastrowid
+    if new_ver_id is None:
+        raise ValueError("Fehler beim Erstellen der Version")
+
+    # Insert positions
+    if positions:
+        for idx, pos in enumerate(positions):
+            p_title = pos.get("title") or ""
+            p_amount = float(pos.get("amount") or 0.0)
+            p_comment = pos.get("comment")
+            p_cat = pos.get("category")
+            p_sort = pos.get("sort_order", idx)
+            cursor.execute(
+                "INSERT INTO positions (version_id, title, amount, comment, category, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+                (new_ver_id, p_title, p_amount, p_comment, p_cat, p_sort),
+            )
+
+    # Insert contributions
+    if contributions:
+        for idx, c in enumerate(contributions):
+            c_person = c.get("person_name") or ""
+            c_amount = float(c.get("amount") or 0.0)
+            c_comment = c.get("comment")
+            c_sort = c.get("sort_order", idx)
+            cursor.execute(
+                "INSERT INTO contributions (version_id, person_name, amount, comment, sort_order) VALUES (?, ?, ?, ?, ?)",
+                (new_ver_id, c_person, c_amount, c_comment, c_sort),
+            )
+
+    conn.commit()
+    details = get_version_details(conn, new_ver_id)
+    if details is None:
+        raise ValueError("Fehler beim Abrufen der erstellten Version")
+    return details
+
+
+def save_new_version(
+    conn: sqlite3.Connection,
+    plan_id: int,
+    title: str,
+    effective_date: Optional[str],
+    positions: List[Dict[str, Any]],
+    contributions: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    cursor = conn.cursor()
+    # Deactivate other versions for this plan
+    cursor.execute("UPDATE versions SET is_active = 0 WHERE plan_id = ?", (plan_id,))
+
+    # Insert new active version
+    cursor.execute(
+        "INSERT INTO versions (plan_id, title, effective_date, is_active) VALUES (?, ?, ?, 1)",
+        (plan_id, title, effective_date),
+    )
+    new_ver_id = cursor.lastrowid
+    if new_ver_id is None:
+        raise ValueError("Fehler beim Erstellen der Version")
+
+    # Insert positions
+    for idx, pos in enumerate(positions):
+        cursor.execute(
+            "INSERT INTO positions (version_id, title, amount, comment, category, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                new_ver_id,
+                pos["title"],
+                float(pos["amount"]),
+                pos.get("comment"),
+                pos.get("category"),
+                pos.get("sort_order", idx),
+            ),
+        )
+
+    # Insert contributions
+    for idx, c in enumerate(contributions):
+        cursor.execute(
+            "INSERT INTO contributions (version_id, person_name, amount, comment, sort_order) VALUES (?, ?, ?, ?, ?)",
+            (
+                new_ver_id,
+                c["person_name"],
+                float(c["amount"]),
+                c.get("comment"),
+                c.get("sort_order", idx),
+            ),
+        )
+
+    conn.commit()
+    details = get_version_details(conn, new_ver_id)
+    if details is None:
+        raise ValueError("Fehler beim Abrufen der erstellten Version")
+    return details
+
+
+
+def update_version(
+    conn: sqlite3.Connection,
+    version_id: int,
+    title: Optional[str] = None,
+    effective_date: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    existing = conn.execute("SELECT * FROM versions WHERE id = ?", (version_id,)).fetchone()
+    if not existing:
+        return None
+
+    current = dict(existing)
+    new_title = title if title is not None else current["title"]
+    new_date = effective_date if effective_date is not None else current["effective_date"]
+
+    conn.execute(
+        "UPDATE versions SET title = ?, effective_date = ? WHERE id = ?",
+        (new_title, new_date, version_id),
+    )
+    conn.commit()
+    return get_version_details(conn, version_id)
+
+
+def delete_version(conn: sqlite3.Connection, version_id: int) -> bool:
+    ver_row = conn.execute("SELECT * FROM versions WHERE id = ?", (version_id,)).fetchone()
+    if not ver_row:
+        return False
+
+    ver = dict(ver_row)
+    plan_id = ver["plan_id"]
+    is_active = ver["is_active"]
+
+    count_row = conn.execute("SELECT COUNT(*) as cnt FROM versions WHERE plan_id = ?", (plan_id,)).fetchone()
+    if count_row and count_row["cnt"] <= 1:
+        raise ValueError("Der letzte verbleibende Stand eines Plans kann nicht gelöscht werden.")
+
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM positions WHERE version_id = ?", (version_id,))
+    cursor.execute("DELETE FROM contributions WHERE version_id = ?", (version_id,))
+    cursor.execute("DELETE FROM versions WHERE id = ?", (version_id,))
+
+    # If the deleted version was active, make the latest remaining version active
+    if is_active == 1:
+        latest = conn.execute("SELECT id FROM versions WHERE plan_id = ? ORDER BY id DESC LIMIT 1", (plan_id,)).fetchone()
+        if latest:
+            cursor.execute("UPDATE versions SET is_active = 1 WHERE id = ?", (latest["id"],))
+
+    conn.commit()
+    return True
+
+
+def activate_version(conn: sqlite3.Connection, plan_id: int, version_id: int) -> Optional[Dict[str, Any]]:
+    ver = conn.execute("SELECT id FROM versions WHERE id = ? AND plan_id = ?", (version_id, plan_id)).fetchone()
+    if not ver:
+        return None
+    cursor = conn.cursor()
+    cursor.execute("UPDATE versions SET is_active = 0 WHERE plan_id = ?", (plan_id,))
+    cursor.execute("UPDATE versions SET is_active = 1 WHERE id = ?", (version_id,))
+    conn.commit()
+    return get_version_details(conn, version_id)
+
+
+
+def get_plan_history(conn: sqlite3.Connection, plan_id: int) -> List[Dict[str, Any]]:
+    ver_rows = conn.execute(
+        "SELECT id, plan_id, title, effective_date, is_active, created_at FROM versions WHERE plan_id = ? ORDER BY id DESC",
+        (plan_id,),
+    ).fetchall()
+
+    history = []
+    for r in ver_rows:
+        v_dict = dict(r)
+        v_id = v_dict["id"]
+        v_details = get_version_details(conn, v_id)
+        if v_details:
+            v_dict["positions_count"] = len(v_details["positions"])
+            v_dict["contributions_count"] = len(v_details["contributions"])
+            v_dict["totals"] = v_details["totals"]
+        else:
+            v_dict["positions_count"] = 0
+            v_dict["contributions_count"] = 0
+            v_dict["totals"] = {}
+        history.append(v_dict)
+
+    return history
+
+
 def create_version_snapshot(conn: sqlite3.Connection, plan_id: int, title: str, effective_date: Optional[str], copy_from_version_id: Optional[int] = None) -> Dict[str, Any]:
     cursor = conn.cursor()
     cursor.execute(
@@ -158,6 +353,8 @@ def create_version_snapshot(conn: sqlite3.Connection, plan_id: int, title: str, 
         (plan_id, title, effective_date),
     )
     new_ver_id = cursor.lastrowid
+    if new_ver_id is None:
+        raise ValueError("Fehler beim Erstellen der Snapshot-Version")
 
     # If copying from an existing version, duplicate positions & contributions
     if copy_from_version_id:
@@ -176,7 +373,10 @@ def create_version_snapshot(conn: sqlite3.Connection, plan_id: int, title: str, 
             )
 
     conn.commit()
-    return get_version_details(conn, new_ver_id)
+    details = get_version_details(conn, new_ver_id)
+    if details is None:
+        raise ValueError("Fehler beim Abrufen der Snapshot-Version")
+    return details
 
 
 def get_history_comparison(conn: sqlite3.Connection, plan_id: int) -> Dict[str, Any]:
@@ -186,7 +386,6 @@ def get_history_comparison(conn: sqlite3.Connection, plan_id: int) -> Dict[str, 
     ).fetchall()
 
     versions = [dict(v) for v in ver_rows]
-    version_ids = [v["id"] for v in versions]
 
     # Collect all positions across versions
     positions_map: Dict[str, Dict[str, Any]] = {}  # title -> { category, comment, values: {v_id: amount} }
@@ -198,6 +397,8 @@ def get_history_comparison(conn: sqlite3.Connection, plan_id: int) -> Dict[str, 
     for v in versions:
         v_id = v["id"]
         v_details = get_version_details(conn, v_id)
+        if not v_details:
+            continue
         totals_by_version[str(v_id)] = v_details["totals"]
 
         for pos in v_details["positions"]:
@@ -224,6 +425,7 @@ def get_history_comparison(conn: sqlite3.Connection, plan_id: int) -> Dict[str, 
                 }
             contributions_map[person]["values"][str(v_id)] = c["amount"]
             contributions_map[person]["formatted_values"][str(v_id)] = c["amount_formatted"]
+
 
     return {
         "versions": versions,

@@ -6,6 +6,9 @@ const state = {
     activePlan: null,
     selectedVersionId: null,
     currentVersionDetails: null,
+    isDirty: false,
+    unlockedVersionIds: new Set(),
+    pendingAction: null, // Callback when confirming discard of unsaved changes
 };
 
 // DOM Elements
@@ -24,8 +27,10 @@ const elements = {
 
     planTitle: document.getElementById("plan-title"),
     selectVersion: document.getElementById("select-version"),
-    btnNewSnapshot: document.getElementById("btn-new-snapshot"),
-    btnHistoryComparison: document.getElementById("btn-history-comparison"),
+    draftStatusBadge: document.getElementById("draft-status-badge"),
+    btnDiscardDraft: document.getElementById("btn-discard-draft"),
+    btnSaveVersion: document.getElementById("btn-save-version"),
+    btnOpenHistory: document.getElementById("btn-open-history"),
 
     kpiExpensesVal: document.getElementById("kpi-expenses-val"),
     kpiContributionsVal: document.getElementById("kpi-contributions-val"),
@@ -57,14 +62,48 @@ const elements = {
     contribComment: document.getElementById("contrib-comment"),
     modalContribTitle: document.getElementById("modal-contrib-title"),
 
-    modalSnapshot: document.getElementById("modal-snapshot"),
-    formSnapshot: document.getElementById("form-snapshot"),
-    snapTitle: document.getElementById("snap-title"),
-    snapDate: document.getElementById("snap-date"),
-    snapCopy: document.getElementById("snap-copy"),
+    // Save Version Modal
+    modalSaveVersion: document.getElementById("modal-save-version"),
+    formSaveVersion: document.getElementById("form-save-version"),
+    saveVersionTitle: document.getElementById("save-version-title"),
+    saveVersionDate: document.getElementById("save-version-date"),
+    saveSummaryPosCount: document.getElementById("save-summary-pos-count"),
+    saveSummaryExpenses: document.getElementById("save-summary-expenses"),
+    saveSummaryContribCount: document.getElementById("save-summary-contrib-count"),
+    saveSummaryContributions: document.getElementById("save-summary-contributions"),
+    saveSummaryBalance: document.getElementById("save-summary-balance"),
 
+    // History Modal
     modalHistory: document.getElementById("modal-history"),
+    tabBtnTimeline: document.getElementById("tab-btn-timeline"),
+    tabBtnMatrix: document.getElementById("tab-btn-matrix"),
+    historyTabTimeline: document.getElementById("history-tab-timeline"),
+    historyTabMatrix: document.getElementById("history-tab-matrix"),
+    historyTimelineList: document.getElementById("history-timeline-list"),
     historyContainer: document.getElementById("history-comparison-container"),
+
+    // Version Edit Modal (Unlocked)
+    modalVersionEdit: document.getElementById("modal-version-edit"),
+    formVersionEdit: document.getElementById("form-version-edit"),
+    editVerId: document.getElementById("edit-ver-id"),
+    editVerTitle: document.getElementById("edit-ver-title"),
+    editVerDate: document.getElementById("edit-ver-date"),
+
+    // Confirm Delete Version Modal
+    modalConfirmDeleteVersion: document.getElementById("modal-confirm-delete-version"),
+    deleteVersionId: document.getElementById("delete-version-id"),
+    deleteVersionTitleDisplay: document.getElementById("delete-version-title-display"),
+    deleteVersionActiveWarning: document.getElementById("delete-version-active-warning"),
+    btnExecuteDeleteVersion: document.getElementById("btn-execute-delete-version"),
+
+    // Confirm Discard Draft Modal
+    modalConfirmDiscardDraft: document.getElementById("modal-confirm-discard-draft"),
+    btnExecuteDiscardDraft: document.getElementById("btn-execute-discard-draft"),
+
+    // Unsaved Warning Modal
+    modalUnsavedWarning: document.getElementById("modal-unsaved-warning"),
+    btnDiscardUnsaved: document.getElementById("btn-discard-unsaved"),
+    btnSaveBeforeAction: document.getElementById("btn-save-before-action"),
 
     modalUsers: document.getElementById("modal-users"),
     formUserCreate: document.getElementById("form-user-create"),
@@ -103,9 +142,9 @@ async function apiFetch(url, options = {}) {
     return response;
 }
 
-// Format Currency
+// Format Currency DE
 function formatCurrency(val) {
-    if (val === undefined || val === null) return "0,00 €";
+    if (val === undefined || val === null || isNaN(val)) return "0,00 €";
     const isNeg = val < 0;
     const absVal = Math.abs(val);
     const parts = absVal.toFixed(2).split(".");
@@ -114,6 +153,43 @@ function formatCurrency(val) {
     let res = `${intPart},${decPart} €`;
     if (isNeg) res = `-${res}`;
     return res;
+}
+
+// Format German Date Helper
+function formatGermanDate(isoStr) {
+    if (!isoStr) return "";
+    const parts = isoStr.split("-");
+    if (parts.length === 3) {
+        return `${parts[2]}.${parts[1]}.${parts[0]}`;
+    }
+    return isoStr;
+}
+
+function formatVersionDropdownLabel(v) {
+    if (!v.effective_date) return v.title;
+    const deDate = formatGermanDate(v.effective_date);
+    if (v.title.includes(deDate)) {
+        return v.title;
+    }
+    return `${v.title} (ab ${deDate})`;
+}
+
+// Dirty Tracking
+function setDirty(isDirty) {
+    state.isDirty = isDirty;
+    if (elements.draftStatusBadge) {
+        if (isDirty) {
+            elements.draftStatusBadge.textContent = "● Ungespeicherte Änderungen";
+            elements.draftStatusBadge.className = "badge badge-dirty";
+            elements.btnSaveVersion.classList.add("is-dirty");
+            if (elements.btnDiscardDraft) elements.btnDiscardDraft.classList.remove("hidden");
+        } else {
+            elements.draftStatusBadge.textContent = "✓ Stand aktuell";
+            elements.draftStatusBadge.className = "badge badge-saved";
+            elements.btnSaveVersion.classList.remove("is-dirty");
+            if (elements.btnDiscardDraft) elements.btnDiscardDraft.classList.add("hidden");
+        }
+    }
 }
 
 // App Init
@@ -134,6 +210,14 @@ async function initApp() {
 
 // Event Listeners Setup
 function setupEventListeners() {
+    // BeforeUnload Warning
+    window.addEventListener("beforeunload", (e) => {
+        if (state.isDirty) {
+            e.preventDefault();
+            e.returnValue = "Sie haben ungespeicherte Änderungen.";
+        }
+    });
+
     // Login
     elements.loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -163,7 +247,11 @@ function setupEventListeners() {
     });
 
     // Logout
-    elements.btnLogout.addEventListener("click", logout);
+    elements.btnLogout.addEventListener("click", () => {
+        guardedAction(() => {
+            logout();
+        });
+    });
 
     // Mobile Navigation Menu Toggle
     if (elements.btnMobileMenu && elements.navbarActions) {
@@ -180,7 +268,6 @@ function setupEventListeners() {
             }
         });
 
-        // Close mobile menu when clicking any button inside it
         elements.navbarActions.querySelectorAll("button").forEach((btn) => {
             btn.addEventListener("click", () => {
                 elements.navbarActions.classList.remove("is-open");
@@ -189,10 +276,23 @@ function setupEventListeners() {
         });
     }
 
-    // Version dropdown change
+    // Version dropdown change with dirty check
     elements.selectVersion.addEventListener("change", async (e) => {
-        state.selectedVersionId = parseInt(e.target.value, 10);
-        await loadVersionDetails(state.selectedVersionId);
+        const newVerId = parseInt(e.target.value, 10);
+        if (state.isDirty) {
+            e.preventDefault();
+            // Revert selector visually until confirmed
+            elements.selectVersion.value = state.selectedVersionId;
+            guardedAction(async () => {
+                elements.selectVersion.value = newVerId;
+                state.selectedVersionId = newVerId;
+                await loadVersionDetails(newVerId);
+                setDirty(false);
+            });
+        } else {
+            state.selectedVersionId = newVerId;
+            await loadVersionDetails(state.selectedVersionId);
+        }
     });
 
     // Modal Close buttons
@@ -203,7 +303,7 @@ function setupEventListeners() {
         });
     });
 
-    // Positions Modals & Forms
+    // Positions Modals & Forms (Draft in memory)
     elements.btnAddPosition.addEventListener("click", () => {
         elements.formPosition.reset();
         elements.posId.value = "";
@@ -211,30 +311,45 @@ function setupEventListeners() {
         openModal("modal-position");
     });
 
-    elements.formPosition.addEventListener("submit", async (e) => {
+    elements.formPosition.addEventListener("submit", (e) => {
         e.preventDefault();
         const id = elements.posId.value;
-        const payload = {
-            title: elements.posTitle.value.trim(),
-            amount: parseFloat(elements.posAmount.value),
-            comment: elements.posComment.value.trim(),
-        };
+        const title = elements.posTitle.value.trim();
+        const amount = parseFloat(elements.posAmount.value);
+        const comment = elements.posComment.value.trim();
+
+        if (!state.currentVersionDetails) return;
 
         if (id) {
-            // Update
-            await apiFetch(`/api/positions/${id}`, { method: "PUT", body: payload });
+            // Edit existing
+            const pos = state.currentVersionDetails.positions.find((p) => String(p.id) === String(id));
+            if (pos) {
+                pos.title = title;
+                pos.amount = amount;
+                pos.amount_formatted = formatCurrency(amount);
+                pos.comment = comment;
+            }
         } else {
-            // Create
-            await apiFetch(`/api/versions/${state.selectedVersionId}/positions`, {
-                method: "POST",
-                body: payload,
-            });
+            // New position in draft
+            const newPos = {
+                id: "temp_" + Date.now(),
+                title: title,
+                amount: amount,
+                amount_formatted: formatCurrency(amount),
+                comment: comment,
+                category: "Allgemein",
+                sort_order: state.currentVersionDetails.positions.length,
+            };
+            state.currentVersionDetails.positions.push(newPos);
         }
+
+        recalculateDraftTotals();
+        renderVersionDetails(state.currentVersionDetails);
+        setDirty(true);
         closeModal("modal-position");
-        await loadVersionDetails(state.selectedVersionId);
     });
 
-    // Contributions Modals & Forms
+    // Contributions Modals & Forms (Draft in memory)
     elements.btnAddContribution.addEventListener("click", () => {
         elements.formContribution.reset();
         elements.contribId.value = "";
@@ -242,58 +357,206 @@ function setupEventListeners() {
         openModal("modal-contribution");
     });
 
-    elements.formContribution.addEventListener("submit", async (e) => {
+    elements.formContribution.addEventListener("submit", (e) => {
         e.preventDefault();
         const id = elements.contribId.value;
-        const payload = {
-            person_name: elements.contribPerson.value.trim(),
-            amount: parseFloat(elements.contribAmount.value),
-            comment: elements.contribComment.value.trim(),
-        };
+        const person_name = elements.contribPerson.value.trim();
+        const amount = parseFloat(elements.contribAmount.value);
+        const comment = elements.contribComment.value.trim();
+
+        if (!state.currentVersionDetails) return;
 
         if (id) {
-            await apiFetch(`/api/contributions/${id}`, { method: "PUT", body: payload });
+            // Edit existing
+            const contrib = state.currentVersionDetails.contributions.find((c) => String(c.id) === String(id));
+            if (contrib) {
+                contrib.person_name = person_name;
+                contrib.amount = amount;
+                contrib.amount_formatted = formatCurrency(amount);
+                contrib.comment = comment;
+            }
         } else {
-            await apiFetch(`/api/versions/${state.selectedVersionId}/contributions`, {
+            // New contribution in draft
+            const newContrib = {
+                id: "temp_c_" + Date.now(),
+                person_name: person_name,
+                amount: amount,
+                amount_formatted: formatCurrency(amount),
+                comment: comment,
+                sort_order: state.currentVersionDetails.contributions.length,
+            };
+            state.currentVersionDetails.contributions.push(newContrib);
+        }
+
+        recalculateDraftTotals();
+        renderVersionDetails(state.currentVersionDetails);
+        setDirty(true);
+        closeModal("modal-contribution");
+    });
+
+    // Open Save Version Modal
+    elements.btnSaveVersion.addEventListener("click", () => {
+        if (!state.currentVersionDetails) return;
+
+        // Populate default values
+        const today = new Date();
+        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const formattedDate = nextMonth.toISOString().split("T")[0];
+        const dateDE = nextMonth.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+        elements.saveVersionTitle.value = `Stand ab ${dateDE}`;
+        elements.saveVersionDate.value = formattedDate;
+
+        // Preview sums
+        const totals = state.currentVersionDetails.totals || {};
+        elements.saveSummaryPosCount.textContent = state.currentVersionDetails.positions.length;
+        elements.saveSummaryExpenses.textContent = totals.total_expenses_formatted || "0,00 €";
+        elements.saveSummaryContribCount.textContent = state.currentVersionDetails.contributions.length;
+        elements.saveSummaryContributions.textContent = totals.total_contributions_formatted || "0,00 €";
+        elements.saveSummaryBalance.textContent = totals.net_balance_formatted || "0,00 €";
+        elements.saveSummaryBalance.className = totals.net_balance < 0 ? "text-neg" : "text-pos";
+
+        openModal("modal-save-version");
+    });
+
+    // Submit Save Version
+    elements.formSaveVersion.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!state.activePlan || !state.currentVersionDetails) return;
+
+        const payload = {
+            title: elements.saveVersionTitle.value.trim(),
+            effective_date: elements.saveVersionDate.value || null,
+            positions: state.currentVersionDetails.positions.map((p, idx) => ({
+                title: p.title,
+                amount: p.amount,
+                comment: p.comment || null,
+                category: p.category || "Allgemein",
+                sort_order: idx,
+            })),
+            contributions: state.currentVersionDetails.contributions.map((c, idx) => ({
+                person_name: c.person_name,
+                amount: c.amount,
+                comment: c.comment || null,
+                sort_order: idx,
+            })),
+        };
+
+        try {
+            const resp = await apiFetch(`/api/plans/${state.activePlan.id}/save-version`, {
                 method: "POST",
                 body: payload,
             });
+            if (!resp.ok) throw new Error("Fehler beim Speichern des Stands");
+            const newVer = await resp.json();
+
+            closeModal("modal-save-version");
+            setDirty(false);
+            await loadActivePlan();
+            state.selectedVersionId = newVer.id;
+            elements.selectVersion.value = newVer.id;
+            renderVersionDetails(newVer);
+        } catch (err) {
+            alert(err.message || "Fehler beim Speichern des neuen Stands");
         }
-        closeModal("modal-contribution");
-        await loadVersionDetails(state.selectedVersionId);
     });
 
-    // Snapshot Creation
-    elements.btnNewSnapshot.addEventListener("click", () => {
-        elements.formSnapshot.reset();
-        elements.snapDate.value = new Date().toISOString().split("T")[0];
-        openModal("modal-snapshot");
+    // Open History Modal
+    elements.btnOpenHistory.addEventListener("click", async () => {
+        await loadHistoryTimeline();
+        switchHistoryTab("timeline");
+        openModal("modal-history");
     });
 
-    elements.formSnapshot.addEventListener("submit", async (e) => {
+    // History Tabs
+    elements.tabBtnTimeline.addEventListener("click", () => {
+        switchHistoryTab("timeline");
+        loadHistoryTimeline();
+    });
+
+    elements.tabBtnMatrix.addEventListener("click", () => {
+        switchHistoryTab("matrix");
+        loadHistoryComparison();
+    });
+
+    // Edit Version Metadata Form (Unlocked)
+    elements.formVersionEdit.addEventListener("submit", async (e) => {
         e.preventDefault();
+        const verId = elements.editVerId.value;
         const payload = {
-            title: elements.snapTitle.value.trim(),
-            effective_date: elements.snapDate.value || null,
-            copy_from_version_id: elements.snapCopy.checked ? state.selectedVersionId : null,
+            title: elements.editVerTitle.value.trim(),
+            effective_date: elements.editVerDate.value || null,
         };
 
-        const resp = await apiFetch(`/api/plans/${state.activePlan.id}/snapshots`, {
-            method: "POST",
-            body: payload,
-        });
-        const newVer = await resp.json();
-        closeModal("modal-snapshot");
-        await loadActivePlan();
-        elements.selectVersion.value = newVer.id;
-        state.selectedVersionId = newVer.id;
-        await loadVersionDetails(newVer.id);
+        try {
+            const resp = await apiFetch(`/api/versions/${verId}`, {
+                method: "PATCH",
+                body: payload,
+            });
+            if (!resp.ok) throw new Error("Fehler beim Aktualisieren des Stands");
+            closeModal("modal-version-edit");
+            await loadHistoryTimeline();
+            await loadActivePlan();
+        } catch (err) {
+            alert(err.message || "Fehler beim Aktualisieren der Stand-Informationen");
+        }
     });
 
-    // Historical Side-by-Side Comparison
-    elements.btnHistoryComparison.addEventListener("click", async () => {
-        await loadHistoryComparison();
-        openModal("modal-history");
+    // Discard Draft Button & Modal Actions
+    if (elements.btnDiscardDraft) {
+        elements.btnDiscardDraft.addEventListener("click", () => {
+            openModal("modal-confirm-discard-draft");
+        });
+    }
+
+    if (elements.btnExecuteDiscardDraft) {
+        elements.btnExecuteDiscardDraft.addEventListener("click", async () => {
+            closeModal("modal-confirm-discard-draft");
+            await discardCurrentDraft();
+        });
+    }
+
+    // Execute Delete Version from Modal
+    if (elements.btnExecuteDeleteVersion) {
+        elements.btnExecuteDeleteVersion.addEventListener("click", async () => {
+            const versionId = parseInt(elements.deleteVersionId.value, 10);
+            if (!versionId) return;
+
+            try {
+                const resp = await apiFetch(`/api/versions/${versionId}`, { method: "DELETE" });
+                if (!resp.ok) {
+                    const errData = await resp.json();
+                    throw new Error(errData.detail || "Fehler beim Löschen des Stands");
+                }
+                closeModal("modal-confirm-delete-version");
+                state.unlockedVersionIds.delete(versionId);
+                await loadActivePlan();
+                await loadHistoryTimeline();
+                if (state.isDirty) {
+                    setDirty(false);
+                }
+            } catch (err) {
+                alert(err.message || "Fehler beim Löschen des Stands");
+            }
+        });
+    }
+
+    // Unsaved Warning Modal Actions
+    elements.btnDiscardUnsaved.addEventListener("click", () => {
+        closeModal("modal-unsaved-warning");
+        setDirty(false);
+        if (typeof state.pendingAction === "function") {
+            const action = state.pendingAction;
+            state.pendingAction = null;
+            action();
+        } else {
+            discardCurrentDraft();
+        }
+    });
+
+    elements.btnSaveBeforeAction.addEventListener("click", () => {
+        closeModal("modal-unsaved-warning");
+        elements.btnSaveVersion.click();
     });
 
     // Export JSON
@@ -346,6 +609,7 @@ function setupEventListeners() {
             }
 
             closeModal("modal-import");
+            setDirty(false);
             await loadActivePlan();
             alert("Daten erfolgreich wiederhergestellt!");
         } catch (err) {
@@ -386,6 +650,57 @@ function setupEventListeners() {
     });
 }
 
+// Guarded Action Helper: Prompts warning if dirty before continuing
+function guardedAction(callback) {
+    if (state.isDirty) {
+        state.pendingAction = callback;
+        openModal("modal-unsaved-warning");
+    } else {
+        callback();
+    }
+}
+
+// History Tab Switching
+function switchHistoryTab(tabName) {
+    if (tabName === "timeline") {
+        elements.tabBtnTimeline.classList.add("active");
+        elements.tabBtnMatrix.classList.remove("active");
+        elements.historyTabTimeline.classList.remove("hidden");
+        elements.historyTabMatrix.classList.add("hidden");
+    } else {
+        elements.tabBtnTimeline.classList.remove("active");
+        elements.tabBtnMatrix.classList.add("active");
+        elements.historyTabTimeline.classList.add("hidden");
+        elements.historyTabMatrix.classList.remove("hidden");
+    }
+}
+
+// Recalculate Draft Totals in Memory
+function recalculateDraftTotals() {
+    if (!state.currentVersionDetails) return;
+
+    let totalExpenses = 0.0;
+    state.currentVersionDetails.positions.forEach((p) => {
+        totalExpenses += parseFloat(p.amount) || 0;
+    });
+
+    let totalContrib = 0.0;
+    state.currentVersionDetails.contributions.forEach((c) => {
+        totalContrib += parseFloat(c.amount) || 0;
+    });
+
+    const netBalance = totalContrib + totalExpenses;
+
+    state.currentVersionDetails.totals = {
+        total_expenses: totalExpenses,
+        total_expenses_formatted: formatCurrency(totalExpenses),
+        total_contributions: totalContrib,
+        total_contributions_formatted: formatCurrency(totalContrib),
+        net_balance: netBalance,
+        net_balance_formatted: formatCurrency(netBalance),
+    };
+}
+
 // User Actions
 async function fetchCurrentUser() {
     const resp = await apiFetch("/api/auth/me");
@@ -395,6 +710,7 @@ async function fetchCurrentUser() {
 function logout() {
     state.token = null;
     state.user = null;
+    state.isDirty = false;
     localStorage.removeItem("token");
     showLogin();
 }
@@ -473,13 +789,27 @@ async function executeTestsuite() {
         }
     };
 
-    evtSource.onerror = (err) => {
+    evtSource.onerror = () => {
         evtSource.close();
         if (progressBar.style.width !== "100%") {
             elements.testsuiteStatusBox.className = "alert alert-danger";
             elements.testsuiteStatusBox.textContent = "❌ Verbindung zur Testsuite unterbrochen.";
         }
     };
+}
+
+// Discard Current Draft & Revert to Saved
+async function discardCurrentDraft() {
+    if (!state.selectedVersionId) {
+        if (state.activePlan && state.activePlan.active_version) {
+            state.selectedVersionId = state.activePlan.active_version.id;
+        }
+    }
+    if (state.selectedVersionId) {
+        await loadVersionDetails(state.selectedVersionId);
+        elements.selectVersion.value = state.selectedVersionId;
+    }
+    setDirty(false);
 }
 
 // Load Active Plan
@@ -490,12 +820,12 @@ async function loadActivePlan() {
     state.activePlan = await resp.json();
     elements.planTitle.textContent = state.activePlan.title;
 
-    // Populate version selector
+    // Populate version selector with clean German date format
     elements.selectVersion.innerHTML = "";
     state.activePlan.versions.forEach((v) => {
         const opt = document.createElement("option");
         opt.value = v.id;
-        opt.textContent = `${v.title} (${v.effective_date || "ohne Datum"})`;
+        opt.textContent = formatVersionDropdownLabel(v);
         elements.selectVersion.appendChild(opt);
     });
 
@@ -514,29 +844,23 @@ async function loadVersionDetails(versionId) {
     renderVersionDetails(data);
 }
 
-// Render Version
+// Render Version Details
 function renderVersionDetails(verData) {
-    state.currentVersionDetails = verData;
-    const totals = verData.totals;
-
-    // Helper for amount color class
-    function getAmountClass(val) {
-        if (!val || val === "-") return "";
-        return val.trim().startsWith("-") ? "text-neg" : "text-pos";
-    }
+    state.currentVersionDetails = JSON.parse(JSON.stringify(verData)); // deep clone for safe drafting
+    const totals = verData.totals || {};
 
     // Render KPIs
-    elements.kpiExpensesVal.textContent = totals.total_expenses_formatted;
+    elements.kpiExpensesVal.textContent = totals.total_expenses_formatted || "0,00 €";
     elements.kpiExpensesVal.className = `kpi-value ${totals.total_expenses < 0 ? "text-neg" : "text-pos"}`;
 
-    elements.kpiContributionsVal.textContent = totals.total_contributions_formatted;
+    elements.kpiContributionsVal.textContent = totals.total_contributions_formatted || "0,00 €";
     elements.kpiContributionsVal.className = `kpi-value ${totals.total_contributions < 0 ? "text-neg" : "text-pos"}`;
 
-    elements.kpiBalanceVal.textContent = totals.net_balance_formatted;
+    elements.kpiBalanceVal.textContent = totals.net_balance_formatted || "0,00 €";
     elements.kpiBalanceVal.className = `kpi-value ${totals.net_balance < 0 ? "text-neg" : "text-pos"}`;
 
     elements.kpiBalanceCard.classList.remove("balance-positive", "balance-negative");
-    if (totals.net_balance >= 0) {
+    if ((totals.net_balance || 0) >= 0) {
         elements.kpiBalanceCard.classList.add("balance-positive");
     } else {
         elements.kpiBalanceCard.classList.add("balance-negative");
@@ -544,46 +868,46 @@ function renderVersionDetails(verData) {
 
     // Render Positions Table
     elements.tablePositionsBody.innerHTML = "";
-    verData.positions.forEach((p) => {
+    (verData.positions || []).forEach((p) => {
         const tr = document.createElement("tr");
         const amountClass = p.amount < 0 ? "text-neg" : "text-pos";
         tr.innerHTML = `
             <td data-label="Position"><strong>${escapeHtml(p.title)}</strong></td>
-            <td data-label="Kosten" class="${amountClass}">${escapeHtml(p.amount_formatted)}</td>
+            <td data-label="Kosten" class="${amountClass}">${escapeHtml(p.amount_formatted || formatCurrency(p.amount))}</td>
             <td data-label="Bemerkung" class="text-muted">${escapeHtml(p.comment || "")}</td>
             <td data-label="Aktionen" class="actions-cell">
-                <button class="btn btn-sm btn-outline btn-icon" onclick="editPosition(${p.id})" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
-                <button class="btn btn-sm btn-danger btn-icon" onclick="deletePosition(${p.id})" title="Löschen" aria-label="Löschen">🗑️</button>
+                <button class="btn btn-sm btn-outline btn-icon" onclick="editPosition('${p.id}')" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
+                <button class="btn btn-sm btn-danger btn-icon" onclick="deletePosition('${p.id}')" title="Löschen" aria-label="Löschen">🗑️</button>
             </td>
         `;
         elements.tablePositionsBody.appendChild(tr);
     });
-    elements.sumPositionsVal.textContent = totals.total_expenses_formatted;
+    elements.sumPositionsVal.textContent = totals.total_expenses_formatted || "0,00 €";
     elements.sumPositionsVal.className = totals.total_expenses < 0 ? "text-neg" : "text-pos";
 
     // Render Contributions Table
     elements.tableContributionsBody.innerHTML = "";
-    verData.contributions.forEach((c) => {
+    (verData.contributions || []).forEach((c) => {
         const tr = document.createElement("tr");
         const amountClass = c.amount < 0 ? "text-neg" : "text-pos";
         tr.innerHTML = `
             <td data-label="Person"><strong>Zahlung ${escapeHtml(c.person_name)}</strong></td>
-            <td data-label="Betrag" class="${amountClass}">${escapeHtml(c.amount_formatted)}</td>
+            <td data-label="Betrag" class="${amountClass}">${escapeHtml(c.amount_formatted || formatCurrency(c.amount))}</td>
             <td data-label="Bemerkung" class="text-muted">${escapeHtml(c.comment || "")}</td>
             <td data-label="Aktionen" class="actions-cell">
-                <button class="btn btn-sm btn-outline btn-icon" onclick="editContribution(${c.id})" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
-                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteContribution(${c.id})" title="Löschen" aria-label="Löschen">🗑️</button>
+                <button class="btn btn-sm btn-outline btn-icon" onclick="editContribution('${c.id}')" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
+                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteContribution('${c.id}')" title="Löschen" aria-label="Löschen">🗑️</button>
             </td>
         `;
         elements.tableContributionsBody.appendChild(tr);
     });
-    elements.sumContributionsVal.textContent = totals.total_contributions_formatted;
+    elements.sumContributionsVal.textContent = totals.total_contributions_formatted || "0,00 €";
     elements.sumContributionsVal.className = totals.total_contributions < 0 ? "text-neg" : "text-pos";
 }
 
-// Edit/Delete handlers
+// Edit/Delete handlers in Draft
 window.editPosition = (posId) => {
-    const pos = state.currentVersionDetails.positions.find((p) => p.id === posId);
+    const pos = state.currentVersionDetails.positions.find((p) => String(p.id) === String(posId));
     if (!pos) return;
     elements.posId.value = pos.id;
     elements.posTitle.value = pos.title;
@@ -593,14 +917,18 @@ window.editPosition = (posId) => {
     openModal("modal-position");
 };
 
-window.deletePosition = async (posId) => {
-    if (!confirm("Möchten Sie diese Position wirklich löschen?")) return;
-    await apiFetch(`/api/positions/${posId}`, { method: "DELETE" });
-    await loadVersionDetails(state.selectedVersionId);
+window.deletePosition = (posId) => {
+    if (!state.currentVersionDetails) return;
+    state.currentVersionDetails.positions = state.currentVersionDetails.positions.filter(
+        (p) => String(p.id) !== String(posId)
+    );
+    recalculateDraftTotals();
+    renderVersionDetails(state.currentVersionDetails);
+    setDirty(true);
 };
 
 window.editContribution = (contribId) => {
-    const c = state.currentVersionDetails.contributions.find((item) => item.id === contribId);
+    const c = state.currentVersionDetails.contributions.find((item) => String(item.id) === String(contribId));
     if (!c) return;
     elements.contribId.value = c.id;
     elements.contribPerson.value = c.person_name;
@@ -610,10 +938,160 @@ window.editContribution = (contribId) => {
     openModal("modal-contribution");
 };
 
-window.deleteContribution = async (contribId) => {
-    if (!confirm("Möchten Sie diesen Beitrag wirklich löschen?")) return;
-    await apiFetch(`/api/contributions/${contribId}`, { method: "DELETE" });
-    await loadVersionDetails(state.selectedVersionId);
+window.deleteContribution = (contribId) => {
+    if (!state.currentVersionDetails) return;
+    state.currentVersionDetails.contributions = state.currentVersionDetails.contributions.filter(
+        (c) => String(c.id) !== String(contribId)
+    );
+    recalculateDraftTotals();
+    renderVersionDetails(state.currentVersionDetails);
+    setDirty(true);
+};
+
+// History Timeline List Loader & Renderer
+async function loadHistoryTimeline() {
+    if (!state.activePlan) return;
+    const resp = await apiFetch(`/api/plans/${state.activePlan.id}/history`);
+    if (!resp.ok) return;
+    const history = await resp.json();
+
+    elements.historyTimelineList.innerHTML = "";
+
+    history.forEach((v) => {
+        const isUnlocked = state.unlockedVersionIds.has(v.id);
+        const isActive = v.is_active === 1;
+        const totals = v.totals || {};
+
+        const card = document.createElement("div");
+        card.className = `history-card ${isActive ? "is-active" : ""} ${isUnlocked ? "is-unlocked" : ""}`;
+        card.id = `history-card-${v.id}`;
+
+        card.innerHTML = `
+            <div class="history-card-header">
+                <div class="history-card-title-box">
+                    <span class="history-card-title">${escapeHtml(v.title)}</span>
+                    ${isActive ? '<span class="badge badge-admin">🟢 Aktuell aktiv</span>' : '<span class="badge" style="background: rgba(255,255,255,0.08); color: var(--text-muted);">Archiviert</span>'}
+                    ${isUnlocked ? '<span class="badge badge-dirty">🔓 Entsperrt</span>' : ''}
+                </div>
+                <div class="history-card-meta">
+                    <span>📅 Gültig ab: <strong>${escapeHtml(v.effective_date || "ohne Datum")}</strong></span>
+                    <span>📑 ${v.positions_count} Positionen</span>
+                    <span>👥 ${v.contributions_count} Beitragszahler</span>
+                </div>
+            </div>
+
+            <div class="history-card-kpi-grid">
+                <div class="history-kpi-item">
+                    <span class="history-kpi-label">Ausgaben</span>
+                    <span class="history-kpi-val text-neg">${totals.total_expenses_formatted || "0,00 €"}</span>
+                </div>
+                <div class="history-kpi-item">
+                    <span class="history-kpi-label">Beiträge</span>
+                    <span class="history-kpi-val text-pos">${totals.total_contributions_formatted || "0,00 €"}</span>
+                </div>
+                <div class="history-kpi-item">
+                    <span class="history-kpi-label">Saldo (Rest)</span>
+                    <span class="history-kpi-val ${(totals.net_balance || 0) < 0 ? "text-neg" : "text-pos"}">${totals.net_balance_formatted || "0,00 €"}</span>
+                </div>
+            </div>
+
+            <div class="history-card-actions">
+                <div class="history-actions-left">
+                    <button class="btn btn-sm btn-outline" onclick="loadVersionAsDraft(${v.id})" title="Lädt diesen Stand als Vorlage in die Hauptmaske">
+                        📝 Als Entwurf laden
+                    </button>
+                    ${!isActive ? `
+                    <button class="btn btn-sm btn-primary" onclick="activateHistoricalVersion(${v.id})" title="Setzt diesen Stand sofort als aktiven Standard-Stand">
+                        🚀 Als aktiv setzen
+                    </button>` : ''}
+                </div>
+
+                <div class="history-actions-right">
+                    <button class="btn-lock-toggle ${isUnlocked ? 'is-unlocked' : ''}" onclick="toggleVersionLock(${v.id})" title="${isUnlocked ? 'Wieder sperren' : 'Entsperren zur Bearbeitung'}">
+                        ${isUnlocked ? '🔓 Entsperrt' : '🔒 Schreibgeschützt'}
+                    </button>
+                    ${isUnlocked ? `
+                    <div class="unlocked-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="openVersionEditModal(${v.id}, '${escapeHtml(v.title)}', '${v.effective_date || ''}')" title="Stand umbenennen / Datum anpassen">
+                            ✏️ Bearbeiten
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="confirmDeleteHistoricalVersion(${v.id}, '${escapeHtml(v.title)}', ${isActive})" title="Stand unwiderruflich löschen">
+                            🗑️ Löschen
+                        </button>
+                    </div>` : ''}
+                </div>
+            </div>
+        `;
+
+        elements.historyTimelineList.appendChild(card);
+    });
+}
+
+// Lock Toggle
+window.toggleVersionLock = (versionId) => {
+    if (state.unlockedVersionIds.has(versionId)) {
+        state.unlockedVersionIds.delete(versionId);
+    } else {
+        state.unlockedVersionIds.add(versionId);
+    }
+    loadHistoryTimeline();
+};
+
+// Option C: Load as Draft
+window.loadVersionAsDraft = async (versionId) => {
+    guardedAction(async () => {
+        closeModal("modal-history");
+        const resp = await apiFetch(`/api/versions/${versionId}`);
+        if (!resp.ok) return;
+        const verData = await resp.json();
+        renderVersionDetails(verData);
+        setDirty(true);
+    });
+};
+
+// Option C: Activate Historical Version
+window.activateHistoricalVersion = async (versionId) => {
+    guardedAction(async () => {
+        try {
+            const resp = await apiFetch(`/api/versions/${versionId}/activate`, { method: "POST" });
+            if (!resp.ok) throw new Error("Fehler beim Aktivieren des Stands");
+            closeModal("modal-history");
+            setDirty(false);
+            await loadActivePlan();
+        } catch (err) {
+            alert(err.message || "Fehler beim Aktivieren der Version");
+        }
+    });
+};
+
+// Edit Historical Version Metadata (Unlocked)
+window.openVersionEditModal = (versionId, title, date) => {
+    elements.editVerId.value = versionId;
+    elements.editVerTitle.value = title;
+    elements.editVerDate.value = date;
+    openModal("modal-version-edit");
+};
+
+// Delete Historical Version (Safety Modal Confirmation)
+window.confirmDeleteHistoricalVersion = (versionId, title, isActive) => {
+    if (state.activePlan && state.activePlan.versions && state.activePlan.versions.length <= 1) {
+        alert("Der letzte verbleibende Stand eines Plans kann nicht gelöscht werden. Ein Plan muss mindestens einen Stand behalten.");
+        return;
+    }
+
+    elements.deleteVersionId.value = versionId;
+    elements.deleteVersionTitleDisplay.textContent = `„${title}“`;
+    if (isActive) {
+        elements.deleteVersionActiveWarning.classList.remove("hidden");
+    } else {
+        elements.deleteVersionActiveWarning.classList.add("hidden");
+    }
+    openModal("modal-confirm-delete-version");
+};
+
+window.deleteHistoricalVersion = (versionId, title) => {
+    const isAct = state.activePlan && state.activePlan.active_version && state.activePlan.active_version.id === versionId;
+    confirmDeleteHistoricalVersion(versionId, title, isAct);
 };
 
 // Historical Side-by-Side Matrix
@@ -696,11 +1174,13 @@ async function loadUsersList() {
 
 // Modal Helpers
 function openModal(modalId) {
-    document.getElementById(modalId).classList.remove("hidden");
+    const el = document.getElementById(modalId);
+    if (el) el.classList.remove("hidden");
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.add("hidden");
+    const el = document.getElementById(modalId);
+    if (el) el.classList.add("hidden");
 }
 
 function escapeHtml(str) {
@@ -715,3 +1195,4 @@ function escapeHtml(str) {
 
 // Boot app
 document.addEventListener("DOMContentLoaded", initApp);
+

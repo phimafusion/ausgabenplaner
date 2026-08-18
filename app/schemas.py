@@ -123,6 +123,11 @@ class HistoryVersionSummary(BaseModel):
     totals: Dict[str, Any] = {}
 
 
+class PlanUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+
 class PlanResponse(BaseModel):
     id: int
     title: str

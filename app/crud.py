@@ -62,6 +62,23 @@ def get_active_plan(conn: sqlite3.Connection) -> Optional[Dict[str, Any]]:
     return plan
 
 
+def update_plan(conn: sqlite3.Connection, plan_id: int, title: Optional[str] = None, description: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    fields = []
+    values = []
+    if title is not None:
+        fields.append("title = ?")
+        values.append(title)
+    if description is not None:
+        fields.append("description = ?")
+        values.append(description)
+    if fields:
+        values.append(plan_id)
+        cursor = conn.cursor()
+        cursor.execute(f"UPDATE plans SET {', '.join(fields)} WHERE id = ?", tuple(values))
+        conn.commit()
+    return get_active_plan(conn)
+
+
 def create_position(conn: sqlite3.Connection, version_id: int, title: str, amount: float, comment: Optional[str], category: Optional[str], sort_order: int = 0) -> Dict[str, Any]:
     cursor = conn.cursor()
     cursor.execute(

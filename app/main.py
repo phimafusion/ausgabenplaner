@@ -199,6 +199,19 @@ def get_active_plan_route(
     return plan
 
 
+@app.patch("/api/plans/{plan_id}", response_model=schemas.PlanResponse)
+def update_plan_route(
+    plan_id: int,
+    req: schemas.PlanUpdate,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    plan = crud.update_plan(conn, plan_id=plan_id, title=req.title, description=req.description)
+    if not plan:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan nicht gefunden")
+    return plan
+
+
 @app.get("/api/versions/{version_id}", response_model=schemas.VersionResponse)
 def get_version_route(
     version_id: int,

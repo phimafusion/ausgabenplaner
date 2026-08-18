@@ -450,43 +450,48 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 24px;
-    flex-wrap: wrap;
+    padding: 16px 20px;
+    flex-wrap: nowrap;
     gap: 16px;
 }
 
 .plan-title-box {
     display: flex;
     align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
+    gap: 14px;
+    flex-wrap: nowrap;
+    flex-shrink: 1;
+    min-width: 0;
 }
 
 .plan-title-box h2 {
     font-family: var(--font-heading);
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 700;
+    white-space: nowrap;
 }
 
 .version-selector-container {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     flex-wrap: nowrap;
+    flex-shrink: 1;
 }
 
 .version-selector-container label {
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     color: var(--text-muted);
     white-space: nowrap;
 }
 
 .version-selector-container .form-select {
-    min-width: 200px;
-    max-width: 320px;
-    height: 38px;
-    padding: 6px 12px;
+    min-width: 160px;
+    max-width: 240px;
+    height: 36px;
+    padding: 4px 10px;
+    font-size: 0.9rem;
 }
 
 #draft-status-badge {
@@ -495,11 +500,13 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: 38px;
+    height: 36px;
     line-height: 1;
-    padding: 0 14px;
+    padding: 0 12px;
     font-size: 0.8rem;
+    font-weight: 600;
     letter-spacing: 0.02em;
+    border-radius: 8px;
 }
 
 .btn-discard {
@@ -518,7 +525,9 @@ body {
 .plan-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
 }
 
 /* KPI Cards Grid */
@@ -601,6 +610,12 @@ body {
     align-items: center;
     justify-content: space-between;
     margin-bottom: 18px;
+}
+
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .card-header h3 {
@@ -1132,6 +1147,12 @@ select,
     background: rgba(16, 185, 129, 0.15);
     color: #34d399;
     border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-archived {
+    background: rgba(148, 163, 184, 0.15);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .badge-dirty {

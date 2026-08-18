@@ -88,3 +88,19 @@ def test_static_files_served():
     resp_js = client.get("/static/app.js")
     assert resp_js.status_code == 200
     assert "javascript" in resp_js.headers["content-type"]
+
+
+def test_table_lock_toggle_ui():
+    """Verify that table lock toggle buttons and action column headers exist."""
+    html_path = STATIC_DIR / "index.html"
+    content = html_path.read_text(encoding="utf-8")
+
+    assert 'id="btn-toggle-unlock-positions"' in content
+    assert 'id="btn-toggle-unlock-contributions"' in content
+    assert 'class="text-right th-actions hidden"' in content
+
+    js_path = STATIC_DIR / "app.js"
+    js_content = js_path.read_text(encoding="utf-8")
+    assert "btnToggleUnlockPositions" in js_content
+    assert "updateLockControls" in js_content
+

@@ -200,3 +200,37 @@ def test_cannot_delete_only_remaining_version(client, auth_headers):
     assert last_del_resp.status_code == 400
     assert "Der letzte verbleibende Stand" in last_del_resp.json()["detail"]
 
+
+def test_update_plan_title_and_stand_title(client, auth_headers):
+    # Fetch active plan
+    resp = client.get("/api/plans/active", headers=auth_headers)
+    plan_id = resp.json()["id"]
+    version_id = resp.json()["active_version"]["id"]
+
+    # 1. Update overall plan title (e.g. from Tütingstraße 22 to Neues Zuhause 2026)
+    plan_patch = client.patch(
+        f"/api/plans/{plan_id}",
+        json={"title": "Neues Zuhause 2026", "description": "Aktualisierter Haushaltsplan"},
+        headers=auth_headers,
+    )
+    assert plan_patch.status_code == 200
+    assert plan_patch.json()["title"] == "Neues Zuhause 2026"
+    assert plan_patch.json()["description"] == "Aktualisierter Haushaltsplan"
+
+    # 2. Update stand title & date (e.g. Stand ab 01.10.2026)
+    ver_patch = client.patch(
+        f"/api/versions/{version_id}",
+        json={"title": "Stand ab 01.10.2026 (Planung)", "effective_date": "2026-10-01"},
+        headers=auth_headers,
+    )
+    assert ver_patch.status_code == 200
+    assert ver_patch.json()["title"] == "Stand ab 01.10.2026 (Planung)"
+    assert ver_patch.json()["effective_date"] == "2026-10-01"
+
+    # 3. Verify changes persist in GET /api/plans/active
+    active_after = client.get("/api/plans/active", headers=auth_headers).json()
+    assert active_after["title"] == "Neues Zuhause 2026"
+    assert active_after["active_version"]["title"] == "Stand ab 01.10.2026 (Planung)"
+    assert active_after["active_version"]["effective_date"] == "2026-10-01"
+
+

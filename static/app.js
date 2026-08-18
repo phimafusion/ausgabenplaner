@@ -7,6 +7,8 @@ const state = {
     selectedVersionId: null,
     currentVersionDetails: null,
     isDirty: false,
+    isPositionsUnlocked: false,
+    isContributionsUnlocked: false,
     unlockedVersionIds: new Set(),
     pendingAction: null, // Callback when confirming discard of unsaved changes
 };
@@ -37,12 +39,16 @@ const elements = {
     kpiBalanceVal: document.getElementById("kpi-balance-val"),
     kpiBalanceCard: document.getElementById("kpi-balance-card"),
 
+    btnToggleUnlockPositions: document.getElementById("btn-toggle-unlock-positions"),
     tablePositionsBody: document.querySelector("#table-positions tbody"),
     sumPositionsVal: document.getElementById("sum-positions-val"),
+    sumPositionsColspan: document.getElementById("sum-positions-colspan"),
     btnAddPosition: document.getElementById("btn-add-position"),
 
+    btnToggleUnlockContributions: document.getElementById("btn-toggle-unlock-contributions"),
     tableContributionsBody: document.querySelector("#table-contributions tbody"),
     sumContributionsVal: document.getElementById("sum-contributions-val"),
+    sumContributionsColspan: document.getElementById("sum-contributions-colspan"),
     btnAddContribution: document.getElementById("btn-add-contribution"),
 
     // Modals
@@ -174,21 +180,84 @@ function formatVersionDropdownLabel(v) {
     return `${v.title} (ab ${deDate})`;
 }
 
+// Status Badge Tracking (Active vs Archived vs Dirty Draft)
+function updateDraftStatusBadge() {
+    if (!elements.draftStatusBadge) return;
+
+    if (state.isDirty) {
+        elements.draftStatusBadge.textContent = "● Ungespeichert";
+        elements.draftStatusBadge.className = "badge badge-dirty";
+        elements.btnSaveVersion.classList.add("is-dirty");
+        if (elements.btnDiscardDraft) elements.btnDiscardDraft.classList.remove("hidden");
+        return;
+    }
+
+    elements.btnSaveVersion.classList.remove("is-dirty");
+    if (elements.btnDiscardDraft) elements.btnDiscardDraft.classList.add("hidden");
+
+    const curVerId = state.selectedVersionId || (state.currentVersionDetails ? state.currentVersionDetails.id : null);
+    const activeVerId = state.activePlan && state.activePlan.active_version ? state.activePlan.active_version.id : null;
+    const isCurActive = curVerId && activeVerId && curVerId === activeVerId;
+
+    if (isCurActive) {
+        elements.draftStatusBadge.textContent = "✓ Stand aktuell";
+        elements.draftStatusBadge.className = "badge badge-saved";
+    } else {
+        elements.draftStatusBadge.textContent = "📁 Archiviert";
+        elements.draftStatusBadge.className = "badge badge-archived";
+    }
+}
+
 // Dirty Tracking
 function setDirty(isDirty) {
     state.isDirty = isDirty;
-    if (elements.draftStatusBadge) {
-        if (isDirty) {
-            elements.draftStatusBadge.textContent = "● Ungespeicherte Änderungen";
-            elements.draftStatusBadge.className = "badge badge-dirty";
-            elements.btnSaveVersion.classList.add("is-dirty");
-            if (elements.btnDiscardDraft) elements.btnDiscardDraft.classList.remove("hidden");
+    updateDraftStatusBadge();
+}
+
+// Lock State Controls for Positions & Contributions
+function updateLockControls() {
+    // Positions
+    if (elements.btnToggleUnlockPositions) {
+        if (state.isPositionsUnlocked) {
+            elements.btnToggleUnlockPositions.className = "btn-lock-toggle is-unlocked";
+            elements.btnToggleUnlockPositions.innerHTML = "🔓 Entsperrt";
+            elements.btnToggleUnlockPositions.title = "Wieder sperren (Schreibschutz aktivieren)";
+            if (elements.btnAddPosition) elements.btnAddPosition.classList.remove("hidden");
         } else {
-            elements.draftStatusBadge.textContent = "✓ Stand aktuell";
-            elements.draftStatusBadge.className = "badge badge-saved";
-            elements.btnSaveVersion.classList.remove("is-dirty");
-            if (elements.btnDiscardDraft) elements.btnDiscardDraft.classList.add("hidden");
+            elements.btnToggleUnlockPositions.className = "btn-lock-toggle";
+            elements.btnToggleUnlockPositions.innerHTML = "🔒 Entsperren";
+            elements.btnToggleUnlockPositions.title = "Bearbeitung entsperren";
+            if (elements.btnAddPosition) elements.btnAddPosition.classList.add("hidden");
         }
+    }
+    const thPosActions = document.querySelector("#table-positions .th-actions");
+    if (thPosActions) {
+        thPosActions.classList.toggle("hidden", !state.isPositionsUnlocked);
+    }
+    if (elements.sumPositionsColspan) {
+        elements.sumPositionsColspan.colSpan = state.isPositionsUnlocked ? 2 : 1;
+    }
+
+    // Contributions
+    if (elements.btnToggleUnlockContributions) {
+        if (state.isContributionsUnlocked) {
+            elements.btnToggleUnlockContributions.className = "btn-lock-toggle is-unlocked";
+            elements.btnToggleUnlockContributions.innerHTML = "🔓 Entsperrt";
+            elements.btnToggleUnlockContributions.title = "Wieder sperren (Schreibschutz aktivieren)";
+            if (elements.btnAddContribution) elements.btnAddContribution.classList.remove("hidden");
+        } else {
+            elements.btnToggleUnlockContributions.className = "btn-lock-toggle";
+            elements.btnToggleUnlockContributions.innerHTML = "🔒 Entsperren";
+            elements.btnToggleUnlockContributions.title = "Bearbeitung entsperren";
+            if (elements.btnAddContribution) elements.btnAddContribution.classList.add("hidden");
+        }
+    }
+    const thContribActions = document.querySelector("#table-contributions .th-actions");
+    if (thContribActions) {
+        thContribActions.classList.toggle("hidden", !state.isContributionsUnlocked);
+    }
+    if (elements.sumContributionsColspan) {
+        elements.sumContributionsColspan.colSpan = state.isContributionsUnlocked ? 2 : 1;
     }
 }
 
@@ -302,6 +371,27 @@ function setupEventListeners() {
             closeModal(targetId);
         });
     });
+
+    // Lock Toggle Handlers for Positions & Contributions
+    if (elements.btnToggleUnlockPositions) {
+        elements.btnToggleUnlockPositions.addEventListener("click", () => {
+            state.isPositionsUnlocked = !state.isPositionsUnlocked;
+            updateLockControls();
+            if (state.currentVersionDetails) {
+                renderVersionDetails(state.currentVersionDetails);
+            }
+        });
+    }
+
+    if (elements.btnToggleUnlockContributions) {
+        elements.btnToggleUnlockContributions.addEventListener("click", () => {
+            state.isContributionsUnlocked = !state.isContributionsUnlocked;
+            updateLockControls();
+            if (state.currentVersionDetails) {
+                renderVersionDetails(state.currentVersionDetails);
+            }
+        });
+    }
 
     // Positions Modals & Forms (Draft in memory)
     elements.btnAddPosition.addEventListener("click", () => {
@@ -461,14 +551,13 @@ function setupEventListeners() {
         }
     });
 
-    // Open History Modal
+    // History Modal Open & Tab Switching
     elements.btnOpenHistory.addEventListener("click", async () => {
         await loadHistoryTimeline();
         switchHistoryTab("timeline");
         openModal("modal-history");
     });
 
-    // History Tabs
     elements.tabBtnTimeline.addEventListener("click", () => {
         switchHistoryTab("timeline");
         loadHistoryTimeline();
@@ -479,10 +568,36 @@ function setupEventListeners() {
         loadHistoryComparison();
     });
 
-    // Edit Version Metadata Form (Unlocked)
+    // Auto-update Stand Title suggestions when Date changes
+    if (elements.editVerDate) {
+        elements.editVerDate.addEventListener("change", (e) => {
+            const d = e.target.value;
+            if (!d) return;
+            const curVal = elements.editVerTitle.value.trim();
+            const formattedDate = formatDateDE(d);
+            if (!curVal || curVal.startsWith("Stand ab ") || curVal.startsWith("Stand ")) {
+                elements.editVerTitle.value = `Stand ab ${formattedDate}`;
+            }
+        });
+    }
+
+    if (elements.saveVersionDate) {
+        elements.saveVersionDate.addEventListener("change", (e) => {
+            const d = e.target.value;
+            if (!d) return;
+            const curVal = elements.saveVersionTitle.value.trim();
+            const formattedDate = formatDateDE(d);
+            if (!curVal || curVal.startsWith("Stand ab ") || curVal.startsWith("Stand ")) {
+                elements.saveVersionTitle.value = `Stand ab ${formattedDate}`;
+            }
+        });
+    }
+
+    // Edit Version Metadata Form (Unlocked or Header Edit)
     elements.formVersionEdit.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const verId = elements.editVerId.value;
+        const verId = parseInt(elements.editVerId.value, 10);
+        if (!verId) return;
         const payload = {
             title: elements.editVerTitle.value.trim(),
             effective_date: elements.editVerDate.value || null,
@@ -494,9 +609,24 @@ function setupEventListeners() {
                 body: payload,
             });
             if (!resp.ok) throw new Error("Fehler beim Aktualisieren des Stands");
+            const updatedVer = await resp.json();
             closeModal("modal-version-edit");
-            await loadHistoryTimeline();
+
+            // Update in-memory state
+            if (state.currentVersionDetails && state.currentVersionDetails.id === verId) {
+                state.currentVersionDetails.title = updatedVer.title;
+                state.currentVersionDetails.effective_date = updatedVer.effective_date;
+            }
+
+            const currentSelId = state.selectedVersionId || verId;
             await loadActivePlan();
+            state.selectedVersionId = currentSelId;
+            elements.selectVersion.value = currentSelId;
+
+            // Also reload timeline if history modal was open
+            if (!elements.modalHistory.classList.contains("hidden")) {
+                await loadHistoryTimeline();
+            }
         } catch (err) {
             alert(err.message || "Fehler beim Aktualisieren der Stand-Informationen");
         }
@@ -875,10 +1005,11 @@ function renderVersionDetails(verData) {
             <td data-label="Position"><strong>${escapeHtml(p.title)}</strong></td>
             <td data-label="Kosten" class="${amountClass}">${escapeHtml(p.amount_formatted || formatCurrency(p.amount))}</td>
             <td data-label="Bemerkung" class="text-muted">${escapeHtml(p.comment || "")}</td>
+            ${state.isPositionsUnlocked ? `
             <td data-label="Aktionen" class="actions-cell">
                 <button class="btn btn-sm btn-outline btn-icon" onclick="editPosition('${p.id}')" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
                 <button class="btn btn-sm btn-danger btn-icon" onclick="deletePosition('${p.id}')" title="Löschen" aria-label="Löschen">🗑️</button>
-            </td>
+            </td>` : ''}
         `;
         elements.tablePositionsBody.appendChild(tr);
     });
@@ -894,15 +1025,19 @@ function renderVersionDetails(verData) {
             <td data-label="Person"><strong>Zahlung ${escapeHtml(c.person_name)}</strong></td>
             <td data-label="Betrag" class="${amountClass}">${escapeHtml(c.amount_formatted || formatCurrency(c.amount))}</td>
             <td data-label="Bemerkung" class="text-muted">${escapeHtml(c.comment || "")}</td>
+            ${state.isContributionsUnlocked ? `
             <td data-label="Aktionen" class="actions-cell">
                 <button class="btn btn-sm btn-outline btn-icon" onclick="editContribution('${c.id}')" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
                 <button class="btn btn-sm btn-danger btn-icon" onclick="deleteContribution('${c.id}')" title="Löschen" aria-label="Löschen">🗑️</button>
-            </td>
+            </td>` : ''}
         `;
         elements.tableContributionsBody.appendChild(tr);
     });
     elements.sumContributionsVal.textContent = totals.total_contributions_formatted || "0,00 €";
     elements.sumContributionsVal.className = totals.total_contributions < 0 ? "text-neg" : "text-pos";
+
+    updateLockControls();
+    updateDraftStatusBadge();
 }
 
 // Edit/Delete handlers in Draft
@@ -1012,10 +1147,10 @@ async function loadHistoryTimeline() {
                     </button>
                     ${isUnlocked ? `
                     <div class="unlocked-actions">
-                        <button class="btn btn-sm btn-secondary" onclick="openVersionEditModal(${v.id}, '${escapeHtml(v.title)}', '${v.effective_date || ''}')" title="Stand umbenennen / Datum anpassen">
-                            ✏️ Bearbeiten
+                        <button class="btn btn-sm btn-secondary" onclick="openVersionEditModal(${v.id})" title="Stand umbenennen / Datum anpassen">
+                            ✏️ Umbenennen
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="confirmDeleteHistoricalVersion(${v.id}, '${escapeHtml(v.title)}', ${isActive})" title="Stand unwiderruflich löschen">
+                        <button class="btn btn-sm btn-danger" onclick="confirmDeleteHistoricalVersion(${v.id})" title="Stand unwiderruflich löschen">
                             🗑️ Löschen
                         </button>
                     </div>` : ''}
@@ -1065,23 +1200,51 @@ window.activateHistoricalVersion = async (versionId) => {
 };
 
 // Edit Historical Version Metadata (Unlocked)
-window.openVersionEditModal = (versionId, title, date) => {
-    elements.editVerId.value = versionId;
-    elements.editVerTitle.value = title;
-    elements.editVerDate.value = date;
+window.openVersionEditModal = async (versionId, title, date) => {
+    if (title !== undefined && date !== undefined) {
+        elements.editVerId.value = versionId;
+        elements.editVerTitle.value = title;
+        elements.editVerDate.value = date;
+        openModal("modal-version-edit");
+        return;
+    }
+
+    let v = state.activePlan && state.activePlan.versions ? state.activePlan.versions.find(x => x.id === versionId) : null;
+    if (!v) {
+        const resp = await apiFetch(`/api/versions/${versionId}`);
+        if (resp.ok) v = await resp.json();
+    }
+    if (!v) return;
+    elements.editVerId.value = v.id;
+    elements.editVerTitle.value = v.title || "";
+    elements.editVerDate.value = v.effective_date || "";
     openModal("modal-version-edit");
 };
 
 // Delete Historical Version (Safety Modal Confirmation)
-window.confirmDeleteHistoricalVersion = (versionId, title, isActive) => {
+window.confirmDeleteHistoricalVersion = async (versionId, title, isActive) => {
     if (state.activePlan && state.activePlan.versions && state.activePlan.versions.length <= 1) {
         alert("Der letzte verbleibende Stand eines Plans kann nicht gelöscht werden. Ein Plan muss mindestens einen Stand behalten.");
         return;
     }
 
+    let verTitle = title;
+    let isAct = isActive;
+
+    if (verTitle === undefined) {
+        let v = state.activePlan && state.activePlan.versions ? state.activePlan.versions.find(x => x.id === versionId) : null;
+        if (!v) {
+            const resp = await apiFetch(`/api/versions/${versionId}`);
+            if (resp.ok) v = await resp.json();
+        }
+        if (!v) return;
+        verTitle = v.title;
+        isAct = (state.activePlan && state.activePlan.active_version && state.activePlan.active_version.id === versionId) || v.is_active === 1;
+    }
+
     elements.deleteVersionId.value = versionId;
-    elements.deleteVersionTitleDisplay.textContent = `„${title}“`;
-    if (isActive) {
+    elements.deleteVersionTitleDisplay.textContent = `„${verTitle}“`;
+    if (isAct) {
         elements.deleteVersionActiveWarning.classList.remove("hidden");
     } else {
         elements.deleteVersionActiveWarning.classList.add("hidden");
@@ -1090,8 +1253,7 @@ window.confirmDeleteHistoricalVersion = (versionId, title, isActive) => {
 };
 
 window.deleteHistoricalVersion = (versionId, title) => {
-    const isAct = state.activePlan && state.activePlan.active_version && state.activePlan.active_version.id === versionId;
-    confirmDeleteHistoricalVersion(versionId, title, isAct);
+    confirmDeleteHistoricalVersion(versionId, title);
 };
 
 // Historical Side-by-Side Matrix

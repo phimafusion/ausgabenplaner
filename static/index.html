@@ -138,9 +138,14 @@
                     <div class="table-card glass-panel">
                         <div class="card-header">
                             <h3>Positionsausgaben</h3>
-                            <button id="btn-add-position" class="btn btn-sm btn-primary">
-                                ➕ Position hinzufügen
-                            </button>
+                            <div class="card-header-actions">
+                                <button id="btn-toggle-unlock-positions" class="btn-lock-toggle" type="button" title="Bearbeitung entsperren">
+                                    🔒 Entsperren
+                                </button>
+                                <button id="btn-add-position" class="btn btn-sm btn-primary hidden" type="button">
+                                    ➕ Position hinzufügen
+                                </button>
+                            </div>
                         </div>
                         <div class="table-responsive">
                             <table class="data-table" id="table-positions">
@@ -149,7 +154,7 @@
                                         <th>Position</th>
                                         <th>Kosten</th>
                                         <th>Bemerkung</th>
-                                        <th class="text-right">Aktionen</th>
+                                        <th class="text-right th-actions hidden">Aktionen</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -159,7 +164,7 @@
                                     <tr class="table-sum-row">
                                         <td><strong>Summe Ausgaben</strong></td>
                                         <td id="sum-positions-val"><strong>-0,00 €</strong></td>
-                                        <td colspan="2"></td>
+                                        <td id="sum-positions-colspan" colspan="1"></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -170,9 +175,14 @@
                     <div class="table-card glass-panel">
                         <div class="card-header">
                             <h3>Personenbeiträge</h3>
-                            <button id="btn-add-contribution" class="btn btn-sm btn-primary">
-                                ➕ Beitrag hinzufügen
-                            </button>
+                            <div class="card-header-actions">
+                                <button id="btn-toggle-unlock-contributions" class="btn-lock-toggle" type="button" title="Bearbeitung entsperren">
+                                    🔒 Entsperren
+                                </button>
+                                <button id="btn-add-contribution" class="btn btn-sm btn-primary hidden" type="button">
+                                    ➕ Beitrag hinzufügen
+                                </button>
+                            </div>
                         </div>
                         <div class="table-responsive">
                             <table class="data-table" id="table-contributions">
@@ -181,7 +191,7 @@
                                         <th>Person / Bezahler</th>
                                         <th>Betrag</th>
                                         <th>Bemerkung</th>
-                                        <th class="text-right">Aktionen</th>
+                                        <th class="text-right th-actions hidden">Aktionen</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -191,7 +201,7 @@
                                     <tr class="table-sum-row">
                                         <td><strong>Summe Beiträge</strong></td>
                                         <td id="sum-contributions-val"><strong>0,00 €</strong></td>
-                                        <td colspan="2"></td>
+                                        <td id="sum-contributions-colspan" colspan="1"></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -345,28 +355,29 @@
         </div>
     </div>
 
-    <!-- Modal: Edit Version Metadata (Unlocked State) -->
+    <!-- Modal: Edit Version Metadata / Stand umbenennen (nach Entsperren in Historie) -->
     <div id="modal-version-edit" class="modal-overlay hidden">
         <div class="modal-dialog glass-panel">
             <div class="modal-header">
-                <h3>✏️ Stand-Informationen bearbeiten</h3>
+                <h3 id="modal-version-edit-heading">✏️ Stand umbenennen / bearbeiten</h3>
                 <button class="modal-close" data-close="modal-version-edit">&times;</button>
             </div>
             <form id="form-version-edit">
                 <input type="hidden" id="edit-ver-id">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="edit-ver-title">Bezeichnung</label>
-                        <input type="text" id="edit-ver-title" required>
+                        <label for="edit-ver-title">Bezeichnung des Stands</label>
+                        <input type="text" id="edit-ver-title" required placeholder="z.B. Stand ab 01.09.2026">
+                        <small class="form-help">Wird in der Auswahlliste und im Verlauf angezeigt.</small>
                     </div>
                     <div class="form-group">
-                        <label for="edit-ver-date">Gültig ab</label>
+                        <label for="edit-ver-date">Gültig ab (Datum)</label>
                         <input type="date" id="edit-ver-date">
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" data-close="modal-version-edit">Abbrechen</button>
-                    <button type="submit" class="btn btn-primary">Änderungen speichern</button>
+                    <button type="submit" class="btn btn-primary">💾 Änderungen speichern</button>
                 </div>
             </form>
         </div>

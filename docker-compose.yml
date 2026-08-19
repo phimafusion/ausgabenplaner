@@ -2,8 +2,10 @@ version: '3.8'
 
 services:
   ausgabenplaner:
-    # Baut direkt aus dem GitHub Repository (oder 'build: .' für lokalen Ordner)
-    build: https://github.com/phimafusion/ausgabenplaner.git#main
+    # Offizielles Image von GitHub Container Registry (Multi-Arch: amd64 & arm64)
+    image: ghcr.io/phimafusion/ausgabenplaner:latest
+    # Für lokalen Build stattdessen einkommentieren:
+    # build: .
     container_name: ausgabenplaner
     restart: unless-stopped
     ports:

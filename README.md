@@ -49,14 +49,36 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12+), SQLite3
 - **Frontend**: Vanilla ES6-Module (`<script type="module">`), CSS3 (Glassmorphism), HTML5
 - **Datenexport**: `openpyxl` (Excel), JSON-Engine
-- **Testing**: `pytest`, `pytest-cov`, `httpx` (39 automatisierte Tests)
-- **Container**: Docker & Docker Compose
+- **Testing**: `pytest`, `pytest-cov`, `httpx` (48 automatisierte Tests)
+- **Container & CI/CD**: Docker (Multi-Arch `linux/amd64` & `linux/arm64`), Docker Compose, GitHub Actions & GitHub Container Registry (GHCR)
 
 ---
 
 ## 📦 Installation & Start
 
-### Option 1: Lokale Python-Umgebung
+### Option 1: Schneller Start mit Docker (Empfohlen für Server & Synology NAS)
+
+Das offizielle Multi-Arch Docker-Image wird über GitHub Actions automatisch gebaut und in der GitHub Container Registry bereitgestellt.
+
+```bash
+docker-compose up -d
+```
+
+Oder direkt als Container starten:
+```bash
+docker run -d \
+  --name ausgabenplaner \
+  -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  -e ADMIN_PASSWORD=admin123 \
+  ghcr.io/phimafusion/ausgabenplaner:latest
+```
+
+Die Anwendung ist anschließend unter `http://localhost:3000` erreichbar. Die Datenbankdaten werden persistent im Verzeichnis `./data` gesichert.
+
+---
+
+### Option 2: Lokale Python-Umgebung (Entwicklung)
 
 1. **Repository klonen**:
    ```bash
@@ -90,19 +112,9 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
 
 ---
 
-### Option 2: Mit Docker & Docker Compose
-
-```bash
-docker-compose up -d --build
-```
-
-Die Anwendung ist anschließend unter `http://localhost:3000` erreichbar. Die Datenbankdaten werden persistent im Verzeichnis `./data` gesichert.
-
----
-
 ## 🧪 Tests ausführen
 
-Das Projekt verfügt über eine vollständige Testabdeckung mit 39 automatisierten Tests:
+Das Projekt verfügt über eine vollständige Testabdeckung mit 48 automatisierten Tests:
 
 ```bash
 # Tests ausführen

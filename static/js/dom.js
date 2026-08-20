@@ -140,6 +140,13 @@ export const elements = {
     testsuiteOutput: document.getElementById("testsuite-output"),
     btnReRunTests: document.getElementById("btn-re-run-tests"),
 
+    btnDeletePlan: document.getElementById("btn-delete-plan"),
+    modalConfirmDeletePlan: document.getElementById("modal-confirm-delete-plan"),
+    deletePlanId: document.getElementById("delete-plan-id"),
+    deletePlanTitleDisplay: document.getElementById("delete-plan-title-display"),
+    btnExecuteDeletePlan: document.getElementById("btn-execute-delete-plan"),
+    tabBtnChangelog: document.getElementById("tab-btn-changelog"),
+
     cardAutomatedBackups: document.getElementById("card-automated-backups"),
     formBackupSettings: document.getElementById("form-backup-settings"),
     btnSaveBackupSettings: document.getElementById("btn-save-backup-settings"),

@@ -21,7 +21,7 @@
             <div class="login-card glass-panel">
                 <div class="brand-header">
                     <div class="brand-icon">📊</div>
-                    <h1>Ausgabenplaner</h1>
+                    <h1>Ausgabenplaner <span class="badge badge-version" style="font-size: 0.75rem; vertical-align: middle;">v1.1.0</span></h1>
                     <p class="subtitle">Haushaltskosten & Beitragsverwaltung</p>
                 </div>
                 <form id="login-form">
@@ -51,6 +51,7 @@
                 <div class="navbar-brand">
                     <span class="brand-logo">📊</span>
                     <span class="brand-name">Ausgabenplaner</span>
+                    <span class="badge badge-version" id="app-version-badge">v1.1.0</span>
                 </div>
                 <button id="btn-mobile-menu" class="btn-mobile-nav" aria-label="Menü öffnen/schließen">
                     <span class="hamburger-bar"></span>
@@ -84,6 +85,9 @@
                         </div>
                     </div>
                     <div class="plan-actions">
+                        <button id="btn-delete-plan" class="btn btn-outline btn-delete-plan admin-only" title="Aktuellen Plan löschen">
+                            🗑️ Plan löschen
+                        </button>
                         <button id="btn-discard-draft" class="btn btn-outline btn-discard hidden" title="Verwirft ungespeicherte Änderungen">
                             ↩️ Entwurf verwerfen
                         </button>
@@ -209,6 +213,7 @@
                 <div class="navbar-brand brand-clickable" id="btn-brand-logo-settings" style="cursor: pointer;" title="Zurück zum Dashboard">
                     <span class="brand-logo">📊</span>
                     <span class="brand-name">Ausgabenplaner</span>
+                    <span class="badge badge-version" id="settings-app-version-badge">v1.1.0</span>
                 </div>
                 <div class="navbar-actions">
                     <div class="user-badge glass-badge">
@@ -230,7 +235,7 @@
                     <div class="settings-header-title-box">
                         <h2>⚙️ Einstellungen & Verwaltung</h2>
                         <p class="text-muted" style="margin-top: 4px; font-size: 0.9rem;">
-                            Verwalten Sie Datensicherungen, Exporte, Benutzerkonten und führen Sie Systemtests durch.
+                            Verwalten Sie Datensicherungen, Exporte, Benutzerkonten, Versionshistorie und Systemtests.
                         </p>
                     </div>
                     <div class="settings-header-actions">
@@ -254,6 +259,9 @@
                         </button>
                         <button type="button" class="settings-tab-btn" id="tab-btn-testsuite" data-tab="tab-settings-testsuite">
                             🧪 Automatische Testsuite
+                        </button>
+                        <button type="button" class="settings-tab-btn" id="tab-btn-changelog" data-tab="tab-settings-changelog">
+                            📋 Changelog
                         </button>
                     </div>
 
@@ -466,6 +474,56 @@
                         </div>
                         <div class="testsuite-log-box" style="margin-top: 14px;">
                             <pre id="testsuite-output">Warte auf Testausführung...</pre>
+                        </div>
+                    </div>
+
+                    <!-- Tab 5: Changelog & Release Notes -->
+                    <div id="tab-settings-changelog" class="settings-tab-content hidden">
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="margin: 0; font-size: 1.15rem;">📋 Versionshistorie & Release Notes</h4>
+                            <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
+                                Übersicht aller Neuerungen, Fehlerbehebungen und Verbesserungen des Ausgabenplaners.
+                            </p>
+                        </div>
+
+                        <div class="changelog-timeline">
+                            <!-- Release v1.1.0 -->
+                            <div class="changelog-card glass-panel" style="margin-bottom: 20px; padding: 20px; border-left: 4px solid var(--primary-color, #38bdf8);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main);">v1.1.0</h3>
+                                        <span class="badge badge-success">Aktuelle Version</span>
+                                    </div>
+                                    <span class="text-muted" style="font-size: 0.85rem;">August 2026</span>
+                                </div>
+                                <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
+                                    <li>🚀 <strong>CI/CD Pipeline & GHCR</strong>: Automatischer Multi-Arch Docker Build (<code>amd64</code> & <code>arm64</code>) und Veröffentlichung auf GitHub Container Registry.</li>
+                                    <li>🐳 <strong>Synology 1-Klick Deployment</strong>: Optimierte <code>docker-compose.yml</code> für schlanke Updates ohne lokalen Build auf dem NAS.</li>
+                                    <li>🗑️ <strong>Plan-Löschung</strong>: Pläne können von Administratoren sicher gelöscht werden (mit Kaskadierung und Schutz des letzten Plans).</li>
+                                    <li>🏷️ <strong>Versions-Badge im Header</strong>: Permanente Anzeige der App-Version in Navigation und Login.</li>
+                                    <li>🔒 <strong>Datenschutz & Bereinigung</strong>: Vollständige Anonymisierung der initialen Datenbank und Entfernung harter Secrets aus Dockerfile.</li>
+                                    <li>🧪 <strong>Container-Testsuite</strong>: Pytest & Testsuite direkt im Synology Docker-Container integriert.</li>
+                                </ul>
+                            </div>
+
+                            <!-- Release v1.0.0 -->
+                            <div class="changelog-card glass-panel" style="padding: 20px; border-left: 4px solid var(--text-muted, #94a3b8); opacity: 0.9;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-main);">v1.0.0</h3>
+                                        <span class="badge badge-secondary">Initial Release</span>
+                                    </div>
+                                    <span class="text-muted" style="font-size: 0.85rem;">August 2026</span>
+                                </div>
+                                <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
+                                    <li>✨ <strong>Glassmorphism Dashboard</strong>: Modernes responsives UI mit Echtzeit-KPIs und Saldo-Berechnung.</li>
+                                    <li>📜 <strong>Stände-Management & Historie</strong>: Git-ähnliche Versionierung mit In-Memory-Entwürfen und Schreibschutz.</li>
+                                    <li>🔍 <strong>Matrix-Vergleich</strong>: Side-by-Side Vergleich historischer Stände nebeneinander.</li>
+                                    <li>⏱️ <strong>Intervall-Engine</strong>: Automatische Monatskosten-Umrechnung für quartalsweise und jährliche Zahlungen.</li>
+                                    <li>💾 <strong>Datensicherung</strong>: JSON Export/Import & aufbereiteter Excel-Export (<code>.xlsx</code>).</li>
+                                    <li>👥 <strong>Benutzerverwaltung</strong>: Rollenbasiertes Rechtesystem (Admin vs. User).</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -682,6 +740,32 @@
             <div class="modal-footer" style="gap: 8px;">
                 <button type="button" class="btn btn-outline" data-close="modal-confirm-delete-version">Abbrechen</button>
                 <button id="btn-execute-delete-version" type="button" class="btn btn-danger">🗑️ Ja, Stand löschen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirm Delete Plan -->
+    <div id="modal-confirm-delete-plan" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 style="color: var(--danger-color, #ef4444);">🗑️ Gesamten Plan löschen</h3>
+                <button class="modal-close" data-close="modal-confirm-delete-plan">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="delete-plan-id">
+                <p>
+                    Möchten Sie den gesamten Plan <strong id="delete-plan-title-display">„...“</strong> wirklich unwiderruflich löschen?
+                </p>
+                <div class="alert alert-danger" style="margin-top: 1rem; font-size: 0.88rem;">
+                    ⚠️ <strong>Achtung:</strong> Alle historischen Stände, Positionen und Beitragszahlungen dieses Plans werden endgültig und unwiderruflich gelöscht.
+                </div>
+                <p style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">
+                    Hinweis: Der letzte verbleibende Plan eines Systems kann nicht gelöscht werden.
+                </p>
+            </div>
+            <div class="modal-footer" style="gap: 8px;">
+                <button type="button" class="btn btn-outline" data-close="modal-confirm-delete-plan">Abbrechen</button>
+                <button id="btn-execute-delete-plan" type="button" class="btn btn-danger">🗑️ Ja, Plan unwiderruflich löschen</button>
             </div>
         </div>
     </div>

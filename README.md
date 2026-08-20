@@ -49,7 +49,7 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12+), SQLite3
 - **Frontend**: Vanilla ES6-Module (`<script type="module">`), CSS3 (Glassmorphism), HTML5
 - **Datenexport**: `openpyxl` (Excel), JSON-Engine
-- **Testing**: `pytest`, `pytest-cov`, `httpx` (49 automatisierte Tests)
+- **Testing**: `pytest`, `pytest-cov`, `httpx` (53 automatisierte Tests)
 - **Container & CI/CD**: Docker (Multi-Arch `linux/amd64` & `linux/arm64`), Docker Compose, GitHub Actions & GitHub Container Registry (GHCR)
 
 ---

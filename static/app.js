@@ -59,6 +59,7 @@ export function showDashboard() {
             }
         }
 
+        if (elements.btnDeletePlan) elements.btnDeletePlan.classList.toggle("hidden", state.user.role !== "admin");
         if (elements.btnExportJson) elements.btnExportJson.classList.toggle("hidden", !canExportOrAdmin);
         if (elements.btnExportXlsx) elements.btnExportXlsx.classList.toggle("hidden", !canExportOrAdmin);
         if (elements.btnImportJson) elements.btnImportJson.classList.toggle("hidden", !canExportOrAdmin);

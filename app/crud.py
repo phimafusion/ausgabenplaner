@@ -84,6 +84,52 @@ def update_plan(conn: sqlite3.Connection, plan_id: int, title: Optional[str] = N
     return get_active_plan(conn)
 
 
+def get_all_plans(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
+    rows = conn.execute("SELECT * FROM plans ORDER BY id ASC").fetchall()
+    plans = []
+    for r in rows:
+        p = dict(r)
+        ver_count = conn.execute("SELECT COUNT(*) as cnt FROM versions WHERE plan_id = ?", (p["id"],)).fetchone()["cnt"]
+        p["versions_count"] = ver_count
+        plans.append(p)
+    return plans
+
+
+def create_plan(conn: sqlite3.Connection, title: str, description: Optional[str] = None) -> Dict[str, Any]:
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO plans (title, description) VALUES (?, ?)",
+        (title, description or ""),
+    )
+    plan_id = cursor.lastrowid
+    # Create initial version
+    cursor.execute(
+        "INSERT INTO versions (plan_id, title, is_active, created_by) VALUES (?, ?, 1, 'Administrator')",
+        (plan_id, "Aktueller Stand"),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM plans WHERE id = ?", (plan_id,)).fetchone()
+    plan = dict(row)
+    plan["versions"] = [dict(v) for v in conn.execute("SELECT * FROM versions WHERE plan_id = ?", (plan_id,)).fetchall()]
+    plan["active_version"] = get_version_details(conn, plan["versions"][0]["id"])
+    return plan
+
+
+def delete_plan(conn: sqlite3.Connection, plan_id: int) -> bool:
+    existing = conn.execute("SELECT * FROM plans WHERE id = ?", (plan_id,)).fetchone()
+    if not existing:
+        return False
+
+    plan_count = conn.execute("SELECT COUNT(*) as cnt FROM plans").fetchone()["cnt"]
+    if plan_count <= 1:
+        raise ValueError("Der letzte verbleibende Plan kann nicht gelöscht werden. Mindestens ein Plan muss immer existieren.")
+
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM plans WHERE id = ?", (plan_id,))
+    conn.commit()
+    return True
+
+
 def create_position(conn: sqlite3.Connection, version_id: int, title: str, amount: float, comment: Optional[str], category: Optional[str], sort_order: int = 0) -> Dict[str, Any]:
     cursor = conn.cursor()
     cursor.execute(
@@ -467,7 +513,8 @@ def export_full_data_xlsx(conn: sqlite3.Connection) -> bytes:
 
     wb = openpyxl.Workbook()
     # Remove default sheet
-    wb.remove(wb.active)
+    if wb.active is not None:
+        wb.remove(wb.active)
 
     # Styles
     font_title = Font(name="Calibri", size=16, bold=True, color="1E293B")
@@ -514,10 +561,10 @@ def export_full_data_xlsx(conn: sqlite3.Connection) -> bytes:
             ws.views.sheetView[0].showGridLines = True
 
             # Plan Title & Subtitle
-            ws["A1"] = f"📊 Ausgabenplaner: {plan_title}"
-            ws["A1"].font = font_title
-            ws["A2"] = f"Stand: {active_ver.get('title')} | Gültig ab: {active_ver.get('effective_date') or '-'} | Exportiert am: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}"
-            ws["A2"].font = font_subtitle
+            cell_a1 = ws.cell(row=1, column=1, value=f"📊 Ausgabenplaner: {plan_title}")
+            cell_a1.font = font_title
+            cell_a2 = ws.cell(row=2, column=1, value=f"Stand: {active_ver.get('title')} | Gültig ab: {active_ver.get('effective_date') or '-'} | Exportiert am: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}")
+            cell_a2.font = font_subtitle
 
             # Section: Positions (Ausgaben)
             cur_row = 4
@@ -736,10 +783,10 @@ def export_full_data_xlsx(conn: sqlite3.Connection) -> bytes:
     ws_hist = wb.create_sheet(title="Historie & Stände")
     ws_hist.views.sheetView[0].showGridLines = True
 
-    ws_hist["A1"] = "📜 Historienübersicht aller Versionen & Stände"
-    ws_hist["A1"].font = font_title
-    ws_hist["A2"] = f"Exportiert am: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}"
-    ws_hist["A2"].font = font_subtitle
+    cell_h1 = ws_hist.cell(row=1, column=1, value="📜 Historienübersicht aller Versionen & Stände")
+    cell_h1.font = font_title
+    cell_h2 = ws_hist.cell(row=2, column=1, value=f"Exportiert am: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}")
+    cell_h2.font = font_subtitle
 
     hist_headers = ["Plan", "Stand-Name", "Gültig ab", "Status", "Erstellt von", "Erstellt am", "Geändert von", "Geändert am", "Ausgaben (€)", "Beiträge (€)", "Saldo (€)"]
     h_row = 4

@@ -281,3 +281,38 @@ def test_automated_backups_ui():
     assert "deleteBackup" in js_content
     assert "/api/admin/backups" in js_content
 
+
+def test_version_badge_changelog_and_plan_deletion_ui():
+    """Verify that version badges, changelog tab and plan deletion UI elements exist."""
+    html_path = STATIC_DIR / "index.html"
+    content = html_path.read_text(encoding="utf-8")
+
+    # Header version badge
+    assert 'id="app-version-badge"' in content
+    assert 'class="badge badge-version"' in content
+
+    # Changelog tab in Settings
+    assert 'id="tab-btn-changelog"' in content
+    assert 'id="tab-settings-changelog"' in content
+    assert "v1.1.0" in content
+    assert "v1.0.0" in content
+    assert "Release Notes" in content
+
+    # Plan deletion UI
+    assert 'id="btn-delete-plan"' in content
+    assert 'id="modal-confirm-delete-plan"' in content
+    assert 'id="btn-execute-delete-plan"' in content
+
+    # Styles
+    css_content = (STATIC_DIR / "styles.css").read_text(encoding="utf-8")
+    assert ".badge-version" in css_content
+    assert ".btn-delete-plan" in css_content
+    assert ".changelog-timeline" in css_content
+
+    # JS wiring
+    js_content = get_all_frontend_js_content()
+    assert "btnDeletePlan" in js_content
+    assert "btnExecuteDeletePlan" in js_content
+    assert "/api/plans/" in js_content
+
+

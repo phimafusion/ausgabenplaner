@@ -2030,7 +2030,63 @@ select.backup-input-styled option {
     }
 }
 
+/* App Version Badge */
+.badge-version {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+    font-family: var(--font-heading);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    vertical-align: middle;
+}
 
+/* Plan Deletion Button */
+.btn-delete-plan {
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    color: #f87171 !important;
+    transition: all 0.2s ease;
+}
 
+.btn-delete-plan:hover {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: #ef4444 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
 
+/* Changelog Timeline */
+.changelog-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
 
+.changelog-card {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.changelog-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.changelog-list {
+    margin: 0;
+    color: var(--text-main);
+}
+
+.changelog-list li {
+    margin-bottom: 6px;
+}
+
+.changelog-list li:last-child {
+    margin-bottom: 0;
+}

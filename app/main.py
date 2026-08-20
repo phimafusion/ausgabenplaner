@@ -84,7 +84,9 @@ async def lifespan(app: FastAPI):
         task.cancel()
 
 
-app = FastAPI(title="Ausgabenplaner API", version="1.0.0", lifespan=lifespan)
+APP_VERSION = "1.1.0"
+
+app = FastAPI(title="Ausgabenplaner API", version=APP_VERSION, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -93,6 +95,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/api/info", response_model=schemas.AppInfoResponse)
+def get_app_info():
+    return {
+        "app_name": "Ausgabenplaner",
+        "version": APP_VERSION,
+        "environment": "production" if os.getenv("TESTING") != "1" else "testing",
+        "status": "healthy",
+    }
 
 
 # --- Auth Endpoints ---
@@ -329,6 +341,38 @@ def run_tests_stream_route(
 
 
 # --- Plan & Version Endpoints ---
+
+@app.get("/api/plans")
+def list_plans_route(
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return crud.get_all_plans(conn)
+
+
+@app.post("/api/plans", response_model=schemas.PlanResponse, status_code=status.HTTP_201_CREATED)
+def create_plan_route(
+    req: schemas.PlanCreate,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    return crud.create_plan(conn, title=req.title, description=req.description)
+
+
+@app.delete("/api/plans/{plan_id}")
+def delete_plan_route(
+    plan_id: int,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    try:
+        deleted = crud.delete_plan(conn, plan_id)
+        if not deleted:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan nicht gefunden")
+        return {"message": "Plan erfolgreich gelöscht", "deleted_id": plan_id}
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 
 @app.get("/api/plans/active", response_model=schemas.PlanResponse)
 def get_active_plan_route(

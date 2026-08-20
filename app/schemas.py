@@ -138,6 +138,11 @@ class HistoryVersionSummary(BaseModel):
     totals: Dict[str, Any] = {}
 
 
+class PlanCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+
 class PlanUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
@@ -149,6 +154,13 @@ class PlanResponse(BaseModel):
     description: Optional[str] = None
     active_version: Optional[VersionResponse] = None
     versions: List[Dict[str, Any]] = []
+
+
+class AppInfoResponse(BaseModel):
+    app_name: str
+    version: str
+    environment: str
+    status: str
 
 
 class HistoryRow(BaseModel):

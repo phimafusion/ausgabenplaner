@@ -431,6 +431,48 @@ export function setupEventListeners({
         });
     }
 
+    // Delete Plan Button & Modal Actions
+    if (elements.btnDeletePlan) {
+        elements.btnDeletePlan.addEventListener("click", () => {
+            if (!state.activePlan) return;
+            if (elements.deletePlanId) elements.deletePlanId.value = state.activePlan.id;
+            if (elements.deletePlanTitleDisplay) elements.deletePlanTitleDisplay.textContent = `„${state.activePlan.title}“`;
+            openModal("modal-confirm-delete-plan");
+        });
+    }
+
+    if (elements.btnExecuteDeletePlan) {
+        elements.btnExecuteDeletePlan.addEventListener("click", async () => {
+            const planId = parseInt(elements.deletePlanId.value, 10);
+            if (!planId) return;
+
+            try {
+                const resp = await apiFetch(`/api/plans/${planId}`, { method: "DELETE" });
+                if (!resp.ok) {
+                    const errData = await resp.json();
+                    throw new Error(errData.detail || "Fehler beim Löschen des Plans");
+                }
+                closeModal("modal-confirm-delete-plan");
+                setDirty(false);
+                await loadActivePlan();
+            } catch (err) {
+                alert(err.message || "Fehler beim Löschen des Plans");
+            }
+        });
+    }
+
+    // Version Badge Click -> Quick-jump to Changelog
+    const versionBadges = document.querySelectorAll(".badge-version");
+    versionBadges.forEach((badge) => {
+        badge.style.cursor = "pointer";
+        badge.title = "Klicken, um den Changelog in den Einstellungen anzuzeigen";
+        badge.addEventListener("click", () => {
+            if (state.token) {
+                showSettings("tab-settings-changelog");
+            }
+        });
+    });
+
     // Unsaved Warning Modal Actions
     if (elements.btnDiscardUnsaved) {
         elements.btnDiscardUnsaved.addEventListener("click", () => {

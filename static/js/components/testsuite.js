@@ -30,7 +30,7 @@ export async function executeTestsuite() {
     if (progressPercent) progressPercent.textContent = "0%";
     if (statusBox) {
         statusBox.className = "alert alert-info";
-        statusBox.textContent = "⏳ Testsuite wird ausgeführt... (38 Tests werden überprüft)";
+        statusBox.textContent = "⏳ Testsuite wird ausgeführt...";
     }
     if (outputBox) outputBox.textContent = "Initialisiere Testsuite...\n";
 

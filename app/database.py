@@ -177,52 +177,15 @@ def init_db(seed: Optional[bool] = None):
         )
         conn.commit()
 
-    # Seed initial plan and dataset from screenshot if not exists
+    # Create initial empty plan structure if not exists
     plan_exists = cursor.execute("SELECT id FROM plans LIMIT 1").fetchone()
     if not plan_exists:
-        cursor.execute("INSERT INTO plans (title, description) VALUES (?, ?)", ("Tütingstraße 22", "Haushalts-Ausgabenplaner"))
+        cursor.execute("INSERT INTO plans (title, description) VALUES (?, ?)", ("Muster-Wirtschaftsplan", "Haushalts-Ausgabenplaner"))
         plan_id = cursor.lastrowid
         cursor.execute(
             "INSERT INTO versions (plan_id, title, effective_date, is_active, created_by) VALUES (?, ?, ?, 1, 'Administrator')",
-            (plan_id, "Stand ab 01.09.2026", "2026-09-01"),
+            (plan_id, "Aktueller Stand", None),
         )
-        version_id = cursor.lastrowid
-
-        if seed:
-            # Positions from user spreadsheet
-            positions_seed = [
-                ("Miete (Kalt + Nebenkosten) an Vermieter", -1235.00, ""),
-                ("Kita", -60.00, ""),
-                ("Strom / Naturstrom", -87.00, ""),
-                ("Wasser (Stadtwerke OS)", -38.00, ""),
-                ("eprimo (Gas)", -143.00, ""),
-                ("Internet / Osnatel", -40.00, "Wird an Phil überwiesen"),
-                ("OSBO Versicherung", -38.72, "Wird quartalsweise eingezogen (COSMOS)"),
-                ("OSBO Steuer", -8.50, "Wird jährlich eingezogen, (Bundeskasse Kiel)"),
-                ("Rundfunkgebühr", -18.36, "Wird quartalsweise eingezogen, Wird an Sabrina überwiesen"),
-                ("OSC Mitgliedschaft Jonti", 0.00, ""),
-                ("Familienhaftpflichtversicherung", -6.41, "Wird jährlich eingezogen (COSMOS)"),
-                ("Hausratsversicherung", -9.17, "Wird jährlich eingezogen (Docura)"),
-            ]
-
-            for idx, (title, amount, comment) in enumerate(positions_seed):
-                cursor.execute(
-                    "INSERT INTO positions (version_id, title, amount, comment, sort_order) VALUES (?, ?, ?, ?, ?)",
-                    (version_id, title, amount, comment, idx),
-                )
-
-            # Contributions from user spreadsheet
-            contributions_seed = [
-                ("Phil", 930.00, "Zahlung Phil"),
-                ("Sabrina", 800.00, "Zahlung Sabrina"),
-            ]
-
-            for idx, (person, amount, comment) in enumerate(contributions_seed):
-                cursor.execute(
-                    "INSERT INTO contributions (version_id, person_name, amount, comment, sort_order) VALUES (?, ?, ?, ?, ?)",
-                    (version_id, person, amount, comment, idx),
-                )
-
         conn.commit()
 
     conn.close()

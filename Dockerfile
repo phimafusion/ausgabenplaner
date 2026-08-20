@@ -11,9 +11,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
+# Copy application files and test suite
 COPY app/ ./app/
 COPY static/ ./static/
+COPY tests/ ./tests/
+COPY pytest.ini .
 
 # Environment variables
 ENV PORT=3000

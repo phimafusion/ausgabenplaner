@@ -34,17 +34,17 @@ def test_update_delete_contribution_not_found():
 
 
 def test_non_admin_forbidden_routes():
-    # Admin creates user 'sabrina'
+    # Admin creates user 'normaluser'
     login_admin = client.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
     admin_token = login_admin.json()["access_token"]
     client.post(
         "/api/users",
-        json={"username": "sabrina", "password": "user123", "name": "Sabrina", "role": "user"},
+        json={"username": "normaluser", "password": "user123", "name": "Normal User", "role": "user"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
 
-    # Sabrina logs in
-    login_user = client.post("/api/auth/login", json={"username": "sabrina", "password": "user123"})
+    # User logs in
+    login_user = client.post("/api/auth/login", json={"username": "normaluser", "password": "user123"})
     user_token = login_user.json()["access_token"]
     user_headers = {"Authorization": f"Bearer {user_token}"}
 
@@ -79,15 +79,15 @@ def test_run_tests_endpoint_security(mock_run):
     admin_token = login_admin.json()["access_token"]
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
-    # Admin creates normal user 'sabrina'
+    # Admin creates normal user
     client.post(
         "/api/users",
-        json={"username": "sabrina2", "password": "user123", "name": "Sabrina", "role": "user"},
+        json={"username": "normaluser2", "password": "user123", "name": "Normal User 2", "role": "user"},
         headers=admin_headers,
     )
 
     # User logs in
-    login_user = client.post("/api/auth/login", json={"username": "sabrina2", "password": "user123"})
+    login_user = client.post("/api/auth/login", json={"username": "normaluser2", "password": "user123"})
     user_token = login_user.json()["access_token"]
     user_headers = {"Authorization": f"Bearer {user_token}"}
 

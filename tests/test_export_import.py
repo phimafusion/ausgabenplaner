@@ -46,7 +46,7 @@ def test_export_and_import_flow():
     assert export_data["version"] == 1
     assert len(export_data["plans"]) == 1
     plan_data = export_data["plans"][0]
-    assert plan_data["title"] == "Tütingstraße 22"
+    assert plan_data["title"] == "Muster-Wirtschaftsplan"
     assert len(plan_data["versions"]) == 1
 
     ver_data = plan_data["versions"][0]
@@ -104,7 +104,7 @@ def test_export_includes_entire_history_and_restores_all_versions():
             "title": "Stand ab 01.10.2026",
             "effective_date": "2026-10-01",
             "positions": [{"title": "Strom", "amount": -80.0}],
-            "contributions": [{"person_name": "Phil", "amount": 80.0}],
+            "contributions": [{"person_name": "Person A", "amount": 80.0}],
         },
         headers=headers,
     )
@@ -116,7 +116,7 @@ def test_export_includes_entire_history_and_restores_all_versions():
             "title": "Stand ab 01.11.2026",
             "effective_date": "2026-11-01",
             "positions": [{"title": "Gas", "amount": -120.0}],
-            "contributions": [{"person_name": "Sabrina", "amount": 120.0}],
+            "contributions": [{"person_name": "Person B", "amount": 120.0}],
         },
         headers=headers,
     )
@@ -130,7 +130,7 @@ def test_export_includes_entire_history_and_restores_all_versions():
     versions = export_data["plans"][0]["versions"]
     assert len(versions) == 3
     version_titles = [v["title"] for v in versions]
-    assert "Stand ab 01.09.2026" in version_titles
+    assert "Aktueller Stand" in version_titles
     assert "Stand ab 01.10.2026" in version_titles
     assert "Stand ab 01.11.2026" in version_titles
 
@@ -172,7 +172,7 @@ def test_export_xlsx_endpoint_and_structure():
     )
     client.post(
         f"/api/versions/{version_id}/contributions",
-        json={"person_name": "Phil", "amount": 600.0, "comment": "Anteil Phil"},
+        json={"person_name": "Alex", "amount": 600.0, "comment": "Anteil Alex"},
         headers=headers,
     )
 
@@ -196,7 +196,7 @@ def test_export_xlsx_endpoint_and_structure():
     # Search for position and contribution values in active sheet
     cell_values = [str(cell.value) for row in active_sheet.iter_rows() for cell in row if cell.value is not None]
     assert any("Miete XLSX Test" in v for v in cell_values)
-    assert any("Phil" in v for v in cell_values)
+    assert any("Alex" in v for v in cell_values)
     assert any("Saldo" in v for v in cell_values)
 
     # Check history sheet

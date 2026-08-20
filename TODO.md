@@ -24,7 +24,7 @@ Dieses Dokument fasst geplante Erweiterungen, architektonische Verbesserungen un
 
 ## 🏢 2. Multi-Plan-Verwaltung (Liegenschaften / Mandanten)
 - [ ] **Plan-Auswahl in der Top-Navigation**:
-  - Dropdown zur Auswahl und zum schnellen Wechsel zwischen verschiedenen Liegenschaften/Plänen (z. B. „Tütingstraße 22“, „Musterweg 5“, „Projekt B“).
+  - Dropdown zur Auswahl und zum schnellen Wechsel zwischen verschiedenen Liegenschaften/Plänen (z. B. „Musterstraße 1“, „Musterweg 5“, „Projekt B“).
 - [ ] **Plan-CRUD für Administratoren**:
   - Neuen Plan anlegen, archivieren, umbenennen oder duplizieren.
 - [ ] **Plan-spezifische Benutzerzuordnungen**:

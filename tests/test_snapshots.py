@@ -30,7 +30,7 @@ def test_create_historical_snapshot():
     )
     client.post(
         f"/api/versions/{version1_id}/contributions",
-        json={"person_name": "Phil", "amount": 930.00, "comment": "Zahlung Phil"},
+        json={"person_name": "Person A", "amount": 930.00, "comment": "Zahlung A"},
         headers=headers,
     )
 

@@ -65,19 +65,19 @@ def test_admin_creates_new_user():
     token = login_resp.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Create new user 'sabrina'
+    # Create new user 'testuser'
     create_resp = client.post(
         "/api/users",
-        json={"username": "sabrina", "password": "password123", "name": "Sabrina", "role": "user"},
+        json={"username": "testuser", "password": "password123", "name": "Test User", "role": "user"},
         headers=headers,
     )
     assert create_resp.status_code == 201
     user_data = create_resp.json()
-    assert user_data["username"] == "sabrina"
+    assert user_data["username"] == "testuser"
 
     # Verify new user can login
-    sabrina_login = client.post("/api/auth/login", json={"username": "sabrina", "password": "password123"})
-    assert sabrina_login.status_code == 200
+    user_login = client.post("/api/auth/login", json={"username": "testuser", "password": "password123"})
+    assert user_login.status_code == 200
 
 
 def test_user_export_permissions_and_editing():
@@ -85,58 +85,58 @@ def test_user_export_permissions_and_editing():
     admin_login = client.post("/api/auth/login", json={"username": "admin", "password": "admin123"}).json()
     admin_headers = {"Authorization": f"Bearer {admin_login['access_token']}"}
 
-    # 1. Admin creates user 'sabrina' with can_export = False
+    # 1. Admin creates user 'testuser' with can_export = False
     create_resp = client.post(
         "/api/users",
-        json={"username": "sabrina", "password": "password123", "name": "Sabrina", "role": "user", "can_export": False},
+        json={"username": "testuser", "password": "password123", "name": "Test User", "role": "user", "can_export": False},
         headers=admin_headers,
     )
     assert create_resp.status_code == 201
-    sabrina_data = create_resp.json()
-    assert sabrina_data["can_export"] is False
-    sabrina_id = sabrina_data["id"]
+    user_data = create_resp.json()
+    assert user_data["can_export"] is False
+    user_id = user_data["id"]
 
-    # 2. Sabrina logs in
-    sabrina_login = client.post("/api/auth/login", json={"username": "sabrina", "password": "password123"}).json()
-    assert sabrina_login["user"]["can_export"] is False
-    sabrina_headers = {"Authorization": f"Bearer {sabrina_login['access_token']}"}
+    # 2. Test user logs in
+    user_login = client.post("/api/auth/login", json={"username": "testuser", "password": "password123"}).json()
+    assert user_login["user"]["can_export"] is False
+    user_headers = {"Authorization": f"Bearer {user_login['access_token']}"}
 
-    # 3. Sabrina tries to export data (JSON & XLSX) -> 403 Forbidden
-    export_forbidden = client.get("/api/data/export", headers=sabrina_headers)
+    # 3. Test user tries to export data (JSON & XLSX) -> 403 Forbidden
+    export_forbidden = client.get("/api/data/export", headers=user_headers)
     assert export_forbidden.status_code == 403
     assert "Exportieren" in export_forbidden.json()["detail"]
 
-    export_xlsx_forbidden = client.get("/api/data/export-xlsx", headers=sabrina_headers)
+    export_xlsx_forbidden = client.get("/api/data/export-xlsx", headers=user_headers)
     assert export_xlsx_forbidden.status_code == 403
 
-    # 4. Admin edits user Sabrina: grant export permission, update name and new password
+    # 4. Admin edits user: grant export permission, update name and new password
     edit_resp = client.patch(
-        f"/api/users/{sabrina_id}",
-        json={"name": "Sabrina M.", "role": "user", "can_export": True, "password": "newpassword456"},
+        f"/api/users/{user_id}",
+        json={"name": "Test User M.", "role": "user", "can_export": True, "password": "newpassword456"},
         headers=admin_headers,
     )
     assert edit_resp.status_code == 200
     updated = edit_resp.json()
-    assert updated["name"] == "Sabrina M."
+    assert updated["name"] == "Test User M."
     assert updated["can_export"] is True
 
-    # 5. Sabrina logs in with new password
-    new_login = client.post("/api/auth/login", json={"username": "sabrina", "password": "newpassword456"}).json()
+    # 5. Test user logs in with new password
+    new_login = client.post("/api/auth/login", json={"username": "testuser", "password": "newpassword456"}).json()
     assert new_login["user"]["can_export"] is True
-    new_sabrina_headers = {"Authorization": f"Bearer {new_login['access_token']}"}
+    new_user_headers = {"Authorization": f"Bearer {new_login['access_token']}"}
 
-    # 6. Now Sabrina can successfully export (JSON & XLSX)
-    export_allowed = client.get("/api/data/export", headers=new_sabrina_headers)
+    # 6. Now test user can successfully export (JSON & XLSX)
+    export_allowed = client.get("/api/data/export", headers=new_user_headers)
     assert export_allowed.status_code == 200
     assert "plans" in export_allowed.json()
 
-    export_xlsx_allowed = client.get("/api/data/export-xlsx", headers=new_sabrina_headers)
+    export_xlsx_allowed = client.get("/api/data/export-xlsx", headers=new_user_headers)
     assert export_xlsx_allowed.status_code == 200
     assert len(export_xlsx_allowed.content) > 0
 
 
-    # 7. Admin deletes user Sabrina
-    del_resp = client.delete(f"/api/users/{sabrina_id}", headers=admin_headers)
+    # 7. Admin deletes user
+    del_resp = client.delete(f"/api/users/{user_id}", headers=admin_headers)
     assert del_resp.status_code == 200
 
     # 8. Admin cannot delete own account

@@ -35,3 +35,14 @@ def test_dockerfile_validity():
     assert "EXPOSE 3000" in content
     assert 'CMD ["uvicorn", "app.main:app"' in content
     assert "ADMIN_PASSWORD" not in content
+    assert "COPY tests/ ./tests/" in content
+    assert "COPY pytest.ini ." in content
+
+
+def test_requirements_include_test_dependencies_for_container_runner():
+    req_path = BASE_DIR / "requirements.txt"
+    assert req_path.exists()
+    content = req_path.read_text(encoding="utf-8")
+    assert "pytest" in content
+    assert "httpx" in content
+    assert "pytest-cov" in content

@@ -30,13 +30,13 @@ def test_recreate_user_spreadsheet_dataset():
         {"title": "Strom / Naturstrom", "amount": -87.00, "comment": ""},
         {"title": "Wasser (Stadtwerke OS)", "amount": -38.00, "comment": ""},
         {"title": "eprimo (Gas)", "amount": -143.00, "comment": ""},
-        {"title": "Internet / Osnatel", "amount": -40.00, "comment": "Wird an Phil überwiesen"},
-        {"title": "OSBO Versicherung", "amount": -38.72, "comment": "Wird quartalsweise eingezogen (COSMOS)"},
-        {"title": "OSBO Steuer", "amount": -8.50, "comment": "Wird jährlich eingezogen, (Bundeskasse Kiel)"},
-        {"title": "Rundfunkgebühr", "amount": -18.36, "comment": "Wird quartalsweise eingezogen, Wird an Sabrina überwiesen"},
-        {"title": "OSC Mitgliedschaft Jonti", "amount": 0.00, "comment": ""},
-        {"title": "Familienhaftpflichtversicherung", "amount": -6.41, "comment": "Wird jährlich eingezogen (COSMOS)"},
-        {"title": "Hausratsversicherung", "amount": -9.17, "comment": "Wird jährlich eingezogen (Docura)"},
+        {"title": "Internet / DSL", "amount": -40.00, "comment": "Monatlich"},
+        {"title": "Versicherung A", "amount": -38.72, "comment": "Quartalsweise"},
+        {"title": "Kfz-Steuer", "amount": -8.50, "comment": "Jährlich"},
+        {"title": "Rundfunkgebühr", "amount": -18.36, "comment": "Quartalsweise"},
+        {"title": "Vereinsbeitrag", "amount": 0.00, "comment": ""},
+        {"title": "Haftpflichtversicherung", "amount": -6.41, "comment": "Jährlich"},
+        {"title": "Hausratsversicherung", "amount": -9.17, "comment": "Jährlich"},
     ]
 
     for idx, p in enumerate(positions_data):
@@ -49,8 +49,8 @@ def test_recreate_user_spreadsheet_dataset():
 
     # Insert contributions
     contributions_data = [
-        {"person_name": "Phil", "amount": 930.00, "comment": "Zahlung Phil"},
-        {"person_name": "Sabrina", "amount": 800.00, "comment": "Zahlung Sabrina"},
+        {"person_name": "Person A", "amount": 930.00, "comment": "Zahlung Person A"},
+        {"person_name": "Person B", "amount": 800.00, "comment": "Zahlung Person B"},
     ]
 
     for idx, c in enumerate(contributions_data):

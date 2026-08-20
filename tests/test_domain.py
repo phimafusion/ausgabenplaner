@@ -92,15 +92,15 @@ def test_positions_crud_api():
     assert pos_data["title"] == "Miete (Kalt + Nebenkosten)"
     assert pos_data["amount"] == -1235.00
 
-    # Add contribution "Zahlung Phil"
+    # Add contribution "Zahlung Person A"
     contrib_resp = client.post(
         f"/api/versions/{version_id}/contributions",
-        json={"person_name": "Phil", "amount": 930.00, "comment": "Monatlicher Beitrag"},
+        json={"person_name": "Person A", "amount": 930.00, "comment": "Monatlicher Beitrag"},
         headers=headers,
     )
     assert contrib_resp.status_code == 201
     contrib_data = contrib_resp.json()
-    assert contrib_data["person_name"] == "Phil"
+    assert contrib_data["person_name"] == "Person A"
     assert contrib_data["amount"] == 930.00
 
     # Verify updated plan version totals via GET API

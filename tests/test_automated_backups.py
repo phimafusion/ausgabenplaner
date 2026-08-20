@@ -201,7 +201,7 @@ def test_restore_database_backup():
     # 4. Verify database state is restored
     plan_after = client.get("/api/plans/active", headers={"Authorization": f"Bearer {admin_token}"})
     assert plan_after.status_code == 200
-    assert plan_after.json()["title"] == "Tütingstraße 22"
+    assert plan_after.json()["title"] == "Muster-Wirtschaftsplan"
 
     # Non-existent restore 404
     bad_res = client.post("/api/admin/backups/restore/non_existent.db", headers={"Authorization": f"Bearer {admin_token}"})

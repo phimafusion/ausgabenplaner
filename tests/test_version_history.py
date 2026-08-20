@@ -20,8 +20,8 @@ def test_save_new_version_workflow(client, auth_headers):
         {"title": "Neuer Streamingdienst", "amount": -15.00, "comment": "Monatlich", "category": "Freizeit", "sort_order": 2},
     ]
     new_contributions = [
-        {"person_name": "Phil", "amount": 950.00, "comment": "Angepasst", "sort_order": 0},
-        {"person_name": "Sabrina", "amount": 820.00, "comment": "Angepasst", "sort_order": 1},
+        {"person_name": "Person A", "amount": 950.00, "comment": "Angepasst", "sort_order": 0},
+        {"person_name": "Person B", "amount": 820.00, "comment": "Angepasst", "sort_order": 1},
     ]
 
     save_payload = {
@@ -121,7 +121,7 @@ def test_update_and_delete_historical_version(client, auth_headers):
         "title": "Version Original",
         "effective_date": "2026-01-01",
         "positions": [{"title": "Test", "amount": -50.0, "sort_order": 0}],
-        "contributions": [{"person_name": "Phil", "amount": 50.0, "sort_order": 0}],
+        "contributions": [{"person_name": "Person A", "amount": 50.0, "sort_order": 0}],
     }
     v_resp = client.post(f"/api/plans/{plan_id}/save-version", json=v_payload, headers=auth_headers)
     v_id = v_resp.json()["id"]
@@ -152,7 +152,7 @@ def test_delete_active_version_promotes_fallback(client, auth_headers):
         json={
             "title": "Version Alpha",
             "positions": [{"title": "Posten A", "amount": -10.0, "sort_order": 0}],
-            "contributions": [{"person_name": "Phil", "amount": 10.0, "sort_order": 0}],
+            "contributions": [{"person_name": "Person A", "amount": 10.0, "sort_order": 0}],
         },
         headers=auth_headers,
     )
@@ -164,7 +164,7 @@ def test_delete_active_version_promotes_fallback(client, auth_headers):
         json={
             "title": "Version Beta",
             "positions": [{"title": "Posten B", "amount": -20.0, "sort_order": 0}],
-            "contributions": [{"person_name": "Phil", "amount": 20.0, "sort_order": 0}],
+            "contributions": [{"person_name": "Person A", "amount": 20.0, "sort_order": 0}],
         },
         headers=auth_headers,
     )
@@ -207,7 +207,7 @@ def test_update_plan_title_and_stand_title(client, auth_headers):
     plan_id = resp.json()["id"]
     version_id = resp.json()["active_version"]["id"]
 
-    # 1. Update overall plan title (e.g. from Tütingstraße 22 to Neues Zuhause 2026)
+    # 1. Update overall plan title (e.g. from Muster-Wirtschaftsplan to Neues Zuhause 2026)
     plan_patch = client.patch(
         f"/api/plans/{plan_id}",
         json={"title": "Neues Zuhause 2026", "description": "Aktualisierter Haushaltsplan"},
@@ -246,7 +246,7 @@ def test_version_history_audit_metadata(client, auth_headers):
             "title": "Stand ab 01.11.2026",
             "effective_date": "2026-11-01",
             "positions": [{"title": "Internet", "amount": -40.0, "category": "Medien"}],
-            "contributions": [{"person_name": "Phil", "amount": 40.0}],
+            "contributions": [{"person_name": "Person A", "amount": 40.0}],
         },
         headers=auth_headers,
     )

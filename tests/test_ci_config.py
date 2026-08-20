@@ -34,3 +34,4 @@ def test_dockerfile_validity():
     assert "FROM python:3.12-slim" in content
     assert "EXPOSE 3000" in content
     assert 'CMD ["uvicorn", "app.main:app"' in content
+    assert "ADMIN_PASSWORD" not in content

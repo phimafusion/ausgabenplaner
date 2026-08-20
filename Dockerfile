@@ -18,7 +18,6 @@ COPY static/ ./static/
 # Environment variables
 ENV PORT=3000
 ENV DB_PATH=/app/data/ausgabenplaner.db
-ENV ADMIN_PASSWORD=admin123
 
 # Expose container port
 EXPOSE 3000

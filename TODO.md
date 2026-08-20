@@ -27,13 +27,13 @@ Dieses Dokument fasst geplante Erweiterungen, architektonische Verbesserungen un
 
 ---
 
-## 🏢 2. Multi-Plan-Verwaltung (Liegenschaften / Mandanten)
-- [ ] **Plan-Auswahl in der Top-Navigation**:
-  - Dropdown zur Auswahl und zum schnellen Wechsel zwischen verschiedenen Liegenschaften/Plänen (z. B. „Musterstraße 1“, „Musterweg 5“, „Projekt B“).
-- [ ] **Plan-CRUD für Administratoren**:
-  - Neuen Plan anlegen, archivieren, umbenennen oder duplizieren.
-- [ ] **Plan-spezifische Benutzerzuordnungen**:
-  - Berechtigungen pro Plan/Liegenschaft vergeben.
+## 📋 2. Plan-Verwaltung & Optionen
+- [x] **Zentrale Plan-Verwaltung im Optionsmenü**:
+  - Verwaltung, Umbenennung und Wechsel von Plänen im Einstellungsmenü bei aufgeräumtem Dashboard.
+- [x] **Plan-CRUD für Administratoren**:
+  - Neuen Plan anlegen, archivieren/reaktivieren, umbenennen oder duplizieren (vollständige Deep-Copy als Vorlage).
+- [x] **Plan-spezifische Benutzerzuordnungen**:
+  - Granulare Berechtigungen pro Plan vergeben (RBAC via `user_plans`).
 
 ---
 

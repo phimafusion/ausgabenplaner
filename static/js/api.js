@@ -17,12 +17,19 @@ export async function apiFetch(url, options = {}) {
         options.body = JSON.stringify(options.body);
     }
 
-    const response = await fetch(url, { ...options, headers });
-    if (response.status === 401) {
-        if (typeof onUnauthorizedCallback === "function") {
-            onUnauthorizedCallback();
+    try {
+        const response = await fetch(url, { ...options, headers });
+        if (response.status === 401) {
+            if (typeof onUnauthorizedCallback === "function") {
+                onUnauthorizedCallback();
+            }
+            throw new Error("Sitzung abgelaufen. Bitte erneut anmelden.");
         }
-        throw new Error("Sitzung abgelaufen. Bitte erneut anmelden.");
+        return response;
+    } catch (err) {
+        if (err.name === "TypeError" || (err.message && (err.message.includes("fetch") || err.message.includes("NetworkError")))) {
+            throw new Error("Verbindung zum Server fehlgeschlagen. Der Server ist nicht erreichbar. Bitte starten Sie den Server in der Konsole.");
+        }
+        throw err;
     }
-    return response;
 }

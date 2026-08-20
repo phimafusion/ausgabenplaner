@@ -29,6 +29,7 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
 def reset_db():
     conn = get_db_connection()
     cursor = conn.cursor()
+    cursor.execute("DROP TABLE IF EXISTS user_plans;")
     cursor.execute("DROP TABLE IF EXISTS contributions;")
     cursor.execute("DROP TABLE IF EXISTS positions;")
     cursor.execute("DROP TABLE IF EXISTS versions;")
@@ -73,7 +74,28 @@ def init_db(seed: Optional[bool] = None):
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         description TEXT,
+        is_archived INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """
+    )
+
+    # Migration for plans table
+    plan_cols = [row[1] for row in cursor.execute("PRAGMA table_info(plans)").fetchall()]
+    if "is_archived" not in plan_cols:
+        cursor.execute("ALTER TABLE plans ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0")
+
+    # User-Plan Assignments table (Multi-Plan RBAC)
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS user_plans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        plan_id INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, plan_id),
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        FOREIGN KEY (plan_id) REFERENCES plans (id) ON DELETE CASCADE
     );
     """
     )

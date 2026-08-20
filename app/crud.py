@@ -40,13 +40,13 @@ def get_version_details(conn: sqlite3.Connection, version_id: int) -> Optional[D
     return ver
 
 
-def get_active_plan(conn: sqlite3.Connection) -> Optional[Dict[str, Any]]:
-    plan_row = conn.execute("SELECT * FROM plans ORDER BY id ASC LIMIT 1").fetchone()
+def get_plan_details(conn: sqlite3.Connection, plan_id: int) -> Optional[Dict[str, Any]]:
+    plan_row = conn.execute("SELECT * FROM plans WHERE id = ?", (plan_id,)).fetchone()
     if not plan_row:
         return None
 
     plan = dict(plan_row)
-    plan_id = plan["id"]
+    plan["is_archived"] = bool(plan.get("is_archived", 0))
 
     ver_rows = conn.execute(
         "SELECT id, title, effective_date, is_active, created_at, created_by, updated_at, updated_by FROM versions WHERE plan_id = ? ORDER BY id DESC",
@@ -67,7 +67,52 @@ def get_active_plan(conn: sqlite3.Connection) -> Optional[Dict[str, Any]]:
     return plan
 
 
-def update_plan(conn: sqlite3.Connection, plan_id: int, title: Optional[str] = None, description: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def get_active_plan(conn: sqlite3.Connection, user_id: Optional[int] = None, user_role: str = "admin") -> Optional[Dict[str, Any]]:
+    if user_role == "admin" or user_id is None:
+        # First non-archived plan, fallback to any plan
+        plan_row = conn.execute("SELECT id FROM plans WHERE is_archived = 0 ORDER BY id ASC LIMIT 1").fetchone()
+        if not plan_row:
+            plan_row = conn.execute("SELECT id FROM plans ORDER BY id ASC LIMIT 1").fetchone()
+    else:
+        # Check assigned plans
+        assigned = conn.execute(
+            """
+            SELECT p.id FROM plans p
+            JOIN user_plans up ON p.id = up.plan_id
+            WHERE up.user_id = ? AND p.is_archived = 0
+            ORDER BY p.id ASC LIMIT 1
+            """,
+            (user_id,),
+        ).fetchone()
+        if assigned:
+            plan_row = assigned
+        else:
+            # Fallback if no specific assignment: first non-archived plan
+            has_any_assignments = conn.execute("SELECT 1 FROM user_plans WHERE user_id = ?", (user_id,)).fetchone()
+            if has_any_assignments:
+                # User has assignments but all might be archived, try any assigned
+                plan_row = conn.execute(
+                    "SELECT p.id FROM plans p JOIN user_plans up ON p.id = up.plan_id WHERE up.user_id = ? ORDER BY p.id ASC LIMIT 1",
+                    (user_id,),
+                ).fetchone()
+            else:
+                plan_row = conn.execute("SELECT id FROM plans WHERE is_archived = 0 ORDER BY id ASC LIMIT 1").fetchone()
+                if not plan_row:
+                    plan_row = conn.execute("SELECT id FROM plans ORDER BY id ASC LIMIT 1").fetchone()
+
+    if not plan_row:
+        return None
+
+    return get_plan_details(conn, plan_row["id"])
+
+
+def update_plan(
+    conn: sqlite3.Connection,
+    plan_id: int,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    is_archived: Optional[bool] = None,
+) -> Optional[Dict[str, Any]]:
     fields = []
     values = []
     if title is not None:
@@ -76,21 +121,95 @@ def update_plan(conn: sqlite3.Connection, plan_id: int, title: Optional[str] = N
     if description is not None:
         fields.append("description = ?")
         values.append(description)
+    if is_archived is not None:
+        fields.append("is_archived = ?")
+        values.append(1 if is_archived else 0)
+
     if fields:
         values.append(plan_id)
         cursor = conn.cursor()
         cursor.execute(f"UPDATE plans SET {', '.join(fields)} WHERE id = ?", tuple(values))
         conn.commit()
-    return get_active_plan(conn)
+    return get_plan_details(conn, plan_id)
 
 
-def get_all_plans(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
-    rows = conn.execute("SELECT * FROM plans ORDER BY id ASC").fetchall()
+def get_all_plans(
+    conn: sqlite3.Connection,
+    user_id: Optional[int] = None,
+    user_role: str = "admin",
+    include_archived: bool = True,
+) -> List[Dict[str, Any]]:
+    if user_role == "admin" or user_id is None:
+        if include_archived:
+            rows = conn.execute("SELECT * FROM plans ORDER BY is_archived ASC, id ASC").fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM plans WHERE is_archived = 0 ORDER BY id ASC").fetchall()
+    else:
+        # Check if user has explicit assignments
+        has_assignments = conn.execute("SELECT 1 FROM user_plans WHERE user_id = ?", (user_id,)).fetchone()
+        if has_assignments:
+            if include_archived:
+                rows = conn.execute(
+                    """
+                    SELECT p.* FROM plans p
+                    JOIN user_plans up ON p.id = up.plan_id
+                    WHERE up.user_id = ?
+                    ORDER BY p.is_archived ASC, p.id ASC
+                    """,
+                    (user_id,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT p.* FROM plans p
+                    JOIN user_plans up ON p.id = up.plan_id
+                    WHERE up.user_id = ? AND p.is_archived = 0
+                    ORDER BY p.id ASC
+                    """,
+                    (user_id,),
+                ).fetchall()
+        else:
+            if include_archived:
+                rows = conn.execute("SELECT * FROM plans ORDER BY is_archived ASC, id ASC").fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM plans WHERE is_archived = 0 ORDER BY id ASC").fetchall()
+
     plans = []
     for r in rows:
         p = dict(r)
+        p["is_archived"] = bool(p.get("is_archived", 0))
         ver_count = conn.execute("SELECT COUNT(*) as cnt FROM versions WHERE plan_id = ?", (p["id"],)).fetchone()["cnt"]
         p["versions_count"] = ver_count
+
+        active_ver_row = conn.execute(
+            "SELECT id, title FROM versions WHERE plan_id = ? AND is_active = 1 LIMIT 1",
+            (p["id"],),
+        ).fetchone()
+        if not active_ver_row:
+            active_ver_row = conn.execute(
+                "SELECT id, title FROM versions WHERE plan_id = ? ORDER BY id DESC LIMIT 1",
+                (p["id"],),
+            ).fetchone()
+
+        if active_ver_row:
+            p["active_version_id"] = active_ver_row["id"]
+            p["active_version_title"] = active_ver_row["title"]
+            details = get_version_details(conn, active_ver_row["id"])
+            if details and "totals" in details:
+                p["total_expenses"] = details["totals"].get("total_expenses", 0.0)
+                p["total_contributions"] = details["totals"].get("total_contributions", 0.0)
+                p["total_balance"] = details["totals"].get("balance", 0.0)
+            else:
+                p["total_expenses"] = 0.0
+                p["total_contributions"] = 0.0
+                p["total_balance"] = 0.0
+        else:
+            p["active_version_id"] = None
+            p["active_version_title"] = None
+            p["total_expenses"] = 0.0
+            p["total_contributions"] = 0.0
+            p["total_balance"] = 0.0
+
         plans.append(p)
     return plans
 
@@ -98,7 +217,7 @@ def get_all_plans(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
 def create_plan(conn: sqlite3.Connection, title: str, description: Optional[str] = None) -> Dict[str, Any]:
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO plans (title, description) VALUES (?, ?)",
+        "INSERT INTO plans (title, description, is_archived) VALUES (?, ?, 0)",
         (title, description or ""),
     )
     plan_id = cursor.lastrowid
@@ -108,11 +227,63 @@ def create_plan(conn: sqlite3.Connection, title: str, description: Optional[str]
         (plan_id, "Aktueller Stand"),
     )
     conn.commit()
-    row = conn.execute("SELECT * FROM plans WHERE id = ?", (plan_id,)).fetchone()
-    plan = dict(row)
-    plan["versions"] = [dict(v) for v in conn.execute("SELECT * FROM versions WHERE plan_id = ?", (plan_id,)).fetchall()]
-    plan["active_version"] = get_version_details(conn, plan["versions"][0]["id"])
-    return plan
+    details = get_plan_details(conn, plan_id)
+    if details is None:
+        raise ValueError("Fehler beim Erstellen des Plans")
+    return details
+
+
+def duplicate_plan(conn: sqlite3.Connection, plan_id: int, new_title: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    orig = conn.execute("SELECT * FROM plans WHERE id = ?", (plan_id,)).fetchone()
+    if not orig:
+        return None
+
+    orig_dict = dict(orig)
+    dup_title = new_title.strip() if new_title and new_title.strip() else f"{orig_dict['title']} (Kopie)"
+
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO plans (title, description, is_archived) VALUES (?, ?, 0)",
+        (dup_title, orig_dict.get("description") or ""),
+    )
+    new_plan_id = cursor.lastrowid
+    if new_plan_id is None:
+        raise ValueError("Fehler beim Duplizieren des Plans")
+
+    # Fetch all versions of the original plan ordered by id asc
+    ver_rows = conn.execute(
+        "SELECT * FROM versions WHERE plan_id = ? ORDER BY id ASC",
+        (plan_id,),
+    ).fetchall()
+
+    for v in ver_rows:
+        v_dict = dict(v)
+        cursor.execute(
+            "INSERT INTO versions (plan_id, title, effective_date, is_active, created_by) VALUES (?, ?, ?, ?, ?)",
+            (new_plan_id, v_dict["title"], v_dict.get("effective_date"), v_dict.get("is_active", 0), v_dict.get("created_by") or "Administrator"),
+        )
+        new_ver_id = cursor.lastrowid
+
+        # Copy positions
+        pos_rows = conn.execute("SELECT * FROM positions WHERE version_id = ?", (v_dict["id"],)).fetchall()
+        for p in pos_rows:
+            p_dict = dict(p)
+            cursor.execute(
+                "INSERT INTO positions (version_id, title, amount, comment, category, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+                (new_ver_id, p_dict["title"], p_dict["amount"], p_dict.get("comment"), p_dict.get("category"), p_dict.get("sort_order", 0)),
+            )
+
+        # Copy contributions
+        contrib_rows = conn.execute("SELECT * FROM contributions WHERE version_id = ?", (v_dict["id"],)).fetchall()
+        for c in contrib_rows:
+            c_dict = dict(c)
+            cursor.execute(
+                "INSERT INTO contributions (version_id, person_name, amount, comment, sort_order) VALUES (?, ?, ?, ?, ?)",
+                (new_ver_id, c_dict["person_name"], c_dict["amount"], c_dict.get("comment"), c_dict.get("sort_order", 0)),
+            )
+
+    conn.commit()
+    return get_plan_details(conn, new_plan_id)
 
 
 def delete_plan(conn: sqlite3.Connection, plan_id: int) -> bool:
@@ -128,6 +299,29 @@ def delete_plan(conn: sqlite3.Connection, plan_id: int) -> bool:
     cursor.execute("DELETE FROM plans WHERE id = ?", (plan_id,))
     conn.commit()
     return True
+
+
+def get_user_assigned_plans(conn: sqlite3.Connection, user_id: int) -> List[int]:
+    rows = conn.execute("SELECT plan_id FROM user_plans WHERE user_id = ? ORDER BY plan_id ASC", (user_id,)).fetchall()
+    return [r["plan_id"] for r in rows]
+
+
+def set_user_assigned_plans(conn: sqlite3.Connection, user_id: int, plan_ids: List[int]):
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM user_plans WHERE user_id = ?", (user_id,))
+    for pid in plan_ids:
+        cursor.execute("INSERT OR IGNORE INTO user_plans (user_id, plan_id) VALUES (?, ?)", (user_id, pid))
+    conn.commit()
+
+
+def check_user_plan_access(conn: sqlite3.Connection, user_id: int, user_role: str, plan_id: int) -> bool:
+    if user_role == "admin":
+        return True
+    has_assignments = conn.execute("SELECT 1 FROM user_plans WHERE user_id = ?", (user_id,)).fetchone()
+    if not has_assignments:
+        return True  # Open access fallback when no specific restrictions configured
+    allowed = conn.execute("SELECT 1 FROM user_plans WHERE user_id = ? AND plan_id = ?", (user_id, plan_id)).fetchone()
+    return allowed is not None
 
 
 def create_position(conn: sqlite3.Connection, version_id: int, title: str, amount: float, comment: Optional[str], category: Optional[str], sort_order: int = 0) -> Dict[str, Any]:

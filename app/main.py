@@ -119,6 +119,7 @@ def login(req: schemas.LoginRequest, conn: sqlite3.Connection = Depends(get_db))
     if not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ungültiger Benutzername oder Passwort")
 
+    assigned_plans = crud.get_user_assigned_plans(conn, user["id"])
     token = create_access_token({"sub": user["username"], "role": user["role"]})
     return {
         "access_token": token,
@@ -129,13 +130,16 @@ def login(req: schemas.LoginRequest, conn: sqlite3.Connection = Depends(get_db))
             "name": user["name"],
             "role": user["role"],
             "can_export": bool(user.get("can_export", 1)),
+            "assigned_plan_ids": assigned_plans,
         },
     }
 
 
 @app.get("/api/auth/me", response_model=schemas.UserResponse)
-def get_me(current_user: dict = Depends(get_current_user)):
-    return current_user
+def get_me(current_user: dict = Depends(get_current_user), conn: sqlite3.Connection = Depends(get_db)):
+    user_data = dict(current_user)
+    user_data["assigned_plan_ids"] = crud.get_user_assigned_plans(conn, user_data["id"])
+    return user_data
 
 
 # --- User Management Endpoints (Admin only) ---
@@ -159,7 +163,23 @@ def create_user(
     )
     conn.commit()
     user_id = cursor.lastrowid
-    return {"id": user_id, "username": req.username, "name": req.name, "role": req.role, "can_export": bool(can_export_val)}
+    if user_id is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Fehler beim Erstellen des Benutzers")
+
+    if req.assigned_plan_ids is not None:
+        crud.set_user_assigned_plans(conn, user_id, req.assigned_plan_ids)
+        assigned = req.assigned_plan_ids
+    else:
+        assigned = []
+
+    return {
+        "id": user_id,
+        "username": req.username,
+        "name": req.name,
+        "role": req.role,
+        "can_export": bool(can_export_val),
+        "assigned_plan_ids": assigned,
+    }
 
 
 @app.get("/api/users")
@@ -172,6 +192,7 @@ def list_users(
     for r in rows:
         d = dict(r)
         d["can_export"] = bool(d.get("can_export", 1))
+        d["assigned_plan_ids"] = crud.get_user_assigned_plans(conn, d["id"])
         res.append(d)
     return res
 
@@ -211,9 +232,13 @@ def update_user_route(
         )
     conn.commit()
 
+    if req.assigned_plan_ids is not None:
+        crud.set_user_assigned_plans(conn, user_id, req.assigned_plan_ids)
+
     updated = conn.execute("SELECT id, username, name, role, can_export FROM users WHERE id = ?", (user_id,)).fetchone()
     res = dict(updated)
     res["can_export"] = bool(res.get("can_export", 1))
+    res["assigned_plan_ids"] = crud.get_user_assigned_plans(conn, user_id)
     return res
 
 
@@ -344,10 +369,16 @@ def run_tests_stream_route(
 
 @app.get("/api/plans")
 def list_plans_route(
+    include_archived: bool = True,
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
-    return crud.get_all_plans(conn)
+    return crud.get_all_plans(
+        conn,
+        user_id=current_user["id"],
+        user_role=current_user["role"],
+        include_archived=include_archived,
+    )
 
 
 @app.post("/api/plans", response_model=schemas.PlanResponse, status_code=status.HTTP_201_CREATED)
@@ -357,6 +388,58 @@ def create_plan_route(
     conn: sqlite3.Connection = Depends(get_db),
 ):
     return crud.create_plan(conn, title=req.title, description=req.description)
+
+
+@app.get("/api/plans/active", response_model=schemas.PlanResponse)
+def get_active_plan_route(
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    plan = crud.get_active_plan(conn, user_id=current_user["id"], user_role=current_user["role"])
+    if not plan:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kein aktiver Plan vorhanden")
+    return plan
+
+
+@app.get("/api/plans/{plan_id}", response_model=schemas.PlanResponse)
+def get_plan_by_id_route(
+    plan_id: int,
+    current_user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], plan_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
+    plan = crud.get_plan_details(conn, plan_id)
+    if not plan:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan nicht gefunden")
+    return plan
+
+
+@app.patch("/api/plans/{plan_id}", response_model=schemas.PlanResponse)
+def update_plan_route(
+    plan_id: int,
+    req: schemas.PlanUpdate,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    plan = crud.update_plan(conn, plan_id=plan_id, title=req.title, description=req.description, is_archived=req.is_archived)
+    if not plan:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan nicht gefunden")
+    return plan
+
+
+@app.post("/api/plans/{plan_id}/duplicate", response_model=schemas.PlanResponse, status_code=status.HTTP_201_CREATED)
+def duplicate_plan_route(
+    plan_id: int,
+    req: Optional[schemas.PlanDuplicateRequest] = None,
+    current_admin: dict = Depends(get_current_admin),
+    conn: sqlite3.Connection = Depends(get_db),
+):
+    new_title = req.title if req else None
+    dup = crud.duplicate_plan(conn, plan_id=plan_id, new_title=new_title)
+    if not dup:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ursprünglicher Plan nicht gefunden")
+    return dup
 
 
 @app.delete("/api/plans/{plan_id}")
@@ -374,30 +457,6 @@ def delete_plan_route(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@app.get("/api/plans/active", response_model=schemas.PlanResponse)
-def get_active_plan_route(
-    current_user: dict = Depends(get_current_user),
-    conn: sqlite3.Connection = Depends(get_db),
-):
-    plan = crud.get_active_plan(conn)
-    if not plan:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kein aktiver Plan vorhanden")
-    return plan
-
-
-@app.patch("/api/plans/{plan_id}", response_model=schemas.PlanResponse)
-def update_plan_route(
-    plan_id: int,
-    req: schemas.PlanUpdate,
-    current_user: dict = Depends(get_current_user),
-    conn: sqlite3.Connection = Depends(get_db),
-):
-    plan = crud.update_plan(conn, plan_id=plan_id, title=req.title, description=req.description)
-    if not plan:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan nicht gefunden")
-    return plan
-
-
 @app.get("/api/versions/{version_id}", response_model=schemas.VersionResponse)
 def get_version_route(
     version_id: int,
@@ -407,6 +466,8 @@ def get_version_route(
     ver = crud.get_version_details(conn, version_id)
     if not ver:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], ver["plan_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
     return ver
 
 
@@ -417,6 +478,8 @@ def save_version_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], plan_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
     positions_data = [p.model_dump() for p in req.positions]
     contributions_data = [c.model_dump() for c in req.contributions]
     user_name = current_user.get("name") or current_user.get("username") or "Administrator"
@@ -438,6 +501,8 @@ def get_plan_history_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], plan_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
     return crud.get_plan_history(conn, plan_id)
 
 
@@ -450,6 +515,8 @@ def activate_version_route(
     ver = crud.get_version_details(conn, version_id)
     if not ver:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], ver["plan_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
     activated = crud.activate_version(conn, plan_id=ver["plan_id"], version_id=version_id)
     if not activated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
@@ -463,6 +530,11 @@ def update_version_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    ver = crud.get_version_details(conn, version_id)
+    if not ver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], ver["plan_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
     user_name = current_user.get("name") or current_user.get("username") or "Administrator"
     updated = crud.update_version(
         conn,
@@ -482,6 +554,11 @@ def delete_version_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    ver = crud.get_version_details(conn, version_id)
+    if not ver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], ver["plan_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
     try:
         success = crud.delete_version(conn, version_id=version_id)
     except ValueError as e:
@@ -491,7 +568,6 @@ def delete_version_route(
     return {"message": "Version erfolgreich gelöscht", "id": version_id}
 
 
-
 @app.post("/api/plans/{plan_id}/snapshots", response_model=schemas.VersionResponse, status_code=status.HTTP_201_CREATED)
 def create_snapshot_route(
     plan_id: int,
@@ -499,6 +575,8 @@ def create_snapshot_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], plan_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
     ver = crud.create_version_snapshot(
         conn,
         plan_id=plan_id,
@@ -515,6 +593,8 @@ def get_history_comparison_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], plan_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
     return crud.get_history_comparison(conn, plan_id)
 
 
@@ -527,6 +607,12 @@ def create_position_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    ver = crud.get_version_details(conn, version_id)
+    if not ver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], ver["plan_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
+
     return crud.create_position(
         conn,
         version_id=version_id,
@@ -545,6 +631,15 @@ def update_position_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    pos_row = conn.execute(
+        "SELECT p.id, v.plan_id FROM positions p JOIN versions v ON p.version_id = v.id WHERE p.id = ?",
+        (position_id,),
+    ).fetchone()
+    if not pos_row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Position nicht gefunden")
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], pos_row["plan_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
+
     updated = crud.update_position(
         conn,
         position_id=position_id,
@@ -565,6 +660,15 @@ def delete_position_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    pos_row = conn.execute(
+        "SELECT p.id, v.plan_id FROM positions p JOIN versions v ON p.version_id = v.id WHERE p.id = ?",
+        (position_id,),
+    ).fetchone()
+    if not pos_row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Position nicht gefunden")
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], pos_row["plan_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
+
     success = crud.delete_position(conn, position_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Position nicht gefunden")
@@ -580,6 +684,12 @@ def create_contribution_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    ver = crud.get_version_details(conn, version_id)
+    if not ver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version nicht gefunden")
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], ver["plan_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
+
     return crud.create_contribution(
         conn,
         version_id=version_id,
@@ -597,6 +707,15 @@ def update_contribution_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    contrib_row = conn.execute(
+        "SELECT c.id, v.plan_id FROM contributions c JOIN versions v ON c.version_id = v.id WHERE c.id = ?",
+        (contribution_id,),
+    ).fetchone()
+    if not contrib_row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Beitrag nicht gefunden")
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], contrib_row["plan_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
+
     updated = crud.update_contribution(
         conn,
         contribution_id=contribution_id,
@@ -616,6 +735,15 @@ def delete_contribution_route(
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
+    contrib_row = conn.execute(
+        "SELECT c.id, v.plan_id FROM contributions c JOIN versions v ON c.version_id = v.id WHERE c.id = ?",
+        (contribution_id,),
+    ).fetchone()
+    if not contrib_row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Beitrag nicht gefunden")
+    if not crud.check_user_plan_access(conn, current_user["id"], current_user["role"], contrib_row["plan_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diesen Plan")
+
     success = crud.delete_contribution(conn, contribution_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Beitrag nicht gefunden")

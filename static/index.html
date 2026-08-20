@@ -21,7 +21,7 @@
             <div class="login-card glass-panel">
                 <div class="brand-header">
                     <div class="brand-icon">📊</div>
-                    <h1>Ausgabenplaner <span class="badge badge-version" style="font-size: 0.75rem; vertical-align: middle;">v1.1.0</span></h1>
+                    <h1>Ausgabenplaner <span class="badge badge-version" style="font-size: 0.75rem; vertical-align: middle;">v1.2.0</span></h1>
                     <p class="subtitle">Haushaltskosten & Beitragsverwaltung</p>
                 </div>
                 <form id="login-form">
@@ -51,7 +51,7 @@
                 <div class="navbar-brand">
                     <span class="brand-logo">📊</span>
                     <span class="brand-name">Ausgabenplaner</span>
-                    <span class="badge badge-version" id="app-version-badge">v1.1.0</span>
+                    <span class="badge badge-version" id="app-version-badge">v1.2.0</span>
                 </div>
                 <button id="btn-mobile-menu" class="btn-mobile-nav" aria-label="Menü öffnen/schließen">
                     <span class="hamburger-bar"></span>
@@ -77,7 +77,10 @@
                 <!-- Header Toolbar & Version Selector -->
                 <div class="plan-header-bar glass-panel">
                     <div class="plan-title-box">
-                        <h2 id="plan-title">Wirtschaftsplan</h2>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <h2 id="plan-title" style="margin: 0;">Wirtschaftsplan</h2>
+                            <span id="plan-archived-badge" class="badge badge-warning hidden">📦 Archiviert</span>
+                        </div>
                         <div class="version-selector-container">
                             <label for="select-version">Stand:</label>
                             <select id="select-version" class="form-select"></select>
@@ -85,9 +88,6 @@
                         </div>
                     </div>
                     <div class="plan-actions">
-                        <button id="btn-delete-plan" class="btn btn-outline btn-delete-plan admin-only" title="Aktuellen Plan löschen">
-                            🗑️ Plan löschen
-                        </button>
                         <button id="btn-discard-draft" class="btn btn-outline btn-discard hidden" title="Verwirft ungespeicherte Änderungen">
                             ↩️ Entwurf verwerfen
                         </button>
@@ -213,7 +213,7 @@
                 <div class="navbar-brand brand-clickable" id="btn-brand-logo-settings" style="cursor: pointer;" title="Zurück zum Dashboard">
                     <span class="brand-logo">📊</span>
                     <span class="brand-name">Ausgabenplaner</span>
-                    <span class="badge badge-version" id="settings-app-version-badge">v1.1.0</span>
+                    <span class="badge badge-version" id="settings-app-version-badge">v1.2.0</span>
                 </div>
                 <div class="navbar-actions">
                     <div class="user-badge glass-badge">
@@ -248,14 +248,17 @@
                 <div class="settings-page-card glass-panel" style="margin-top: 20px; padding: 24px;">
                     <!-- Settings Tabs Bar -->
                     <div class="settings-tabs-bar">
-                        <button type="button" class="settings-tab-btn active" data-tab="tab-settings-data">
-                            📦 Daten & Backup
+                        <button type="button" class="settings-tab-btn" id="tab-btn-plans" data-tab="tab-settings-plans">
+                            📋 Plan
                         </button>
                         <button type="button" class="settings-tab-btn" id="tab-btn-users" data-tab="tab-settings-users">
                             👥 Benutzerverwaltung
                         </button>
                         <button type="button" class="settings-tab-btn" id="tab-btn-new-user" data-tab="tab-settings-new-user">
                             ➕ Neuer Benutzer
+                        </button>
+                        <button type="button" class="settings-tab-btn active" id="tab-btn-data" data-tab="tab-settings-data">
+                            📦 Daten & Backup
                         </button>
                         <button type="button" class="settings-tab-btn" id="tab-btn-testsuite" data-tab="tab-settings-testsuite">
                             🧪 Automatische Testsuite
@@ -397,6 +400,27 @@
                         </div>
                     </div>
 
+                    <!-- Tab: Plan-Verwaltung (Admin) -->
+                    <div id="tab-settings-plans" class="settings-tab-content hidden">
+                        <div class="plans-management-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                            <div>
+                                <h4 style="margin: 0; font-size: 1.05rem;">📋 Plan verwalten & anpassen</h4>
+                                <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
+                                    Plan-Bezeichnung, Beschreibung oder Status anpassen sowie bei Bedarf weitere Pläne verwalten.
+                                </p>
+                            </div>
+                            <button type="button" id="btn-open-create-plan" class="btn btn-sm btn-primary">
+                                ➕ Neuen Plan anlegen
+                            </button>
+                        </div>
+
+                        <div class="plans-list-container">
+                            <div id="plans-grid" class="plans-grid">
+                                <!-- Rendered dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Tab 2: Benutzerverwaltung (Bestehende Benutzer) -->
                     <div id="tab-settings-users" class="settings-tab-content hidden">
                         <div class="user-management-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -441,6 +465,15 @@
                                     <input type="checkbox" id="user-can-export" checked style="width: 17px; height: 17px; cursor: pointer;">
                                     <span>💾 <strong>Export-Recht erteilen</strong> (Darf Plan-Daten exportieren/sichern)</span>
                                 </label>
+                            </div>
+                            <div class="form-group" id="user-plans-assignment-group" style="margin-top: 10px; margin-bottom: 14px;">
+                                <label class="form-label-sm" style="display: block; margin-bottom: 6px;">📋 <strong>Zugewiesene Pläne</strong></label>
+                                <div id="user-plans-assignment-container" class="plans-assignment-container" style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; max-height: 180px; overflow-y: auto;">
+                                    <!-- Dynamic checkboxes for plans -->
+                                </div>
+                                <small id="user-plans-admin-help" class="text-muted" style="font-size: 0.8rem; display: block; margin-top: 4px;">
+                                    💡 Hinweis: Administratoren haben automatisch Vollzugriff auf alle Pläne.
+                                </small>
                             </div>
                             <div style="display: flex; gap: 8px;">
                                 <button type="submit" id="btn-submit-user" class="btn btn-sm btn-primary">Benutzer erstellen</button>
@@ -487,14 +520,32 @@
                         </div>
 
                         <div class="changelog-timeline">
-                            <!-- Release v1.1.0 -->
+                            <!-- Release v1.2.0 -->
                             <div class="changelog-card glass-panel" style="margin-bottom: 20px; padding: 20px; border-left: 4px solid var(--primary-color, #38bdf8);">
                                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
                                     <div style="display: flex; align-items: center; gap: 10px;">
-                                        <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main);">v1.1.0</h3>
+                                        <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main);">v1.2.0</h3>
                                         <span class="badge badge-success">Aktuelle Version</span>
                                     </div>
-                                    <span class="text-muted" style="font-size: 0.85rem;">August 2026</span>
+                                    <span class="text-muted" style="font-size: 0.85rem;">20. August 2026</span>
+                                </div>
+                                <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
+                                    <li>📋 <strong>Plan-Verwaltung im Optionsmenü</strong>: Pläne zentral in den Einstellungen umbenennen, mit Beschreibungen versehen, archivieren/reaktivieren oder als 1:1 Kopie (Deep Copy) duplizieren.</li>
+                                    <li>👥 <strong>Granulare Plan-Rechte (`user_plans`)</strong>: Benutzer können gezielt einzelnen Plänen zugewiesen werden; Admins besitzen automatisch Vollzugriff.</li>
+                                    <li>🧹 <strong>Fokussiertes Dashboard</strong>: Hauptansicht bereinigt und auf die Kernarbeit mit dem aktuellen Wirtschaftsplan ausgerichtet (keine störenden Zusatzbuttons).</li>
+                                    <li>🏷️ <strong>Bereinigung der Begrifflichkeiten</strong>: Vollständige Umstellung auf „Plan“ bzw. „Wirtschaftsplan“ in der gesamten Anwendung.</li>
+                                    <li>🛡️ <strong>Optimierte Fehlerbehandlung</strong>: Aussagekräftige Fehlermeldungen bei Verbindungsabbrüchen oder gestopptem Server.</li>
+                                </ul>
+                            </div>
+
+                            <!-- Release v1.1.0 -->
+                            <div class="changelog-card glass-panel" style="margin-bottom: 20px; padding: 20px; border-left: 4px solid var(--text-muted, #94a3b8); opacity: 0.95;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main);">v1.1.0</h3>
+                                        <span class="badge badge-secondary">Release</span>
+                                    </div>
+                                    <span class="text-muted" style="font-size: 0.85rem;">20. August 2026</span>
                                 </div>
                                 <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
                                     <li>🚀 <strong>CI/CD Pipeline & GHCR</strong>: Automatischer Multi-Arch Docker Build (<code>amd64</code> & <code>arm64</code>) und Veröffentlichung auf GitHub Container Registry.</li>
@@ -513,7 +564,7 @@
                                         <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-main);">v1.0.0</h3>
                                         <span class="badge badge-secondary">Initial Release</span>
                                     </div>
-                                    <span class="text-muted" style="font-size: 0.85rem;">August 2026</span>
+                                    <span class="text-muted" style="font-size: 0.85rem;">15. August 2026</span>
                                 </div>
                                 <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
                                     <li>✨ <strong>Glassmorphism Dashboard</strong>: Modernes responsives UI mit Echtzeit-KPIs und Saldo-Berechnung.</li>
@@ -741,6 +792,91 @@
                 <button type="button" class="btn btn-outline" data-close="modal-confirm-delete-version">Abbrechen</button>
                 <button id="btn-execute-delete-version" type="button" class="btn btn-danger">🗑️ Ja, Stand löschen</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal: Create Plan -->
+    <div id="modal-create-plan" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>📋 Neuen Plan anlegen</h3>
+                <button class="modal-close" data-close="modal-create-plan">&times;</button>
+            </div>
+            <form id="form-create-plan">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="create-plan-title">Plan-Name</label>
+                        <input type="text" id="create-plan-title" required placeholder="z.B. Wirtschaftsplan 2026 oder Projekt B">
+                    </div>
+                    <div class="form-group">
+                        <label for="create-plan-desc">Beschreibung (optional)</label>
+                        <input type="text" id="create-plan-desc" placeholder="z.B. Haushaltsplan für 2026">
+                    </div>
+                </div>
+                <div class="modal-footer" style="gap: 8px;">
+                    <button type="button" class="btn btn-outline" data-close="modal-create-plan">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">➕ Plan anlegen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Plan -->
+    <div id="modal-edit-plan" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>✏️ Plan bearbeiten</h3>
+                <button class="modal-close" data-close="modal-edit-plan">&times;</button>
+            </div>
+            <form id="form-edit-plan">
+                <input type="hidden" id="edit-plan-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="edit-plan-title">Plan-Name</label>
+                        <input type="text" id="edit-plan-title" required placeholder="z.B. Wirtschaftsplan 2026">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-plan-desc">Beschreibung</label>
+                        <input type="text" id="edit-plan-desc" placeholder="z.B. Planbeschreibung">
+                    </div>
+                    <div class="form-group" style="margin-top: 14px;">
+                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                            <input type="checkbox" id="edit-plan-archived" style="width: 17px; height: 17px; cursor: pointer;">
+                            <span>📦 <strong>Plan archivieren</strong> (In Standardauswahl ausblenden)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer" style="gap: 8px;">
+                    <button type="button" class="btn btn-outline" data-close="modal-edit-plan">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">💾 Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Duplicate Plan -->
+    <div id="modal-duplicate-plan" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>📋 Plan duplizieren</h3>
+                <button class="modal-close" data-close="modal-duplicate-plan">&times;</button>
+            </div>
+            <form id="form-duplicate-plan">
+                <input type="hidden" id="duplicate-plan-id">
+                <div class="modal-body">
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">
+                        Erstellt eine vollständige 1:1 Kopie des Plans <strong id="duplicate-source-name">„...“</strong> inklusive aller historischen Stände, Positionen und Beiträge als Vorlage.
+                    </p>
+                    <div class="form-group">
+                        <label for="duplicate-plan-title">Name des neuen duplizierten Plans</label>
+                        <input type="text" id="duplicate-plan-title" required placeholder="z.B. Wirtschaftsplan 2026 (Kopie)">
+                    </div>
+                </div>
+                <div class="modal-footer" style="gap: 8px;">
+                    <button type="button" class="btn btn-outline" data-close="modal-duplicate-plan">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">📋 Jetzt duplizieren</button>
+                </div>
+            </form>
         </div>
     </div>
 

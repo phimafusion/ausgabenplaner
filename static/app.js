@@ -10,12 +10,25 @@ import { loadHistoryTimeline, loadHistoryComparison, switchHistoryTab, setOnPlan
 import { loadUsersList, resetUserForm, startEditUser, deleteUser, setSwitchTabHandler as setUsersSwitchTab } from "./js/components/users.js";
 import { executeTestsuite, setSwitchTabHandler as setTestsuiteSwitchTab } from "./js/components/testsuite.js";
 import { loadBackupSettings, loadBackupsList, createManualBackup, downloadBackup, deleteBackup, restoreBackup, setOnBackupRestoredHandler } from "./js/components/backups.js";
+import {
+    loadAllPlans,
+    switchPlan,
+    setOnPlanSwitchedHandler,
+    openCreatePlanModal,
+    openEditPlanModal,
+    openDuplicatePlanModal,
+    openDeletePlanModal,
+} from "./js/components/plans.js";
 import { setupEventListeners } from "./js/events.js";
 
 // Wire callbacks across modules
 setUnauthorizedHandler(() => logout());
 setOnPlanChangedHandler(async () => await loadActivePlan());
+setOnPlanSwitchedHandler(async () => {
+    updatePlanView();
+});
 setOnBackupRestoredHandler(async () => {
+    await loadAllPlans();
     await loadActivePlan();
     showDashboard();
 });
@@ -42,14 +55,17 @@ export function showDashboard() {
         if (elements.settingsUserRoleBadge) elements.settingsUserRoleBadge.textContent = state.user.role === "admin" ? "Admin" : "Benutzer";
 
         const canExportOrAdmin = state.user.role === "admin" || !!state.user.can_export;
+        const isAdmin = state.user.role === "admin";
 
-        if (state.user.role === "admin") {
+        if (isAdmin) {
             if (elements.btnSettings) elements.btnSettings.classList.remove("hidden");
+            if (elements.tabBtnPlans) elements.tabBtnPlans.classList.remove("hidden");
             if (elements.tabBtnUsers) elements.tabBtnUsers.classList.remove("hidden");
             if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.remove("hidden");
             if (elements.tabBtnTestsuite) elements.tabBtnTestsuite.classList.remove("hidden");
             if (elements.cardAutomatedBackups) elements.cardAutomatedBackups.classList.remove("hidden");
         } else {
+            if (elements.tabBtnPlans) elements.tabBtnPlans.classList.add("hidden");
             if (elements.tabBtnUsers) elements.tabBtnUsers.classList.add("hidden");
             if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.add("hidden");
             if (elements.tabBtnTestsuite) elements.tabBtnTestsuite.classList.add("hidden");
@@ -59,7 +75,12 @@ export function showDashboard() {
             }
         }
 
-        if (elements.btnDeletePlan) elements.btnDeletePlan.classList.toggle("hidden", state.user.role !== "admin");
+        // Toggle admin-only action buttons in the UI
+        document.querySelectorAll(".admin-only").forEach((el) => {
+            el.classList.toggle("hidden", !isAdmin);
+        });
+
+        if (elements.btnDeletePlan) elements.btnDeletePlan.classList.toggle("hidden", !isAdmin);
         if (elements.btnExportJson) elements.btnExportJson.classList.toggle("hidden", !canExportOrAdmin);
         if (elements.btnExportXlsx) elements.btnExportXlsx.classList.toggle("hidden", !canExportOrAdmin);
         if (elements.btnImportJson) elements.btnImportJson.classList.toggle("hidden", !canExportOrAdmin);
@@ -79,6 +100,9 @@ export function switchSettingsTab(tabId) {
     document.querySelectorAll(".settings-tab-content").forEach((c) => {
         c.classList.toggle("hidden", c.id !== tabId);
     });
+    if (tabId === "tab-settings-plans") {
+        loadAllPlans();
+    }
     if (tabId === "tab-settings-users") {
         loadUsersList();
     }
@@ -134,6 +158,7 @@ export async function login(username, password) {
         state.user = data.user;
         localStorage.setItem("token", state.token);
         showDashboard();
+        await loadAllPlans();
         await loadActivePlan();
     } catch (err) {
         if (elements.loginError) {
@@ -153,11 +178,25 @@ export function logout() {
 
 // Plans & Version Data Loaders
 export async function loadActivePlan() {
-    const resp = await apiFetch("/api/plans/active");
+    const targetUrl = state.activePlanId ? `/api/plans/${state.activePlanId}` : "/api/plans/active";
+    const resp = await apiFetch(targetUrl);
     if (!resp.ok) return;
 
     state.activePlan = await resp.json();
+    state.activePlanId = state.activePlan.id;
+    updatePlanView();
+}
+
+function updatePlanView() {
+    if (!state.activePlan) return;
+
+    if (elements.selectPlan) {
+        elements.selectPlan.value = state.activePlan.id;
+    }
     if (elements.planTitle) elements.planTitle.textContent = state.activePlan.title;
+    if (elements.planArchivedBadge) {
+        elements.planArchivedBadge.classList.toggle("hidden", !state.activePlan.is_archived);
+    }
 
     if (elements.selectVersion) {
         elements.selectVersion.innerHTML = "";
@@ -214,6 +253,7 @@ export async function initApp() {
         try {
             await fetchCurrentUser();
             showDashboard();
+            await loadAllPlans();
             await loadActivePlan();
         } catch (err) {
             logout();
@@ -236,6 +276,11 @@ window.startEditUser = startEditUser;
 window.deleteUser = deleteUser;
 window.openModal = openModal;
 window.closeModal = closeModal;
+window.openCreatePlanModal = openCreatePlanModal;
+window.openEditPlanModal = openEditPlanModal;
+window.openDuplicatePlanModal = openDuplicatePlanModal;
+window.openDeletePlanModal = openDeletePlanModal;
+window.switchPlan = switchPlan;
 
 // Boot application
 if (document.readyState === "loading") {

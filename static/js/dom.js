@@ -146,6 +146,7 @@ export const elements = {
     deletePlanTitleDisplay: document.getElementById("delete-plan-title-display"),
     btnExecuteDeletePlan: document.getElementById("btn-execute-delete-plan"),
     tabBtnChangelog: document.getElementById("tab-btn-changelog"),
+    tabBtnData: document.getElementById("tab-btn-data"),
 
     cardAutomatedBackups: document.getElementById("card-automated-backups"),
     formBackupSettings: document.getElementById("form-backup-settings"),
@@ -153,4 +154,37 @@ export const elements = {
     btnCreateManualBackup: document.getElementById("btn-create-manual-backup"),
     backupSettingsMsg: document.getElementById("backup-settings-msg"),
     backupsListBody: document.getElementById("backups-list-body"),
+
+    // Multi-Plan Management Elements
+    selectPlan: document.getElementById("select-plan"),
+    planArchivedBadge: document.getElementById("plan-archived-badge"),
+    btnQuickNewPlan: document.getElementById("btn-quick-new-plan"),
+    btnQuickEditPlan: document.getElementById("btn-quick-edit-plan"),
+    btnQuickDuplicatePlan: document.getElementById("btn-quick-duplicate-plan"),
+    tabBtnPlans: document.getElementById("tab-btn-plans"),
+    btnOpenCreatePlan: document.getElementById("btn-open-create-plan"),
+    plansGrid: document.getElementById("plans-grid"),
+    userPlansAssignmentContainer: document.getElementById("user-plans-assignment-container"),
+    userPlansAssignmentGroup: document.getElementById("user-plans-assignment-group"),
+
+    // Create Plan Modal
+    modalCreatePlan: document.getElementById("modal-create-plan"),
+    formCreatePlan: document.getElementById("form-create-plan"),
+    createPlanTitle: document.getElementById("create-plan-title"),
+    createPlanDesc: document.getElementById("create-plan-desc"),
+
+    // Edit Plan Modal
+    modalEditPlan: document.getElementById("modal-edit-plan"),
+    formEditPlan: document.getElementById("form-edit-plan"),
+    editPlanId: document.getElementById("edit-plan-id"),
+    editPlanTitle: document.getElementById("edit-plan-title"),
+    editPlanDesc: document.getElementById("edit-plan-desc"),
+    editPlanArchived: document.getElementById("edit-plan-archived"),
+
+    // Duplicate Plan Modal
+    modalDuplicatePlan: document.getElementById("modal-duplicate-plan"),
+    formDuplicatePlan: document.getElementById("form-duplicate-plan"),
+    duplicatePlanId: document.getElementById("duplicate-plan-id"),
+    duplicateSourceName: document.getElementById("duplicate-source-name"),
+    duplicatePlanTitle: document.getElementById("duplicate-plan-title"),
 };

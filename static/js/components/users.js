@@ -3,6 +3,7 @@ import { state } from "../state.js";
 import { elements } from "../dom.js";
 import { apiFetch } from "../api.js";
 import { escapeHtml } from "../formatters.js";
+import { renderUserPlanAssignmentCheckboxes, getSelectedUserPlanIds } from "./plans.js";
 
 let onSwitchTabCallback = null;
 
@@ -28,6 +29,7 @@ export function resetUserForm() {
     if (elements.userFormHeading) elements.userFormHeading.textContent = "Neuen Benutzer anlegen";
     if (elements.btnSubmitUser) elements.btnSubmitUser.textContent = "Benutzer erstellen";
     if (elements.btnCancelUserEdit) elements.btnCancelUserEdit.textContent = "Abbrechen";
+    renderUserPlanAssignmentCheckboxes([]);
 }
 
 export function startEditUser(user) {
@@ -53,6 +55,8 @@ export function startEditUser(user) {
     if (elements.userCanExport) elements.userCanExport.checked = !!user.can_export;
     if (elements.userFormHeading) elements.userFormHeading.textContent = `Benutzer „${user.username}“ bearbeiten`;
     if (elements.btnSubmitUser) elements.btnSubmitUser.textContent = "💾 Änderungen speichern";
+
+    renderUserPlanAssignmentCheckboxes(user.assigned_plan_ids || []);
     if (elements.userName) elements.userName.focus();
 }
 
@@ -78,6 +82,9 @@ export async function loadUsersList() {
     const users = await resp.json();
     if (!elements.usersList) return;
     elements.usersList.innerHTML = "";
+
+    const allPlansMap = new Map((state.availablePlans || []).map((p) => [p.id, p.title]));
+
     users.forEach((u) => {
         const card = document.createElement("div");
         card.className = "user-profile-card glass-panel";
@@ -85,6 +92,16 @@ export async function loadUsersList() {
         const isAdmin = u.role === "admin";
         const isSelf = state.user && String(state.user.id) === String(u.id);
         const initials = (u.name || u.username || "??").trim().substring(0, 2).toUpperCase();
+
+        let planBadges = "";
+        if (isAdmin) {
+            planBadges = `<span class="badge badge-admin" style="font-size: 0.75rem;">📋 Alle Pläne (Vollzugriff)</span>`;
+        } else if (u.assigned_plan_ids && u.assigned_plan_ids.length > 0) {
+            const planNames = u.assigned_plan_ids.map((id) => allPlansMap.get(id) || `Plan #${id}`);
+            planBadges = planNames.map((n) => `<span class="badge badge-saved" style="font-size: 0.75rem;">📋 ${escapeHtml(n)}</span>`).join(" ");
+        } else {
+            planBadges = `<span class="badge badge-saved" style="font-size: 0.75rem;">📋 Alle Pläne (Offen)</span>`;
+        }
 
         card.innerHTML = `
             <div class="user-card-top">
@@ -100,13 +117,17 @@ export async function loadUsersList() {
                 </div>
             </div>
 
-            <div class="user-card-badges">
+            <div class="user-card-badges" style="margin-bottom: 8px;">
                 <span class="badge ${isAdmin ? 'badge-admin' : 'badge-user'}">
                     ${isAdmin ? '👑 Administrator' : '👤 Benutzer'}
                 </span>
                 <span class="badge ${u.can_export ? 'badge-saved' : 'badge-archived'}">
                     ${u.can_export ? '💾 Export erlaubt' : '🔒 Kein Export'}
                 </span>
+            </div>
+
+            <div class="user-card-plans" style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 4px;">
+                ${planBadges}
             </div>
 
             <div class="user-card-actions">
@@ -126,3 +147,4 @@ export async function loadUsersList() {
 // Window attachments for inline HTML onclick handlers
 window.startEditUser = startEditUser;
 window.deleteUser = deleteUser;
+

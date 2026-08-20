@@ -3,7 +3,9 @@
 export const state = {
     token: localStorage.getItem("token") || null,
     user: null,
+    availablePlans: [],
     activePlan: null,
+    activePlanId: null,
     selectedVersionId: null,
     currentVersionDetails: null,
     isDirty: false,

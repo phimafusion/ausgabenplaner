@@ -294,12 +294,12 @@ def test_version_badge_changelog_and_plan_deletion_ui():
     # Changelog tab in Settings
     assert 'id="tab-btn-changelog"' in content
     assert 'id="tab-settings-changelog"' in content
+    assert "v1.2.0" in content
     assert "v1.1.0" in content
     assert "v1.0.0" in content
     assert "Release Notes" in content
 
-    # Plan deletion UI
-    assert 'id="btn-delete-plan"' in content
+    # Plan deletion UI & Modals
     assert 'id="modal-confirm-delete-plan"' in content
     assert 'id="btn-execute-delete-plan"' in content
 

@@ -13,6 +13,7 @@ class UserCreate(BaseModel):
     name: str
     role: str = "user"
     can_export: bool = True
+    assigned_plan_ids: Optional[List[int]] = None
 
 
 class UserUpdate(BaseModel):
@@ -20,6 +21,7 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     password: Optional[str] = None
     can_export: Optional[bool] = None
+    assigned_plan_ids: Optional[List[int]] = None
 
 
 class UserResponse(BaseModel):
@@ -28,6 +30,7 @@ class UserResponse(BaseModel):
     name: str
     role: str
     can_export: bool = True
+    assigned_plan_ids: List[int] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -146,14 +149,35 @@ class PlanCreate(BaseModel):
 class PlanUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    is_archived: Optional[bool] = None
+
+
+class PlanDuplicateRequest(BaseModel):
+    title: Optional[str] = None
 
 
 class PlanResponse(BaseModel):
     id: int
     title: str
     description: Optional[str] = None
+    is_archived: bool = False
+    created_at: Optional[str] = None
     active_version: Optional[VersionResponse] = None
     versions: List[Dict[str, Any]] = []
+
+
+class PlanSummaryResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    is_archived: bool = False
+    created_at: Optional[str] = None
+    versions_count: int = 0
+    active_version_id: Optional[int] = None
+    active_version_title: Optional[str] = None
+    total_expenses: Optional[float] = None
+    total_contributions: Optional[float] = None
+    total_balance: Optional[float] = None
 
 
 class AppInfoResponse(BaseModel):

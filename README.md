@@ -1,11 +1,22 @@
 # Ausgabenplaner 📊💰
 
-Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Verwaltung von Hausgeldern, Liegenschaftskosten, Haushaltsbudgets und Beitragszahlungen mit integrierter **Versionshistorie (Stände-Management)**, **Excel-Export**, **Live-Matrix-Vergleich** und **Echtzeit-Testsuite**.
+Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Verwaltung von Hausgeldern, Kostenpositionen, Haushaltsbudgets und Beitragszahlungen mit integrierter **Plan-Verwaltung**, **Versionshistorie (Stände-Management)**, **Excel-Export**, **Live-Matrix-Vergleich** und **Echtzeit-Testsuite**.
 
 ---
 
 ## 🚀 Kernfunktionen
 
+- **📋 Plan- & Haushaltsverwaltung**:
+  - Verwaltung des Wirtschaftsplans mit optionaler Erweiterbarkeit im Einstellungsmenü.
+  - Aufgeräumtes Dashboard für den direkten Fokus auf den aktuellen Wirtschaftsplan.
+  - **Plan-CRUD & Anpassung**: Pläne im Optionsmenü umbenennen, mit Beschreibungen versehen, archivieren oder reaktivieren.
+  - **1:1 Plan-Duplizierung (Deep Copy)**: Duplizieren kompletter Pläne inklusive aller historischen Stände, Positionen und Beiträge als Vorlage.
+  - **Sichere Plan-Löschung**: Kaskadierendes Löschen mit Bestätigung und Schutz des letzten verbleibenden Plans.
+- **👥 Plan-spezifische Benutzer- & Rechteverwaltung (RBAC)**:
+  - Rollenbasiertes Rechtesystem (Administrator vs. Benutzer).
+  - **Granulare Plan-Zuordnung (`user_plans`)**: Benutzer können gezielt einzelnen Plänen zugewiesen werden; Admins besitzen automatisch Vollzugriff auf alle Pläne.
+  - Granulare Rechtevergabe für Daten-Export & Sicherung.
+  - Sichere Passwort-Verwaltung mit Hash-Verfahren.
 - **📊 Modernes Glassmorphism Dashboard**:
   - Echtzeit-KPI-Karten für Gesamtausgaben, Beitragszahlungen und Rest-Saldo.
   - Dynamische Farbkodierung (positiver/negativer Saldo).
@@ -19,11 +30,8 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
   - Side-by-Side Pivot-Vergleich aller historischen Stände nebeneinander mit dynamischer Kosten- und Beitragsentwicklung.
 - **⏱️ Live-Intervall-Berechnungsengine**:
   - Automatische Monatskosten-Umrechnung für quartalsweise und jährliche Zahlungen.
-- **👥 Benutzer- & Rechteverwaltung (RBAC)**:
-  - Rollenbasiertes Rechtesystem (Administrator vs. Benutzer).
-  - Granulare Rechtevergabe (z. B. Export-Rechte für Benutzer).
-  - Sichere Passwort-Verwaltung mit Hash-Verfahren.
-- **💾 Datensicherung & Export**:
+- **💾 Datensicherung, Snapshots & Export**:
+  - **Automatisierte Backups & Snapshots**: Konfigurierbare automatische Intervallsicherungen mit Rotation (Retention).
   - **JSON-Export & Import**: Vollständige Sicherung und 1-Klick-Wiederherstellung aller Pläne, Stände und Positionen.
   - **Excel-Export (.xlsx)**: Professionell aufbereitete Arbeitsmappe mit formatierter Datums- und Währungsdarstellung.
 - **🧪 Integrierte Live-Testsuite (Admin)**:
@@ -40,16 +48,17 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
 ├──────────────────────────────┬──────────────────────────────┤
 │ Backend:                     │ Frontend (Modular ES6):      │
 │ • Python 3.12+ / FastAPI     │ • state.js (Reactive Store)  │
-│ • SQLite3 (lokal & atomar)   │ • api.js (Auth & Endpoints)  │
+│ • SQLite3 (atomar + WAL)     │ • api.js (Auth & Endpoints)  │
 │ • openpyxl (Excel-Engine)    │ • formatters.js (DE Formats) │
-│ • SSE Subprocess Test Runner │ • 6 UI-Komponenten-Module    │
+│ • Multi-Plan RBAC & Crud     │ • 7 UI-Komponenten-Module    │
+│ • SSE Subprocess Test Runner │ • plans.js, backups.js etc.  │
 └──────────────────────────────┴──────────────────────────────┘
 ```
 
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12+), SQLite3
 - **Frontend**: Vanilla ES6-Module (`<script type="module">`), CSS3 (Glassmorphism), HTML5
 - **Datenexport**: `openpyxl` (Excel), JSON-Engine
-- **Testing**: `pytest`, `pytest-cov`, `httpx` (53 automatisierte Tests)
+- **Testing**: `pytest`, `pytest-cov`, `httpx` (58 automatisierte Tests)
 - **Container & CI/CD**: Docker (Multi-Arch `linux/amd64` & `linux/arm64`), Docker Compose, GitHub Actions & GitHub Container Registry (GHCR)
 
 ---
@@ -114,7 +123,7 @@ Die Anwendung ist anschließend unter `http://localhost:3000` erreichbar. Die Da
 
 ## 🧪 Tests ausführen
 
-Das Projekt verfügt über eine vollständige Testabdeckung mit 49 automatisierten Tests:
+Das Projekt verfügt über eine vollständige Testabdeckung mit 58 automatisierten Tests:
 
 ```bash
 # Tests ausführen
@@ -132,8 +141,8 @@ pytest --cov=app --cov-report=term-missing
 ausgabenplaner/
 ├── app/
 │   ├── auth.py                  # JWT-Token & Passwort-Hashing
-│   ├── crud.py                  # SQLite CRUD & Snapshot-Operationen
-│   ├── database.py              # DB-Initialisierung & Seed-Daten
+│   ├── crud.py                  # SQLite CRUD, Multi-Plan & Snapshot-Operationen
+│   ├── database.py              # DB-Initialisierung, Migrationen & Seed-Daten
 │   ├── domain.py                # Business-Logik & Intervall-Berechnungen
 │   ├── main.py                  # FastAPI Endpunkte & SSE Test Runner
 │   └── schemas.py               # Pydantic Modelle & Validierung
@@ -149,14 +158,16 @@ ausgabenplaner/
 │   │       ├── kpi.js           # KPI-Rendering & Summenberechnung
 │   │       ├── tables.js        # Positions- & Beitrags-Tabellen
 │   │       ├── history.js       # Timeline & Matrix-Vergleich
-│   │       ├── users.js         # Benutzerverwaltung & Rechte
-│   │       └── testsuite.js     # SSE Testsuite-Runner
+│   │       ├── users.js         # Benutzerverwaltung & Plan-Rechte
+│   │       ├── testsuite.js     # SSE Testsuite-Runner
+│   │       ├── backups.js       # Backup- & Snapshot-Verwaltung
+│   │       └── plans.js         # Multi-Plan-Verwaltung & Switcher
 │   ├── app.js                   # Haupt-Einstiegspunkt & Bootstrapping
 │   ├── index.html               # Responsive Single-Page UI
 │   └── styles.css               # Modernes Glassmorphism-Design
-├── tests/                       # 39 Pytest-Tests (Domain, Auth, UI, History)
-├── data/                        # Lokales SQLite-Datenbankverzeichnis
-├── docker-compose.yml           # Docker Compose Konfiguration
+├── tests/                       # 58 Pytest-Tests (Domain, Auth, UI, Multi-Plan, Backups)
+├── data/                        # Lokales SQLite-Datenbankverzeichnis & Snapshots
+├── docker-compose.yml           # Docker Compose Konfiguration (GHCR Image)
 ├── Dockerfile                   # Multi-Stage Dockerfile
 ├── requirements.txt             # Python Dependencies
 ├── TODO.md                      # Roadmap & Feature Backlog
@@ -169,7 +180,7 @@ ausgabenplaner/
 
 Zukünftige Erweiterungen und Vorschläge sind im [TODO.md](TODO.md) dokumentiert:
 - 📊 Interaktive Diagramme (Kostenverteilung nach Kategorien & Trendverlauf)
-- 🏢 Multi-Plan-Verwaltung (Mehrere Liegenschaften/Objekte parallel)
+- 📋 Erweiterte Plan-Verwaltung & Vorlagen
 - 📑 Druckfertiger PDF-Bericht für Versammlungen
 - 🏷️ Eigenes Kategorien-Management mit Farb-Tags
 - ⚡ Drag-and-Drop Sortierung & Inline-Editing

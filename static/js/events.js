@@ -10,6 +10,19 @@ import { loadHistoryTimeline, loadHistoryComparison, switchHistoryTab } from "./
 import { resetUserForm, loadUsersList } from "./components/users.js";
 import { executeTestsuite } from "./components/testsuite.js";
 import { saveBackupSettings, createManualBackup } from "./components/backups.js";
+import {
+    loadAllPlans,
+    switchPlan,
+    openCreatePlanModal,
+    submitCreatePlan,
+    openEditPlanModal,
+    submitEditPlan,
+    openDuplicatePlanModal,
+    submitDuplicatePlan,
+    openDeletePlanModal,
+    executeDeletePlan,
+    getSelectedUserPlanIds,
+} from "./components/plans.js";
 
 export function setupEventListeners({
     login,
@@ -29,6 +42,48 @@ export function setupEventListeners({
             e.returnValue = "Sie haben ungespeicherte Änderungen.";
         }
     });
+
+    // Plan Selection Dropdown
+    if (elements.selectPlan) {
+        elements.selectPlan.addEventListener("change", (e) => {
+            const planId = e.target.value;
+            if (planId) {
+                switchPlan(planId);
+            }
+        });
+    }
+
+    // Quick Plan Buttons
+    if (elements.btnQuickNewPlan) {
+        elements.btnQuickNewPlan.addEventListener("click", openCreatePlanModal);
+    }
+    if (elements.btnQuickEditPlan) {
+        elements.btnQuickEditPlan.addEventListener("click", () => {
+            if (state.activePlanId) openEditPlanModal(state.activePlanId);
+        });
+    }
+    if (elements.btnQuickDuplicatePlan) {
+        elements.btnQuickDuplicatePlan.addEventListener("click", () => {
+            if (state.activePlanId) openDuplicatePlanModal(state.activePlanId);
+        });
+    }
+    if (elements.btnOpenCreatePlan) {
+        elements.btnOpenCreatePlan.addEventListener("click", openCreatePlanModal);
+    }
+
+    // Plan Modals Form Submissions
+    if (elements.formCreatePlan) {
+        elements.formCreatePlan.addEventListener("submit", submitCreatePlan);
+    }
+    if (elements.formEditPlan) {
+        elements.formEditPlan.addEventListener("submit", submitEditPlan);
+    }
+    if (elements.formDuplicatePlan) {
+        elements.formDuplicatePlan.addEventListener("submit", submitDuplicatePlan);
+    }
+    if (elements.btnExecuteDeletePlan) {
+        elements.btnExecuteDeletePlan.addEventListener("click", executeDeletePlan);
+    }
 
     // Login Form
     if (elements.loginForm) {
@@ -527,6 +582,9 @@ export function setupEventListeners({
             if (targetId === "tab-settings-new-user" && (!elements.userEditId || !elements.userEditId.value)) {
                 resetUserForm();
             }
+            if (targetId === "tab-settings-plans") {
+                loadAllPlans();
+            }
             switchSettingsTab(targetId);
             if (targetId === "tab-settings-new-user" && elements.userUsername) {
                 elements.userUsername.focus();
@@ -621,6 +679,7 @@ export function setupEventListeners({
                 closeModal("modal-import");
                 closeModal("modal-settings");
                 setDirty(false);
+                await loadAllPlans();
                 await loadActivePlan();
                 alert("Daten erfolgreich wiederhergestellt!");
             } catch (err) {
@@ -654,9 +713,10 @@ export function setupEventListeners({
             const password = elements.userPassword.value;
             const role = elements.userRole.value;
             const can_export = elements.userCanExport ? elements.userCanExport.checked : true;
+            const assigned_plan_ids = getSelectedUserPlanIds();
 
             if (editId) {
-                const payload = { name, role, can_export };
+                const payload = { name, role, can_export, assigned_plan_ids };
                 if (password && password.trim()) {
                     payload.password = password.trim();
                 }
@@ -672,6 +732,7 @@ export function setupEventListeners({
                         state.user.name = name;
                         state.user.role = role;
                         state.user.can_export = can_export;
+                        state.user.assigned_plan_ids = assigned_plan_ids;
                         showDashboard();
                     }
                 } else {
@@ -681,7 +742,7 @@ export function setupEventListeners({
             } else {
                 const resp = await apiFetch("/api/users", {
                     method: "POST",
-                    body: { username, name, password, role, can_export },
+                    body: { username, name, password, role, can_export, assigned_plan_ids },
                 });
 
                 if (resp.ok) {

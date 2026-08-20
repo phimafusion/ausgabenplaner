@@ -43,7 +43,7 @@ def test_plan_crud_and_deletion_flow():
     # 4. Create a second plan
     create_resp = client.post(
         "/api/plans",
-        json={"title": "Zweiter Plan (Objekt B)", "description": "Liegenschaft 2"},
+        json={"title": "Zweiter Plan (Objekt B)", "description": "Zweiter Wirtschaftsplan"},
         headers=admin_headers,
     )
     assert create_resp.status_code == 201

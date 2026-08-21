@@ -38,7 +38,7 @@ def test_index_html_viewport_and_mobile_nav():
 
 
 def test_styles_css_responsive_rules():
-    """Verify that styles.css defines touch-friendly baselines and mobile media queries."""
+    """Verify that styles.css defines touch-friendly baselines, mobile media queries, and smartphone optimizations."""
     css_path = STATIC_DIR / "styles.css"
     assert css_path.exists(), "styles.css must exist"
     content = css_path.read_text(encoding="utf-8")
@@ -54,6 +54,7 @@ def test_styles_css_responsive_rules():
     # Media queries for tablet and smartphone
     assert "@media (max-width: 860px)" in content
     assert "@media (max-width: 640px)" in content
+    assert "@media (max-width: 380px)" in content
 
     # Mobile table card transform rules
     assert "data-table" in content
@@ -70,6 +71,18 @@ def test_styles_css_responsive_rules():
     # Table row separation and zebra striping
     assert ".data-table tbody tr:nth-child(even)" in content
     assert ".data-table tbody tr:nth-child(odd)" in content
+
+    # Compact Mobile KPI grid (3-column micro dashboard)
+    assert ".kpi-grid" in content
+    assert "grid-template-columns: repeat(3, 1fr);" in content
+
+    # Scrollable tabs without multi-line wrapping
+    assert "overflow-x: auto;" in content
+    assert "flex-wrap: nowrap;" in content
+
+    # Bottom sheet modal behavior & safe area support
+    assert "env(safe-area-inset-bottom" in content
+    assert "slideUpSheet" in content
 
 
 def test_app_js_mobile_interaction_and_data_labels():

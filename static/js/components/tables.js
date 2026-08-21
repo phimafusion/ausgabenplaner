@@ -136,13 +136,14 @@ export function renderVersionDetails(verData) {
             filteredPositions.forEach((p) => {
                 const tr = document.createElement("tr");
                 const amountClass = p.amount < 0 ? "text-neg" : "text-pos";
+                const hasComment = Boolean(p.comment && p.comment.trim().length > 0);
                 tr.innerHTML = `
-                    <td data-label="Position"><strong>${escapeHtml(p.title)}</strong></td>
-                    <td data-label="Kategorie">${getCategoryBadgeHtml(p.category)}</td>
-                    <td data-label="Kosten" class="${amountClass}">${escapeHtml(p.amount_formatted || formatCurrency(p.amount))}</td>
-                    <td data-label="Bemerkung" class="text-muted">${escapeHtml(p.comment || "")}</td>
+                    <td data-label="Position" class="cell-title"><strong>${escapeHtml(p.title)}</strong></td>
+                    <td data-label="Kategorie" class="cell-category">${getCategoryBadgeHtml(p.category)}</td>
+                    <td data-label="Kosten" class="cell-amount ${amountClass}">${escapeHtml(p.amount_formatted || formatCurrency(p.amount))}</td>
+                    <td data-label="Bemerkung" class="cell-comment text-muted ${hasComment ? '' : 'is-empty'}">${hasComment ? escapeHtml(p.comment) : ''}</td>
                     ${state.isPositionsUnlocked ? `
-                    <td data-label="Aktionen" class="actions-cell">
+                    <td data-label="Aktionen" class="cell-actions actions-cell">
                         <button class="btn btn-sm btn-outline btn-icon" onclick="editPosition('${p.id}')" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
                         <button class="btn btn-sm btn-danger btn-icon" onclick="deletePosition('${p.id}')" title="Löschen" aria-label="Löschen">🗑️</button>
                     </td>` : ''}
@@ -163,12 +164,13 @@ export function renderVersionDetails(verData) {
         (verData.contributions || []).forEach((c) => {
             const tr = document.createElement("tr");
             const amountClass = c.amount < 0 ? "text-neg" : "text-pos";
+            const hasComment = Boolean(c.comment && c.comment.trim().length > 0);
             tr.innerHTML = `
-                <td data-label="Person"><strong>Zahlung ${escapeHtml(c.person_name)}</strong></td>
-                <td data-label="Betrag" class="${amountClass}">${escapeHtml(c.amount_formatted || formatCurrency(c.amount))}</td>
-                <td data-label="Bemerkung" class="text-muted">${escapeHtml(c.comment || "")}</td>
+                <td data-label="Person" class="cell-title"><strong>Zahlung ${escapeHtml(c.person_name)}</strong></td>
+                <td data-label="Betrag" class="cell-amount ${amountClass}">${escapeHtml(c.amount_formatted || formatCurrency(c.amount))}</td>
+                <td data-label="Bemerkung" class="cell-comment text-muted ${hasComment ? '' : 'is-empty'}">${hasComment ? escapeHtml(c.comment) : ''}</td>
                 ${state.isContributionsUnlocked ? `
-                <td data-label="Aktionen" class="actions-cell">
+                <td data-label="Aktionen" class="cell-actions actions-cell">
                     <button class="btn btn-sm btn-outline btn-icon" onclick="editContribution('${c.id}')" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
                     <button class="btn btn-sm btn-danger btn-icon" onclick="deleteContribution('${c.id}')" title="Löschen" aria-label="Löschen">🗑️</button>
                 </td>` : ''}

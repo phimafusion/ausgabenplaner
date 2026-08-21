@@ -58,7 +58,10 @@ def test_styles_css_responsive_rules():
 
     # Mobile table card transform rules
     assert "data-table" in content
-    assert "content: attr(data-label);" in content
+    assert ".cell-title" in content
+    assert ".cell-amount" in content
+    assert ".cell-category" in content
+    assert ".cell-comment" in content
 
     # Sticky historical comparison column for mobile scrolling
     assert "position: sticky;" in content
@@ -95,11 +98,15 @@ def test_app_js_mobile_interaction_and_data_labels():
     assert "is-open" in content
     assert "is-active" in content
 
-    # Data label attributes for mobile card rendering
+    # Data label attributes & compact classes for mobile card rendering
     assert 'data-label="Position"' in content
     assert 'data-label="Kosten"' in content
     assert 'data-label="Person"' in content
     assert 'data-label="Betrag"' in content
+    assert 'cell-title' in content
+    assert 'cell-category' in content
+    assert 'cell-amount' in content
+    assert 'cell-comment' in content
 
 
 def test_static_files_served():

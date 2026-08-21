@@ -1588,16 +1588,16 @@ select,
         display: none !important;
     }
 
-    /* Position & Title (left-aligned) */
+    /* Position & Title (top-left) */
     .data-table tbody td.cell-title {
         order: 1;
-        font-size: 0.92rem;
+        font-size: 0.94rem;
         color: var(--text-main);
         line-height: 1.3;
         word-break: break-word;
-        flex: 1 1 auto;
+        flex: 1 1 0;
         min-width: 0;
-        max-width: calc(100% - 150px);
+        padding-right: 8px;
     }
 
     .data-table tbody td.cell-title strong {
@@ -1605,26 +1605,24 @@ select,
         font-weight: 600;
     }
 
-    /* Amount (Kosten / Betrag) right-aligned */
+    /* Amount (top-right) */
     .data-table tbody td.cell-amount {
         order: 2;
         margin-left: auto;
         text-align: right;
-        font-size: 0.96rem;
+        font-size: 1.0rem;
         font-weight: 700;
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
         flex-shrink: 0;
-        padding-left: 4px;
     }
 
-    /* Category Badge directly right of Amount */
+    /* Category Badge on subline (small & subtle) */
     .data-table tbody td.cell-category {
         order: 3;
-        font-size: 0.76rem;
+        font-size: 0.72rem;
         flex: 0 0 auto;
-        margin-left: 4px;
-        max-width: 130px;
+        margin-top: 3px;
     }
 
     .data-table tbody td.cell-category .badge,
@@ -1632,25 +1630,23 @@ select,
         display: inline-flex;
         align-items: center;
         gap: 3px;
-        padding: 2px 6px;
-        font-size: 0.72rem;
+        padding: 1px 6px;
+        font-size: 0.70rem;
         font-weight: 500;
-        border-radius: 5px;
+        border-radius: 4px;
         line-height: 1.2;
-        max-width: 125px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
-    /* Comment / Note on subline below */
+    /* Comment / Note on subline next to category */
     .data-table tbody td.cell-comment {
         order: 4;
-        width: 100%;
-        font-size: 0.78rem;
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 0.76rem;
         color: var(--text-muted);
         line-height: 1.25;
-        padding-top: 1px;
+        margin-top: 3px;
+        margin-left: 6px;
         word-break: break-word;
     }
 

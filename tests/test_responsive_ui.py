@@ -298,6 +298,8 @@ def test_version_badge_changelog_and_plan_deletion_ui():
     # Changelog tab in Settings
     assert 'id="tab-btn-changelog"' in content
     assert 'id="tab-settings-changelog"' in content
+    assert "<details" in content
+    assert "changelog-summary" in content
     assert "v1.2.0" in content
     assert "v1.1.0" in content
     assert "v1.0.0" in content
@@ -312,6 +314,8 @@ def test_version_badge_changelog_and_plan_deletion_ui():
     assert ".badge-version" in css_content
     assert ".btn-delete-plan" in css_content
     assert ".changelog-timeline" in css_content
+    assert "details.changelog-card" in css_content
+    assert ".changelog-summary" in css_content
 
     # JS wiring
     js_content = get_all_frontend_js_content()

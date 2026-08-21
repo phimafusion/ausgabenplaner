@@ -2077,20 +2077,75 @@ select.backup-input-styled option {
 /* Changelog Timeline */
 .changelog-timeline {
     display: flex;
+.changelog-timeline {
+    display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
 }
 
-.changelog-card {
+/* Collapsible Changelog Accordion */
+details.changelog-card {
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    transition: all 0.2s ease;
+    overflow: hidden;
 }
 
-.changelog-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.2);
+details.changelog-card[open] {
+    background: rgba(15, 23, 42, 0.85);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.changelog-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    transition: background-color 0.15s ease;
+}
+
+.changelog-summary::-webkit-details-marker {
+    display: none;
+}
+
+.changelog-summary:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.changelog-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.changelog-summary-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.changelog-chevron {
+    display: inline-block;
+    transition: transform 0.25s ease;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+details[open] .changelog-chevron {
+    transform: rotate(180deg);
+    color: var(--primary);
+}
+
+.changelog-body {
+    padding: 0 20px 20px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 4px;
+    padding-top: 14px;
 }
 
 .changelog-list {
@@ -2099,7 +2154,7 @@ select.backup-input-styled option {
 }
 
 .changelog-list li {
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .changelog-list li:last-child {

@@ -521,60 +521,74 @@
 
                         <div class="changelog-timeline">
                             <!-- Release v1.2.0 -->
-                            <div class="changelog-card glass-panel" style="margin-bottom: 20px; padding: 20px; border-left: 4px solid var(--primary-color, #38bdf8);">
-                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main);">v1.2.0</h3>
-                                        <span class="badge badge-success">Aktuelle Version</span>
+                            <details class="changelog-card glass-panel" style="border-left: 4px solid var(--primary-color, #38bdf8);">
+                                <summary class="changelog-summary">
+                                    <div class="changelog-summary-left">
+                                        <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-main);">v1.2.0</h3>
+                                        <span class="badge badge-success">Aktuell</span>
                                     </div>
-                                    <span class="text-muted" style="font-size: 0.85rem;">20. August 2026</span>
+                                    <div class="changelog-summary-right">
+                                        <span class="text-muted" style="font-size: 0.85rem;">21. August 2026</span>
+                                        <span class="changelog-chevron">▼</span>
+                                    </div>
+                                </summary>
+                                <div class="changelog-body">
+                                    <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
+                                        <li>⏰ <strong>Zeitzonen-Korrektur (MEZ / MESZ)</strong>: Automatisierte SQLite-Backups, Scheduler und Snapshot-Dateinamen nutzen stets die dynamische lokale Zeitzone des Systems / Hosts.</li>
+                                        <li>🎨 <strong>Tabellenzeilen-Design & Zebra-Muster</strong>: Hoher Kontrast mit dezenten Streifen, klaren Trennlinien und Hover-Effekten für optimale Übersicht der Ausgaben und Beiträge.</li>
+                                        <li>🗑️ <strong>Plan-Löschung & Schutz</strong>: Sicheres Löschen von Plänen durch Administratoren inkl. Kaskadierung und Schutz des letzten verbleibenden Plans.</li>
+                                        <li>🏷️ <strong>Header-Versionsanzeige</strong>: Permanente Anzeige der aktuellen Version im App-Header und Login-Bereich.</li>
+                                        <li>📋 <strong>Einklappbarer Changelog</strong>: Interaktive Versionshistorie in den Einstellungen mit einklappbaren Release-Notizen.</li>
+                                    </ul>
                                 </div>
-                                <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
-                                    <li>📋 <strong>Plan-Verwaltung im Optionsmenü</strong>: Pläne zentral in den Einstellungen umbenennen, mit Beschreibungen versehen, archivieren/reaktivieren oder als 1:1 Kopie (Deep Copy) duplizieren.</li>
-                                    <li>👥 <strong>Granulare Plan-Rechte (`user_plans`)</strong>: Benutzer können gezielt einzelnen Plänen zugewiesen werden; Admins besitzen automatisch Vollzugriff.</li>
-                                    <li>🧹 <strong>Fokussiertes Dashboard</strong>: Hauptansicht bereinigt und auf die Kernarbeit mit dem aktuellen Wirtschaftsplan ausgerichtet (keine störenden Zusatzbuttons).</li>
-                                    <li>🏷️ <strong>Bereinigung der Begrifflichkeiten</strong>: Vollständige Umstellung auf „Plan“ bzw. „Wirtschaftsplan“ in der gesamten Anwendung.</li>
-                                    <li>🛡️ <strong>Optimierte Fehlerbehandlung</strong>: Aussagekräftige Fehlermeldungen bei Verbindungsabbrüchen oder gestopptem Server.</li>
-                                </ul>
-                            </div>
+                            </details>
 
                             <!-- Release v1.1.0 -->
-                            <div class="changelog-card glass-panel" style="margin-bottom: 20px; padding: 20px; border-left: 4px solid var(--text-muted, #94a3b8); opacity: 0.95;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main);">v1.1.0</h3>
+                            <details class="changelog-card glass-panel" style="border-left: 4px solid var(--text-muted, #94a3b8); opacity: 0.95;">
+                                <summary class="changelog-summary">
+                                    <div class="changelog-summary-left">
+                                        <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-main);">v1.1.0</h3>
                                         <span class="badge badge-secondary">Release</span>
                                     </div>
-                                    <span class="text-muted" style="font-size: 0.85rem;">20. August 2026</span>
+                                    <div class="changelog-summary-right">
+                                        <span class="text-muted" style="font-size: 0.85rem;">20. August 2026</span>
+                                        <span class="changelog-chevron">▼</span>
+                                    </div>
+                                </summary>
+                                <div class="changelog-body">
+                                    <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
+                                        <li>🚀 <strong>CI/CD Pipeline & GHCR</strong>: Automatischer Multi-Arch Docker Build (<code>amd64</code> & <code>arm64</code>) und Veröffentlichung auf GitHub Container Registry.</li>
+                                        <li>🐳 <strong>Synology 1-Klick Deployment</strong>: Optimierte <code>docker-compose.yml</code> für schlanke Updates ohne lokalen Build auf dem NAS.</li>
+                                        <li>🏷️ <strong>Versions-Badge im Header</strong>: Permanente Anzeige der App-Version in Navigation und Login.</li>
+                                        <li>🔒 <strong>Datenschutz & Bereinigung</strong>: Vollständige Anonymisierung der initialen Datenbank und Bereinigung sensibler Defaults.</li>
+                                        <li>🧪 <strong>Container-Testsuite</strong>: Pytest & Testsuite direkt im Synology Docker-Container integriert.</li>
+                                    </ul>
                                 </div>
-                                <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
-                                    <li>🚀 <strong>CI/CD Pipeline & GHCR</strong>: Automatischer Multi-Arch Docker Build (<code>amd64</code> & <code>arm64</code>) und Veröffentlichung auf GitHub Container Registry.</li>
-                                    <li>🐳 <strong>Synology 1-Klick Deployment</strong>: Optimierte <code>docker-compose.yml</code> für schlanke Updates ohne lokalen Build auf dem NAS.</li>
-                                    <li>🗑️ <strong>Plan-Löschung</strong>: Pläne können von Administratoren sicher gelöscht werden (mit Kaskadierung und Schutz des letzten Plans).</li>
-                                    <li>🏷️ <strong>Versions-Badge im Header</strong>: Permanente Anzeige der App-Version in Navigation und Login.</li>
-                                    <li>🔒 <strong>Datenschutz & Bereinigung</strong>: Vollständige Anonymisierung der initialen Datenbank und Entfernung harter Secrets aus Dockerfile.</li>
-                                    <li>🧪 <strong>Container-Testsuite</strong>: Pytest & Testsuite direkt im Synology Docker-Container integriert.</li>
-                                </ul>
-                            </div>
+                            </details>
 
                             <!-- Release v1.0.0 -->
-                            <div class="changelog-card glass-panel" style="padding: 20px; border-left: 4px solid var(--text-muted, #94a3b8); opacity: 0.9;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
+                            <details class="changelog-card glass-panel" style="border-left: 4px solid var(--text-muted, #94a3b8); opacity: 0.9;">
+                                <summary class="changelog-summary">
+                                    <div class="changelog-summary-left">
                                         <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-main);">v1.0.0</h3>
                                         <span class="badge badge-secondary">Initial Release</span>
                                     </div>
-                                    <span class="text-muted" style="font-size: 0.85rem;">15. August 2026</span>
+                                    <div class="changelog-summary-right">
+                                        <span class="text-muted" style="font-size: 0.85rem;">15. August 2026</span>
+                                        <span class="changelog-chevron">▼</span>
+                                    </div>
+                                </summary>
+                                <div class="changelog-body">
+                                    <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
+                                        <li>✨ <strong>Glassmorphism Dashboard</strong>: Modernes responsives UI mit Echtzeit-KPIs und Saldo-Berechnung.</li>
+                                        <li>📜 <strong>Stände-Management & Historie</strong>: Git-ähnliche Versionierung mit In-Memory-Entwürfen und Schreibschutz.</li>
+                                        <li>🔍 <strong>Matrix-Vergleich</strong>: Side-by-Side Vergleich historischer Stände nebeneinander.</li>
+                                        <li>⏱️ <strong>Intervall-Engine</strong>: Automatische Monatskosten-Umrechnung für quartalsweise und jährliche Zahlungen.</li>
+                                        <li>💾 <strong>Datensicherung</strong>: JSON Export/Import & aufbereiteter Excel-Export (<code>.xlsx</code>).</li>
+                                        <li>👥 <strong>Benutzerverwaltung</strong>: Rollenbasiertes Rechtesystem (Admin vs. User).</li>
+                                    </ul>
                                 </div>
-                                <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
-                                    <li>✨ <strong>Glassmorphism Dashboard</strong>: Modernes responsives UI mit Echtzeit-KPIs und Saldo-Berechnung.</li>
-                                    <li>📜 <strong>Stände-Management & Historie</strong>: Git-ähnliche Versionierung mit In-Memory-Entwürfen und Schreibschutz.</li>
-                                    <li>🔍 <strong>Matrix-Vergleich</strong>: Side-by-Side Vergleich historischer Stände nebeneinander.</li>
-                                    <li>⏱️ <strong>Intervall-Engine</strong>: Automatische Monatskosten-Umrechnung für quartalsweise und jährliche Zahlungen.</li>
-                                    <li>💾 <strong>Datensicherung</strong>: JSON Export/Import & aufbereiteter Excel-Export (<code>.xlsx</code>).</li>
-                                    <li>👥 <strong>Benutzerverwaltung</strong>: Rollenbasiertes Rechtesystem (Admin vs. User).</li>
-                                </ul>
-                            </div>
+                            </details>
                         </div>
                     </div>
                 </div>

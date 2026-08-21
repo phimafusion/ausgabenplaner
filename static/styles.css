@@ -1580,14 +1580,15 @@ select,
         display: none !important;
     }
 
-    /* Position & Title */
+    /* Position & Title (left-aligned) */
     .data-table tbody td.cell-title {
         order: 1;
         font-size: 0.92rem;
         color: var(--text-main);
         line-height: 1.3;
         word-break: break-word;
-        flex: 0 1 auto;
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     .data-table tbody td.cell-title strong {
@@ -1595,11 +1596,25 @@ select,
         font-weight: 600;
     }
 
-    /* Category Badge directly next to Title */
-    .data-table tbody td.cell-category {
+    /* Amount (Kosten / Betrag) right-aligned */
+    .data-table tbody td.cell-amount {
         order: 2;
+        margin-left: auto;
+        text-align: right;
+        font-size: 0.98rem;
+        font-weight: 700;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+        flex-shrink: 0;
+        padding-left: 6px;
+    }
+
+    /* Category Badge directly right of Amount */
+    .data-table tbody td.cell-category {
+        order: 3;
         font-size: 0.78rem;
         flex: 0 0 auto;
+        margin-left: 6px;
     }
 
     .data-table tbody td.cell-category .badge,
@@ -1612,18 +1627,6 @@ select,
         font-weight: 500;
         border-radius: 5px;
         line-height: 1.2;
-    }
-
-    /* Amount (Kosten / Betrag) right-aligned on the same top line */
-    .data-table tbody td.cell-amount {
-        order: 3;
-        margin-left: auto;
-        text-align: right;
-        font-size: 0.98rem;
-        font-weight: 700;
-        white-space: nowrap;
-        font-variant-numeric: tabular-nums;
-        flex-shrink: 0;
     }
 
     /* Comment / Note on subline below */

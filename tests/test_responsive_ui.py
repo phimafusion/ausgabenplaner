@@ -340,3 +340,12 @@ def test_version_badge_changelog_and_plan_deletion_ui():
     assert "/api/plans/" in js_content
 
 
+def test_vertical_tables_layout_css():
+    """Verify that .tables-grid uses vertical stacking with full width and no side-by-side split."""
+    css_content = (STATIC_DIR / "styles.css").read_text(encoding="utf-8")
+    assert ".tables-grid {" in css_content
+    assert "flex-direction: column" in css_content
+    assert "3fr 2fr" not in css_content
+
+
+

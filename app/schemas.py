@@ -253,6 +253,14 @@ class HistoryComparisonResponse(BaseModel):
 
 # --- Export / Import Schemas ---
 
+class ExportCategoryData(BaseModel):
+    name: str
+    color: Optional[str] = "#64748b"
+    icon: Optional[str] = "📦"
+    is_default: Optional[int] = 0
+    sort_order: Optional[int] = 0
+
+
 class ExportPositionData(BaseModel):
     title: str
     amount: float
@@ -283,12 +291,14 @@ class ExportVersionData(BaseModel):
 class ExportPlanData(BaseModel):
     title: str
     description: Optional[str] = None
+    is_archived: Optional[bool] = False
     versions: List[ExportVersionData] = []
 
 
 class FullExportData(BaseModel):
     version: int = 1
     exported_at: Optional[str] = None
+    categories: List[ExportCategoryData] = []
     plans: List[ExportPlanData] = []
 
 

@@ -753,6 +753,7 @@ def export_full_data(conn: sqlite3.Connection) -> Dict[str, Any]:
             {
                 "title": p_dict["title"],
                 "description": p_dict["description"],
+                "is_archived": bool(p_dict.get("is_archived", 0)),
                 "versions": versions,
             }
         )
@@ -1147,7 +1148,11 @@ def import_full_data(conn: sqlite3.Connection, data: Dict[str, Any], overwrite: 
 
     plans = data.get("plans", [])
     for p in plans:
-        cursor.execute("INSERT INTO plans (title, description) VALUES (?, ?)", (p["title"], p.get("description")))
+        is_archived = 1 if p.get("is_archived") else 0
+        cursor.execute(
+            "INSERT INTO plans (title, description, is_archived) VALUES (?, ?, ?)",
+            (p["title"], p.get("description"), is_archived),
+        )
         plan_id = cursor.lastrowid
         plans_imported += 1
 

@@ -755,9 +755,13 @@ def export_full_data(conn: sqlite3.Connection) -> Dict[str, Any]:
             }
         )
 
+    cat_rows = conn.execute("SELECT name, color, icon, is_default, sort_order FROM categories ORDER BY sort_order ASC, id ASC").fetchall()
+    categories = [dict(c) for c in cat_rows]
+
     return {
         "version": 1,
         "exported_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "categories": categories,
         "plans": plans,
     }
 
@@ -1118,6 +1122,21 @@ def import_full_data(conn: sqlite3.Connection, data: Dict[str, Any], overwrite: 
         cursor.execute("DELETE FROM versions;")
         cursor.execute("DELETE FROM plans;")
         conn.commit()
+
+    # Import categories if present
+    categories = data.get("categories", [])
+    for cat in categories:
+        cursor.execute(
+            """
+            INSERT INTO categories (name, color, icon, is_default, sort_order)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(name) DO UPDATE SET
+                color = excluded.color,
+                icon = excluded.icon,
+                sort_order = excluded.sort_order
+            """,
+            (cat["name"], cat.get("color", "#64748b"), cat.get("icon", "📦"), cat.get("is_default", 0), cat.get("sort_order", 0)),
+        )
 
     plans_imported = 0
     versions_imported = 0

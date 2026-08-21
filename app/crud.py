@@ -3,6 +3,7 @@ import io
 import sqlite3
 from typing import List, Dict, Any, Optional
 from app.domain import calculate_plan_totals, format_currency_de
+from app.backups import get_local_now
 
 
 
@@ -757,7 +758,7 @@ def export_full_data_xlsx(conn: sqlite3.Connection) -> bytes:
             # Plan Title & Subtitle
             cell_a1 = ws.cell(row=1, column=1, value=f"📊 Ausgabenplaner: {plan_title}")
             cell_a1.font = font_title
-            cell_a2 = ws.cell(row=2, column=1, value=f"Stand: {active_ver.get('title')} | Gültig ab: {active_ver.get('effective_date') or '-'} | Exportiert am: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}")
+            cell_a2 = ws.cell(row=2, column=1, value=f"Stand: {active_ver.get('title')} | Gültig ab: {active_ver.get('effective_date') or '-'} | Exportiert am: {get_local_now().strftime('%d.%m.%Y %H:%M')}")
             cell_a2.font = font_subtitle
 
             # Section: Positions (Ausgaben)
@@ -979,7 +980,7 @@ def export_full_data_xlsx(conn: sqlite3.Connection) -> bytes:
 
     cell_h1 = ws_hist.cell(row=1, column=1, value="📜 Historienübersicht aller Versionen & Stände")
     cell_h1.font = font_title
-    cell_h2 = ws_hist.cell(row=2, column=1, value=f"Exportiert am: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}")
+    cell_h2 = ws_hist.cell(row=2, column=1, value=f"Exportiert am: {get_local_now().strftime('%d.%m.%Y %H:%M')}")
     cell_h2.font = font_subtitle
 
     hist_headers = ["Plan", "Stand-Name", "Gültig ab", "Status", "Erstellt von", "Erstellt am", "Geändert von", "Geändert am", "Ausgaben (€)", "Beiträge (€)", "Saldo (€)"]

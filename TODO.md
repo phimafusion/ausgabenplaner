@@ -28,11 +28,11 @@ Dieses Dokument fasst geplante Erweiterungen, architektonische Verbesserungen un
 ---
 
 ## 📋 2. Plan-Verwaltung & Optionen
-- [x] **Zentrale Plan-Verwaltung im Optionsmenü**:
+- [ ] **Zentrale Plan-Verwaltung im Optionsmenü**:
   - Verwaltung, Umbenennung und Wechsel von Plänen im Einstellungsmenü bei aufgeräumtem Dashboard.
-- [x] **Plan-CRUD für Administratoren**:
+- [ ] **Plan-CRUD für Administratoren**:
   - Neuen Plan anlegen, archivieren/reaktivieren, umbenennen oder duplizieren (vollständige Deep-Copy als Vorlage).
-- [x] **Plan-spezifische Benutzerzuordnungen**:
+- [ ] **Plan-spezifische Benutzerzuordnungen**:
   - Granulare Berechtigungen pro Plan vergeben (RBAC via `user_plans`).
 
 ---

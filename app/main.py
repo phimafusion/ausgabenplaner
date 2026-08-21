@@ -30,7 +30,8 @@ async def backup_scheduler_loop():
             try:
                 settings = backups.get_backup_settings(conn)
                 if settings.get("backup_enabled"):
-                    now = datetime.datetime.now()
+                    app_tz = backups.get_app_timezone()
+                    now = backups.get_local_now()
                     now_time_str = now.strftime("%H:%M")
                     target_time = settings.get("auto_backup_time", "03:00")
                     last_backup_str = settings.get("last_backup_at")
@@ -39,7 +40,7 @@ async def backup_scheduler_loop():
                     last_backup_dt = None
                     if last_backup_str:
                         try:
-                            last_backup_dt = datetime.datetime.strptime(last_backup_str, "%Y-%m-%d %H:%M:%S")
+                            last_backup_dt = datetime.datetime.strptime(last_backup_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=app_tz)
                         except Exception:
                             pass
 

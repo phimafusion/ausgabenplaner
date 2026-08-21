@@ -24,6 +24,8 @@ def test_docker_compose_uses_ghcr_image():
     assert "image: ghcr.io/phimafusion/ausgabenplaner:latest" in content
     assert "3000:3000" in content
     assert "/app/data" in content
+    assert "TZ=Europe/Berlin" in content
+    assert "APP_TIMEZONE=Europe/Berlin" in content
 
 
 def test_dockerfile_validity():
@@ -37,6 +39,9 @@ def test_dockerfile_validity():
     assert "ADMIN_PASSWORD" not in content
     assert "COPY tests/ ./tests/" in content
     assert "COPY pytest.ini ." in content
+    assert "tzdata" in content
+    assert "ENV TZ=Europe/Berlin" in content
+    assert "ENV APP_TIMEZONE=Europe/Berlin" in content
 
 
 def test_requirements_include_test_dependencies_for_container_runner():

@@ -15,5 +15,7 @@ services:
       - DB_PATH=/app/data/ausgabenplaner.db
       - ADMIN_PASSWORD=admin123
       - JWT_SECRET=change-this-secret-key-in-production
+      - TZ=Europe/Berlin
+      - APP_TIMEZONE=Europe/Berlin
     volumes:
       - ./data:/app/data

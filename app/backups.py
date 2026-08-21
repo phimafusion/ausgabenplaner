@@ -1,8 +1,39 @@
 import os
 import sqlite3
 import datetime
+import zoneinfo
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+
+
+def get_app_timezone() -> datetime.tzinfo:
+    """
+    Return local timezone:
+    1. If APP_TIMEZONE or TZ environment variable is explicitly set, use zoneinfo.ZoneInfo.
+    2. Otherwise, detect host/system local timezone dynamically via datetime.datetime.now().astimezone().tzinfo.
+    3. Fallback to Europe/Berlin or UTC.
+    """
+    tz_env = os.getenv("APP_TIMEZONE") or os.getenv("TZ")
+    if tz_env:
+        try:
+            return zoneinfo.ZoneInfo(tz_env)
+        except Exception:
+            pass
+    try:
+        local_tz = datetime.datetime.now().astimezone().tzinfo
+        if local_tz is not None:
+            return local_tz
+    except Exception:
+        pass
+    try:
+        return zoneinfo.ZoneInfo("Europe/Berlin")
+    except Exception:
+        return datetime.timezone.utc
+
+
+def get_local_now() -> datetime.datetime:
+    """Return current localized datetime according to local/configured timezone."""
+    return datetime.datetime.now(get_app_timezone())
 
 
 def format_file_size(size_bytes: int) -> str:
@@ -79,7 +110,7 @@ def create_database_backup(
     target_dir = Path(target_folder_str)
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    now = datetime.datetime.now()
+    now = get_local_now()
     timestamp_str = now.strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"ausgabenplaner_backup_{timestamp_str}.db"
     dest_path = target_dir / filename
@@ -136,10 +167,11 @@ def list_database_backups(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
     backup_files = [f for f in target_dir.glob("*.db") if f.is_file()]
     backup_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
 
+    tz = get_app_timezone()
     result = []
     for f in backup_files:
         st = f.stat()
-        mtime = datetime.datetime.fromtimestamp(st.st_mtime)
+        mtime = datetime.datetime.fromtimestamp(st.st_mtime, tz=tz)
         result.append(
             {
                 "filename": f.name,
@@ -193,7 +225,7 @@ def restore_database_backup(conn: sqlite3.Connection, filename: str) -> Dict[str
     finally:
         src_conn.close()
 
-    now_iso = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now_iso = get_local_now().strftime("%Y-%m-%d %H:%M:%S")
     return {
         "success": True,
         "filename": clean_filename,

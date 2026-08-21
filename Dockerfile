@@ -5,6 +5,7 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
@@ -20,6 +21,8 @@ COPY pytest.ini .
 # Environment variables
 ENV PORT=3000
 ENV DB_PATH=/app/data/ausgabenplaner.db
+ENV TZ=Europe/Berlin
+ENV APP_TIMEZONE=Europe/Berlin
 
 # Expose container port
 EXPOSE 3000

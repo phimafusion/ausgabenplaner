@@ -219,3 +219,42 @@ def test_non_admin_forbidden_backup_routes():
     assert client.get("/api/admin/backups/download/test.db", headers={"Authorization": f"Bearer {user_token}"}).status_code == 403
     assert client.post("/api/admin/backups/restore/test.db", headers={"Authorization": f"Bearer {user_token}"}).status_code == 403
     assert client.delete("/api/admin/backups/test.db", headers={"Authorization": f"Bearer {user_token}"}).status_code == 403
+
+
+def test_backup_timezone_support_and_filename():
+    """Verify that backup timezone detects local timezone (MEZ/MESZ) and filenames reflect local time."""
+    tz = backups.get_app_timezone()
+    assert tz is not None
+
+    local_now = backups.get_local_now()
+    assert local_now.tzinfo is not None
+
+    client = TestClient(app)
+    admin_token = get_admin_token(client)
+
+    test_folder = "data/test_tz_backups"
+    if os.path.exists(test_folder):
+        shutil.rmtree(test_folder)
+
+    client.patch(
+        "/api/admin/backups/settings",
+        json={"backup_folder": test_folder},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    create_res = client.post("/api/admin/backups/create", headers={"Authorization": f"Bearer {admin_token}"})
+    assert create_res.status_code == 201
+    created_data = create_res.json()
+    filename = created_data["filename"]
+
+    # Verify filename format and timestamp corresponds to local date
+    local_date_str = local_now.strftime("%Y-%m-%d")
+    assert f"ausgabenplaner_backup_{local_date_str}_" in filename
+
+    # Verify created_at string
+    assert created_data["created_at"].startswith(local_date_str)
+
+    # Cleanup
+    if os.path.exists(test_folder):
+        shutil.rmtree(test_folder)
+

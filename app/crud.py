@@ -222,6 +222,8 @@ def create_plan(conn: sqlite3.Connection, title: str, description: Optional[str]
         (title, description or ""),
     )
     plan_id = cursor.lastrowid
+    if plan_id is None:
+        raise ValueError("Fehler beim Erstellen des Plans")
     # Create initial version
     cursor.execute(
         "INSERT INTO versions (plan_id, title, is_active, created_by) VALUES (?, ?, 1, 'Administrator')",
@@ -1223,7 +1225,11 @@ def create_category(
     )
     conn.commit()
     cat_id = cursor.lastrowid
+    if cat_id is None:
+        raise ValueError("Fehler beim Erstellen der Kategorie")
     row = conn.execute("SELECT * FROM categories WHERE id = ?", (cat_id,)).fetchone()
+    if row is None:
+        raise ValueError("Fehler beim Abrufen der erstellten Kategorie")
     return dict(row)
 
 

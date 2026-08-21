@@ -2456,14 +2456,15 @@ select.backup-input-styled option {
 /* Changelog Timeline */
 .changelog-timeline {
     display: flex;
-.changelog-timeline {
-    display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
+    width: 100%;
 }
 
 /* Collapsible Changelog Accordion */
 details.changelog-card {
+    display: block;
+    width: 100%;
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid var(--border-color);
     border-radius: 12px;

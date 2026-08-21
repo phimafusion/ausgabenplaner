@@ -329,6 +329,7 @@ def test_version_badge_changelog_and_plan_deletion_ui():
     assert ".badge-version" in css_content
     assert ".btn-delete-plan" in css_content
     assert ".changelog-timeline" in css_content
+    assert "flex-direction: column" in css_content
     assert "details.changelog-card" in css_content
     assert ".changelog-summary" in css_content
 

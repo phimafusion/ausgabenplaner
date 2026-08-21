@@ -215,7 +215,8 @@ def init_db(seed: Optional[bool] = None):
         ("Instandhaltung", "#f97316", "🔧", 1, 3),
         ("Rücklagen & Sparen", "#8b5cf6", "💰", 1, 4),
         ("Medien & Kommunikation", "#06b6d4", "🌐", 1, 5),
-        ("Allgemein", "#64748b", "📦", 1, 6),
+        ("Kind", "#ec4899", "👶", 1, 6),
+        ("Allgemein", "#64748b", "📦", 1, 7),
     ]
     for cat_name, cat_color, cat_icon, cat_default, cat_order in default_categories:
         cursor.execute(

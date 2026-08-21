@@ -460,11 +460,41 @@
                                     <option value="admin">Administrator</option>
                                 </select>
                             </div>
-                            <div class="form-group" style="margin-top: 10px; margin-bottom: 14px;">
-                                <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
-                                    <input type="checkbox" id="user-can-export" checked style="width: 17px; height: 17px; cursor: pointer;">
-                                    <span>💾 <strong>Export-Recht erteilen</strong> (Darf Plan-Daten exportieren/sichern)</span>
-                                </label>
+                            <div class="form-group" id="user-permissions-group" style="margin-top: 10px; margin-bottom: 14px;">
+                                <label class="form-label-sm" style="display: block; margin-bottom: 6px;">🔐 <strong>Berechtigungen & Einstellungs-Optionen</strong></label>
+                                <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+                                        <input type="checkbox" id="user-perm-manage-plans" style="width: 17px; height: 17px; cursor: pointer;">
+                                        <span>📋 <strong>Plan-Verwaltung</strong> (Pläne anlegen, bearbeiten, archivieren, duplizieren, löschen)</span>
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+                                        <input type="checkbox" id="user-perm-export" checked style="width: 17px; height: 17px; cursor: pointer;">
+                                        <span>💾 <strong>Daten exportieren</strong> (JSON- und XLSX-Excel-Export)</span>
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+                                        <input type="checkbox" id="user-perm-import" style="width: 17px; height: 17px; cursor: pointer;">
+                                        <span>📤 <strong>Daten importieren</strong> (JSON-Wiederherstellung)</span>
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+                                        <input type="checkbox" id="user-perm-manage-backups" style="width: 17px; height: 17px; cursor: pointer;">
+                                        <span>🛡️ <strong>Snapshots & Datensicherung</strong> (Automatische & manuelle Backups, Rotation, Wiederherstellung)</span>
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+                                        <input type="checkbox" id="user-perm-manage-users" style="width: 17px; height: 17px; cursor: pointer;">
+                                        <span>👥 <strong>Benutzerverwaltung</strong> (Benutzer anlegen, bearbeiten, löschen & Rechte vergeben)</span>
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+                                        <input type="checkbox" id="user-perm-run-testsuite" style="width: 17px; height: 17px; cursor: pointer;">
+                                        <span>🧪 <strong>Automatische Testsuite</strong> (Integrationstests ausführen & Systemprüfung)</span>
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+                                        <input type="checkbox" id="user-perm-view-changelog" checked style="width: 17px; height: 17px; cursor: pointer;">
+                                        <span>📋 <strong>Changelog einsehen</strong> (Release-Historie & Versionsänderungen)</span>
+                                    </label>
+                                </div>
+                                <small id="user-permissions-admin-help" class="text-muted" style="font-size: 0.8rem; display: block; margin-top: 4px;">
+                                    💡 Hinweis: Administratoren haben automatisch Vollzugriff auf alle Optionen.
+                                </small>
                             </div>
                             <div class="form-group" id="user-plans-assignment-group" style="margin-top: 10px; margin-bottom: 14px;">
                                 <label class="form-label-sm" style="display: block; margin-bottom: 6px;">📋 <strong>Zugewiesene Pläne</strong></label>

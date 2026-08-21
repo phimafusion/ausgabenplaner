@@ -176,15 +176,16 @@ def test_user_management_edit_and_export_permissions_ui():
     html_path = STATIC_DIR / "index.html"
     content = html_path.read_text(encoding="utf-8")
 
-    assert 'id="user-can-export"' in content
+    assert 'id="user-perm-export"' in content
+    assert 'id="user-perm-manage-plans"' in content
     assert 'id="user-edit-id"' in content
     assert 'id="btn-cancel-user-edit"' in content
 
     js_content = get_all_frontend_js_content()
     assert "startEditUser" in js_content
     assert "resetUserForm" in js_content
-    assert "userCanExport" in js_content
-    assert "Export erlaubt" in js_content
+    assert "userPermExport" in js_content
+    assert "Export" in js_content
 
 
 def test_settings_view_and_testsuite_tab_ui():

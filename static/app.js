@@ -54,36 +54,40 @@ export function showDashboard() {
         if (elements.settingsUserDisplayName) elements.settingsUserDisplayName.textContent = state.user.name || state.user.username;
         if (elements.settingsUserRoleBadge) elements.settingsUserRoleBadge.textContent = state.user.role === "admin" ? "Admin" : "Benutzer";
 
-        const canExportOrAdmin = state.user.role === "admin" || !!state.user.can_export;
         const isAdmin = state.user.role === "admin";
+        const canManagePlans = isAdmin || !!state.user.can_manage_plans;
+        const canExport = isAdmin || !!state.user.can_export;
+        const canImport = isAdmin || !!state.user.can_import;
+        const canManageBackups = isAdmin || !!state.user.can_manage_backups;
+        const canManageUsers = isAdmin || !!state.user.can_manage_users;
+        const canRunTestsuite = isAdmin || !!state.user.can_run_testsuite;
+        const canViewChangelog = isAdmin || (state.user.can_view_changelog !== undefined ? !!state.user.can_view_changelog : true);
 
-        if (isAdmin) {
-            if (elements.btnSettings) elements.btnSettings.classList.remove("hidden");
-            if (elements.tabBtnPlans) elements.tabBtnPlans.classList.remove("hidden");
-            if (elements.tabBtnUsers) elements.tabBtnUsers.classList.remove("hidden");
-            if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.remove("hidden");
-            if (elements.tabBtnTestsuite) elements.tabBtnTestsuite.classList.remove("hidden");
-            if (elements.cardAutomatedBackups) elements.cardAutomatedBackups.classList.remove("hidden");
-        } else {
-            if (elements.tabBtnPlans) elements.tabBtnPlans.classList.add("hidden");
-            if (elements.tabBtnUsers) elements.tabBtnUsers.classList.add("hidden");
-            if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.add("hidden");
-            if (elements.tabBtnTestsuite) elements.tabBtnTestsuite.classList.add("hidden");
-            if (elements.cardAutomatedBackups) elements.cardAutomatedBackups.classList.add("hidden");
-            if (elements.btnSettings) {
-                elements.btnSettings.classList.toggle("hidden", !canExportOrAdmin);
-            }
+        const hasAnySettingsAccess = canManagePlans || canExport || canImport || canManageBackups || canManageUsers || canRunTestsuite || canViewChangelog;
+
+        if (elements.btnSettings) {
+            elements.btnSettings.classList.toggle("hidden", !hasAnySettingsAccess);
         }
 
-        // Toggle admin-only action buttons in the UI
+        if (elements.tabBtnPlans) elements.tabBtnPlans.classList.toggle("hidden", !canManagePlans);
+        if (elements.tabBtnUsers) elements.tabBtnUsers.classList.toggle("hidden", !canManageUsers);
+        if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.toggle("hidden", !canManageUsers);
+        const canViewDataTab = canExport || canImport || canManageBackups;
+        if (elements.tabBtnData) elements.tabBtnData.classList.toggle("hidden", !canViewDataTab);
+        if (elements.tabBtnTestsuite) elements.tabBtnTestsuite.classList.toggle("hidden", !canRunTestsuite);
+        if (elements.tabBtnChangelog) elements.tabBtnChangelog.classList.toggle("hidden", !canViewChangelog);
+
+        if (elements.cardAutomatedBackups) elements.cardAutomatedBackups.classList.toggle("hidden", !canManageBackups);
+        if (elements.btnExportJson) elements.btnExportJson.classList.toggle("hidden", !canExport);
+        if (elements.btnExportXlsx) elements.btnExportXlsx.classList.toggle("hidden", !canExport);
+        if (elements.btnImportJson) elements.btnImportJson.classList.toggle("hidden", !canImport);
+
+        // Toggle admin-only / plan-manage action buttons in the UI
         document.querySelectorAll(".admin-only").forEach((el) => {
-            el.classList.toggle("hidden", !isAdmin);
+            el.classList.toggle("hidden", !canManagePlans && !isAdmin);
         });
 
-        if (elements.btnDeletePlan) elements.btnDeletePlan.classList.toggle("hidden", !isAdmin);
-        if (elements.btnExportJson) elements.btnExportJson.classList.toggle("hidden", !canExportOrAdmin);
-        if (elements.btnExportXlsx) elements.btnExportXlsx.classList.toggle("hidden", !canExportOrAdmin);
-        if (elements.btnImportJson) elements.btnImportJson.classList.toggle("hidden", !canExportOrAdmin);
+        if (elements.btnDeletePlan) elements.btnDeletePlan.classList.toggle("hidden", !canManagePlans);
     }
 }
 
@@ -106,7 +110,7 @@ export function switchSettingsTab(tabId) {
     if (tabId === "tab-settings-users") {
         loadUsersList();
     }
-    if (tabId === "tab-settings-data" && state.user && state.user.role === "admin") {
+    if (tabId === "tab-settings-data" && state.user && (state.user.role === "admin" || state.user.can_manage_backups)) {
         loadBackupSettings();
         loadBackupsList();
     }
@@ -126,14 +130,32 @@ export function showSettings(targetTab) {
         }
     }
 
-    if (state.user && state.user.role !== "admin") {
-        switchSettingsTab("tab-settings-data");
-    } else if (targetTab) {
+    const isAdmin = state.user && state.user.role === "admin";
+    const canManagePlans = isAdmin || !!(state.user && state.user.can_manage_plans);
+    const canExport = isAdmin || !!(state.user && state.user.can_export);
+    const canImport = isAdmin || !!(state.user && state.user.can_import);
+    const canManageBackups = isAdmin || !!(state.user && state.user.can_manage_backups);
+    const canManageUsers = isAdmin || !!(state.user && state.user.can_manage_users);
+    const canRunTestsuite = isAdmin || !!(state.user && state.user.can_run_testsuite);
+    const canViewChangelog = isAdmin || (state.user && state.user.can_view_changelog !== undefined ? !!state.user.can_view_changelog : true);
+
+    if (targetTab) {
         switchSettingsTab(targetTab);
     } else {
-        const activeTab = document.querySelector('.settings-tab-btn.active');
-        const defaultTab = activeTab ? activeTab.getAttribute("data-tab") : "tab-settings-data";
-        switchSettingsTab(defaultTab);
+        // Choose default visible tab for this user
+        if (canManagePlans) {
+            switchSettingsTab("tab-settings-plans");
+        } else if (canExport || canImport || canManageBackups) {
+            switchSettingsTab("tab-settings-data");
+        } else if (canManageUsers) {
+            switchSettingsTab("tab-settings-users");
+        } else if (canRunTestsuite) {
+            switchSettingsTab("tab-settings-testsuite");
+        } else if (canViewChangelog) {
+            switchSettingsTab("tab-settings-changelog");
+        } else {
+            switchSettingsTab("tab-settings-data");
+        }
     }
 }
 

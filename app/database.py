@@ -56,7 +56,13 @@ def init_db(seed: Optional[bool] = None):
         password_hash TEXT NOT NULL,
         name TEXT NOT NULL,
         role TEXT NOT NULL DEFAULT 'user',
+        can_manage_plans INTEGER NOT NULL DEFAULT 0,
         can_export INTEGER NOT NULL DEFAULT 1,
+        can_import INTEGER NOT NULL DEFAULT 0,
+        can_manage_backups INTEGER NOT NULL DEFAULT 0,
+        can_manage_users INTEGER NOT NULL DEFAULT 0,
+        can_run_testsuite INTEGER NOT NULL DEFAULT 0,
+        can_view_changelog INTEGER NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """
@@ -64,8 +70,18 @@ def init_db(seed: Optional[bool] = None):
 
     # Migration for users table
     user_cols = [row[1] for row in cursor.execute("PRAGMA table_info(users)").fetchall()]
-    if "can_export" not in user_cols:
-        cursor.execute("ALTER TABLE users ADD COLUMN can_export INTEGER NOT NULL DEFAULT 1")
+    user_col_defs = {
+        "can_manage_plans": "INTEGER NOT NULL DEFAULT 0",
+        "can_export": "INTEGER NOT NULL DEFAULT 1",
+        "can_import": "INTEGER NOT NULL DEFAULT 0",
+        "can_manage_backups": "INTEGER NOT NULL DEFAULT 0",
+        "can_manage_users": "INTEGER NOT NULL DEFAULT 0",
+        "can_run_testsuite": "INTEGER NOT NULL DEFAULT 0",
+        "can_view_changelog": "INTEGER NOT NULL DEFAULT 1",
+    }
+    for col_name, col_def in user_col_defs.items():
+        if col_name not in user_cols:
+            cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}")
 
     # Plans table
     cursor.execute(
@@ -194,7 +210,7 @@ def init_db(seed: Optional[bool] = None):
     if not admin_exists:
         admin_pass = os.getenv("ADMIN_PASSWORD", "admin123")
         cursor.execute(
-            "INSERT INTO users (username, password_hash, name, role, can_export) VALUES (?, ?, ?, ?, 1)",
+            "INSERT OR IGNORE INTO users (username, password_hash, name, role, can_manage_plans, can_export, can_import, can_manage_backups, can_manage_users, can_run_testsuite, can_view_changelog) VALUES (?, ?, ?, ?, 1, 1, 1, 1, 1, 1, 1)",
             ("admin", get_password_hash(admin_pass), "Administrator", "admin"),
         )
         conn.commit()

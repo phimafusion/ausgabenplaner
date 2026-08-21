@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 
 from app.database import get_db, init_db, get_db_connection
-from app.auth import verify_password, create_access_token, get_current_user, get_current_admin, get_password_hash, decode_access_token
+from app.auth import verify_password, create_access_token, get_current_user, get_current_admin, get_password_hash, decode_access_token, require_permission
 from app import schemas, crud, backups
 
 
@@ -130,7 +130,13 @@ def login(req: schemas.LoginRequest, conn: sqlite3.Connection = Depends(get_db))
             "username": user["username"],
             "name": user["name"],
             "role": user["role"],
+            "can_manage_plans": bool(user.get("can_manage_plans", 0)),
             "can_export": bool(user.get("can_export", 1)),
+            "can_import": bool(user.get("can_import", 0)),
+            "can_manage_backups": bool(user.get("can_manage_backups", 0)),
+            "can_manage_users": bool(user.get("can_manage_users", 0)),
+            "can_run_testsuite": bool(user.get("can_run_testsuite", 0)),
+            "can_view_changelog": bool(user.get("can_view_changelog", 1)),
             "assigned_plan_ids": assigned_plans,
         },
     }
@@ -143,12 +149,12 @@ def get_me(current_user: dict = Depends(get_current_user), conn: sqlite3.Connect
     return user_data
 
 
-# --- User Management Endpoints (Admin only) ---
+# --- User Management Endpoints (Admin or can_manage_users) ---
 
 @app.post("/api/users", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(
     req: schemas.UserCreate,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_users")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     existing = conn.execute("SELECT id FROM users WHERE username = ?", (req.username,)).fetchone()
@@ -156,11 +162,28 @@ def create_user(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Benutzername existiert bereits")
 
     hashed_pw = get_password_hash(req.password)
+    can_manage_plans_val = 1 if req.can_manage_plans else 0
     can_export_val = 1 if req.can_export else 0
+    can_import_val = 1 if req.can_import else 0
+    can_manage_backups_val = 1 if req.can_manage_backups else 0
+    can_manage_users_val = 1 if req.can_manage_users else 0
+    can_run_testsuite_val = 1 if req.can_run_testsuite else 0
+    can_view_changelog_val = 1 if req.can_view_changelog else 0
+
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO users (username, password_hash, name, role, can_export) VALUES (?, ?, ?, ?, ?)",
-        (req.username, hashed_pw, req.name, req.role, can_export_val),
+        """
+        INSERT INTO users (
+            username, password_hash, name, role,
+            can_manage_plans, can_export, can_import,
+            can_manage_backups, can_manage_users, can_run_testsuite, can_view_changelog
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            req.username, hashed_pw, req.name, req.role,
+            can_manage_plans_val, can_export_val, can_import_val,
+            can_manage_backups_val, can_manage_users_val, can_run_testsuite_val, can_view_changelog_val,
+        ),
     )
     conn.commit()
     user_id = cursor.lastrowid
@@ -178,21 +201,41 @@ def create_user(
         "username": req.username,
         "name": req.name,
         "role": req.role,
+        "can_manage_plans": bool(can_manage_plans_val),
         "can_export": bool(can_export_val),
+        "can_import": bool(can_import_val),
+        "can_manage_backups": bool(can_manage_backups_val),
+        "can_manage_users": bool(can_manage_users_val),
+        "can_run_testsuite": bool(can_run_testsuite_val),
+        "can_view_changelog": bool(can_view_changelog_val),
         "assigned_plan_ids": assigned,
     }
 
 
 @app.get("/api/users")
 def list_users(
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_users")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
-    rows = conn.execute("SELECT id, username, name, role, can_export, created_at FROM users ORDER BY id ASC").fetchall()
+    rows = conn.execute(
+        """
+        SELECT id, username, name, role,
+               can_manage_plans, can_export, can_import,
+               can_manage_backups, can_manage_users, can_run_testsuite, can_view_changelog,
+               created_at
+        FROM users ORDER BY id ASC
+        """
+    ).fetchall()
     res = []
     for r in rows:
         d = dict(r)
+        d["can_manage_plans"] = bool(d.get("can_manage_plans", 0))
         d["can_export"] = bool(d.get("can_export", 1))
+        d["can_import"] = bool(d.get("can_import", 0))
+        d["can_manage_backups"] = bool(d.get("can_manage_backups", 0))
+        d["can_manage_users"] = bool(d.get("can_manage_users", 0))
+        d["can_run_testsuite"] = bool(d.get("can_run_testsuite", 0))
+        d["can_view_changelog"] = bool(d.get("can_view_changelog", 1))
         d["assigned_plan_ids"] = crud.get_user_assigned_plans(conn, d["id"])
         res.append(d)
     return res
@@ -202,7 +245,7 @@ def list_users(
 def update_user_route(
     user_id: int,
     req: schemas.UserUpdate,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_users")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     existing = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
@@ -212,7 +255,13 @@ def update_user_route(
     current = dict(existing)
     new_name = req.name if req.name is not None else current["name"]
     new_role = req.role if req.role is not None else current["role"]
+    new_can_manage_plans = (1 if req.can_manage_plans else 0) if req.can_manage_plans is not None else current.get("can_manage_plans", 0)
     new_can_export = (1 if req.can_export else 0) if req.can_export is not None else current.get("can_export", 1)
+    new_can_import = (1 if req.can_import else 0) if req.can_import is not None else current.get("can_import", 0)
+    new_can_manage_backups = (1 if req.can_manage_backups else 0) if req.can_manage_backups is not None else current.get("can_manage_backups", 0)
+    new_can_manage_users = (1 if req.can_manage_users else 0) if req.can_manage_users is not None else current.get("can_manage_users", 0)
+    new_can_run_testsuite = (1 if req.can_run_testsuite else 0) if req.can_run_testsuite is not None else current.get("can_run_testsuite", 0)
+    new_can_view_changelog = (1 if req.can_view_changelog else 0) if req.can_view_changelog is not None else current.get("can_view_changelog", 1)
 
     # Admin safety: If demoting admin, ensure at least one other admin remains
     if current["role"] == "admin" and new_role != "admin":
@@ -223,22 +272,57 @@ def update_user_route(
     if req.password and req.password.strip():
         new_pw_hash = get_password_hash(req.password.strip())
         conn.execute(
-            "UPDATE users SET name = ?, role = ?, can_export = ?, password_hash = ? WHERE id = ?",
-            (new_name, new_role, new_can_export, new_pw_hash, user_id),
+            """
+            UPDATE users SET name = ?, role = ?,
+                             can_manage_plans = ?, can_export = ?, can_import = ?,
+                             can_manage_backups = ?, can_manage_users = ?, can_run_testsuite = ?, can_view_changelog = ?,
+                             password_hash = ?
+            WHERE id = ?
+            """,
+            (
+                new_name, new_role,
+                new_can_manage_plans, new_can_export, new_can_import,
+                new_can_manage_backups, new_can_manage_users, new_can_run_testsuite, new_can_view_changelog,
+                new_pw_hash, user_id,
+            ),
         )
     else:
         conn.execute(
-            "UPDATE users SET name = ?, role = ?, can_export = ? WHERE id = ?",
-            (new_name, new_role, new_can_export, user_id),
+            """
+            UPDATE users SET name = ?, role = ?,
+                             can_manage_plans = ?, can_export = ?, can_import = ?,
+                             can_manage_backups = ?, can_manage_users = ?, can_run_testsuite = ?, can_view_changelog = ?
+            WHERE id = ?
+            """,
+            (
+                new_name, new_role,
+                new_can_manage_plans, new_can_export, new_can_import,
+                new_can_manage_backups, new_can_manage_users, new_can_run_testsuite, new_can_view_changelog,
+                user_id,
+            ),
         )
     conn.commit()
 
     if req.assigned_plan_ids is not None:
         crud.set_user_assigned_plans(conn, user_id, req.assigned_plan_ids)
 
-    updated = conn.execute("SELECT id, username, name, role, can_export FROM users WHERE id = ?", (user_id,)).fetchone()
+    updated = conn.execute(
+        """
+        SELECT id, username, name, role,
+               can_manage_plans, can_export, can_import,
+               can_manage_backups, can_manage_users, can_run_testsuite, can_view_changelog
+        FROM users WHERE id = ?
+        """,
+        (user_id,),
+    ).fetchone()
     res = dict(updated)
+    res["can_manage_plans"] = bool(res.get("can_manage_plans", 0))
     res["can_export"] = bool(res.get("can_export", 1))
+    res["can_import"] = bool(res.get("can_import", 0))
+    res["can_manage_backups"] = bool(res.get("can_manage_backups", 0))
+    res["can_manage_users"] = bool(res.get("can_manage_users", 0))
+    res["can_run_testsuite"] = bool(res.get("can_run_testsuite", 0))
+    res["can_view_changelog"] = bool(res.get("can_view_changelog", 1))
     res["assigned_plan_ids"] = crud.get_user_assigned_plans(conn, user_id)
     return res
 
@@ -246,15 +330,15 @@ def update_user_route(
 @app.delete("/api/users/{user_id}")
 def delete_user_route(
     user_id: int,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_users")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     existing = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     if not existing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Benutzer nicht gefunden")
 
-    if existing["id"] == current_admin["id"]:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sie können Ihren eigenen Administrator-Account nicht löschen.")
+    if existing["id"] == current_user["id"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sie können Ihren eigenen Benutzer-Account nicht löschen.")
 
     if existing["role"] == "admin":
         admin_count = conn.execute("SELECT COUNT(*) as cnt FROM users WHERE role = 'admin'").fetchone()["cnt"]
@@ -267,7 +351,7 @@ def delete_user_route(
 
 
 @app.post("/api/admin/run-tests")
-def run_test_suite_route(current_admin: dict = Depends(get_current_admin)):
+def run_test_suite_route(current_user: dict = Depends(require_permission("can_run_testsuite"))):
     env = os.environ.copy()
     env["TESTING"] = "1"
 
@@ -300,8 +384,13 @@ def run_tests_stream_route(
         raise HTTPException(status_code=401, detail="Nicht authentifiziert")
 
     payload = decode_access_token(token)
-    if not payload or payload.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin-Rechte erforderlich")
+    if not payload:
+        raise HTTPException(status_code=401, detail="Ungültiges Token")
+
+    username = payload.get("sub")
+    user_row = conn.execute("SELECT role, can_run_testsuite FROM users WHERE username = ?", (username,)).fetchone()
+    if not user_row or (user_row["role"] != "admin" and not user_row["can_run_testsuite"]):
+        raise HTTPException(status_code=403, detail="Keine Berechtigung zum Ausführen der Testsuite")
 
     def event_generator():
         env = os.environ.copy()
@@ -385,7 +474,7 @@ def list_plans_route(
 @app.post("/api/plans", response_model=schemas.PlanResponse, status_code=status.HTTP_201_CREATED)
 def create_plan_route(
     req: schemas.PlanCreate,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_plans")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     return crud.create_plan(conn, title=req.title, description=req.description)
@@ -420,7 +509,7 @@ def get_plan_by_id_route(
 def update_plan_route(
     plan_id: int,
     req: schemas.PlanUpdate,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_plans")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     plan = crud.update_plan(conn, plan_id=plan_id, title=req.title, description=req.description, is_archived=req.is_archived)
@@ -433,7 +522,7 @@ def update_plan_route(
 def duplicate_plan_route(
     plan_id: int,
     req: Optional[schemas.PlanDuplicateRequest] = None,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_plans")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     new_title = req.title if req else None
@@ -446,7 +535,7 @@ def duplicate_plan_route(
 @app.delete("/api/plans/{plan_id}")
 def delete_plan_route(
     plan_id: int,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_plans")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     try:
@@ -755,22 +844,18 @@ def delete_contribution_route(
 
 @app.get("/api/data/export", response_model=schemas.FullExportData)
 def export_data_route(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_permission("can_export")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
-    if current_user.get("role") != "admin" and not current_user.get("can_export"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sie besitzen keine Berechtigung zum Exportieren der Daten.")
     return crud.export_full_data(conn)
 
 
 @app.get("/api/data/export-xlsx")
 @app.get("/api/data/export/xlsx")
 def export_data_xlsx_route(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_permission("can_export")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
-    if current_user.get("role") != "admin" and not current_user.get("can_export"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sie besitzen keine Berechtigung zum Exportieren der Daten.")
     xlsx_bytes = crud.export_full_data_xlsx(conn)
     date_str = datetime.date.today().isoformat()
     filename = f"ausgabenplaner_export_{date_str}.xlsx"
@@ -785,20 +870,18 @@ def export_data_xlsx_route(
 @app.post("/api/data/import")
 def import_data_route(
     req: schemas.FullExportData,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_permission("can_import")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
-    if current_user.get("role") != "admin" and not current_user.get("can_export"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sie besitzen keine Berechtigung zum Importieren der Daten.")
     data = req.model_dump()
     return crud.import_full_data(conn, data, overwrite=True)
 
 
-# --- Automated Backup & Snapshot Endpoints (Admin) ---
+# --- Automated Backup & Snapshot Endpoints ---
 
 @app.get("/api/admin/backups/settings", response_model=schemas.BackupSettingsResponse)
 def get_backup_settings_route(
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_backups")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     return backups.get_backup_settings(conn)
@@ -807,7 +890,7 @@ def get_backup_settings_route(
 @app.patch("/api/admin/backups/settings", response_model=schemas.BackupSettingsResponse)
 def update_backup_settings_route(
     req: schemas.BackupSettingsUpdate,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_backups")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     return backups.update_backup_settings(
@@ -822,7 +905,7 @@ def update_backup_settings_route(
 
 @app.get("/api/admin/backups", response_model=List[schemas.BackupFileInfo])
 def list_backups_route(
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_backups")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     return backups.list_database_backups(conn)
@@ -830,7 +913,7 @@ def list_backups_route(
 
 @app.post("/api/admin/backups/create", response_model=schemas.BackupCreateResponse, status_code=status.HTTP_201_CREATED)
 def create_backup_route(
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_backups")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     return backups.create_database_backup(conn)
@@ -839,7 +922,7 @@ def create_backup_route(
 @app.get("/api/admin/backups/download/{filename}")
 def download_backup_route(
     filename: str,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_backups")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     file_path = backups.get_backup_file_path(conn, filename)
@@ -855,7 +938,7 @@ def download_backup_route(
 @app.delete("/api/admin/backups/{filename}")
 def delete_backup_route(
     filename: str,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_backups")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     success = backups.delete_database_backup(conn, filename)
@@ -867,7 +950,7 @@ def delete_backup_route(
 @app.post("/api/admin/backups/restore/{filename}")
 def restore_backup_route(
     filename: str,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(require_permission("can_manage_backups")),
     conn: sqlite3.Connection = Depends(get_db),
 ):
     try:

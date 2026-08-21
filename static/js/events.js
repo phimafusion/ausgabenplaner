@@ -703,6 +703,22 @@ export function setupEventListeners({
         elements.btnReRunTests.addEventListener("click", executeTestsuite);
     }
 
+    // User Role Change Listener (auto-toggle permissions helper)
+    if (elements.userRole) {
+        elements.userRole.addEventListener("change", () => {
+            const isAdmin = elements.userRole.value === "admin";
+            if (isAdmin) {
+                if (elements.userPermManagePlans) elements.userPermManagePlans.checked = true;
+                if (elements.userPermExport) elements.userPermExport.checked = true;
+                if (elements.userPermImport) elements.userPermImport.checked = true;
+                if (elements.userPermManageBackups) elements.userPermManageBackups.checked = true;
+                if (elements.userPermManageUsers) elements.userPermManageUsers.checked = true;
+                if (elements.userPermRunTestsuite) elements.userPermRunTestsuite.checked = true;
+                if (elements.userPermViewChangelog) elements.userPermViewChangelog.checked = true;
+            }
+        });
+    }
+
     // User Create / Edit Form
     if (elements.formUserCreate) {
         elements.formUserCreate.addEventListener("submit", async (e) => {
@@ -712,11 +728,27 @@ export function setupEventListeners({
             const name = elements.userName.value.trim();
             const password = elements.userPassword.value;
             const role = elements.userRole.value;
-            const can_export = elements.userCanExport ? elements.userCanExport.checked : true;
+            const can_manage_plans = elements.userPermManagePlans ? elements.userPermManagePlans.checked : false;
+            const can_export = elements.userPermExport ? elements.userPermExport.checked : true;
+            const can_import = elements.userPermImport ? elements.userPermImport.checked : false;
+            const can_manage_backups = elements.userPermManageBackups ? elements.userPermManageBackups.checked : false;
+            const can_manage_users = elements.userPermManageUsers ? elements.userPermManageUsers.checked : false;
+            const can_run_testsuite = elements.userPermRunTestsuite ? elements.userPermRunTestsuite.checked : false;
+            const can_view_changelog = elements.userPermViewChangelog ? elements.userPermViewChangelog.checked : true;
             const assigned_plan_ids = getSelectedUserPlanIds();
 
+            const permissionsPayload = {
+                can_manage_plans,
+                can_export,
+                can_import,
+                can_manage_backups,
+                can_manage_users,
+                can_run_testsuite,
+                can_view_changelog,
+            };
+
             if (editId) {
-                const payload = { name, role, can_export, assigned_plan_ids };
+                const payload = { name, role, ...permissionsPayload, assigned_plan_ids };
                 if (password && password.trim()) {
                     payload.password = password.trim();
                 }
@@ -731,7 +763,7 @@ export function setupEventListeners({
                     if (state.user && String(state.user.id) === String(editId)) {
                         state.user.name = name;
                         state.user.role = role;
-                        state.user.can_export = can_export;
+                        Object.assign(state.user, permissionsPayload);
                         state.user.assigned_plan_ids = assigned_plan_ids;
                         showDashboard();
                     }
@@ -742,7 +774,7 @@ export function setupEventListeners({
             } else {
                 const resp = await apiFetch("/api/users", {
                     method: "POST",
-                    body: { username, name, password, role, can_export, assigned_plan_ids },
+                    body: { username, name, password, role, ...permissionsPayload, assigned_plan_ids },
                 });
 
                 if (resp.ok) {

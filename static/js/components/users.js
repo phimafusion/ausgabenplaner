@@ -25,6 +25,13 @@ export function resetUserForm() {
     }
     if (elements.userPasswordHelp) elements.userPasswordHelp.classList.add("hidden");
     if (elements.userRole) elements.userRole.value = "user";
+    if (elements.userPermManagePlans) elements.userPermManagePlans.checked = false;
+    if (elements.userPermExport) elements.userPermExport.checked = true;
+    if (elements.userPermImport) elements.userPermImport.checked = false;
+    if (elements.userPermManageBackups) elements.userPermManageBackups.checked = false;
+    if (elements.userPermManageUsers) elements.userPermManageUsers.checked = false;
+    if (elements.userPermRunTestsuite) elements.userPermRunTestsuite.checked = false;
+    if (elements.userPermViewChangelog) elements.userPermViewChangelog.checked = true;
     if (elements.userCanExport) elements.userCanExport.checked = true;
     if (elements.userFormHeading) elements.userFormHeading.textContent = "Neuen Benutzer anlegen";
     if (elements.btnSubmitUser) elements.btnSubmitUser.textContent = "Benutzer erstellen";
@@ -52,6 +59,13 @@ export function startEditUser(user) {
     }
     if (elements.userPasswordHelp) elements.userPasswordHelp.classList.remove("hidden");
     if (elements.userRole) elements.userRole.value = user.role;
+    if (elements.userPermManagePlans) elements.userPermManagePlans.checked = !!user.can_manage_plans;
+    if (elements.userPermExport) elements.userPermExport.checked = !!user.can_export;
+    if (elements.userPermImport) elements.userPermImport.checked = !!user.can_import;
+    if (elements.userPermManageBackups) elements.userPermManageBackups.checked = !!user.can_manage_backups;
+    if (elements.userPermManageUsers) elements.userPermManageUsers.checked = !!user.can_manage_users;
+    if (elements.userPermRunTestsuite) elements.userPermRunTestsuite.checked = !!user.can_run_testsuite;
+    if (elements.userPermViewChangelog) elements.userPermViewChangelog.checked = user.can_view_changelog !== undefined ? !!user.can_view_changelog : true;
     if (elements.userCanExport) elements.userCanExport.checked = !!user.can_export;
     if (elements.userFormHeading) elements.userFormHeading.textContent = `Benutzer „${user.username}“ bearbeiten`;
     if (elements.btnSubmitUser) elements.btnSubmitUser.textContent = "💾 Änderungen speichern";
@@ -103,6 +117,19 @@ export async function loadUsersList() {
             planBadges = `<span class="badge badge-saved" style="font-size: 0.75rem;">📋 Alle Pläne (Offen)</span>`;
         }
 
+        let permBadges = [];
+        if (isAdmin) {
+            permBadges.push(`<span class="badge badge-admin">👑 Vollzugriff</span>`);
+        } else {
+            if (u.can_manage_plans) permBadges.push(`<span class="badge badge-saved">📋 Pläne verwalten</span>`);
+            if (u.can_export) permBadges.push(`<span class="badge badge-saved">💾 Export</span>`);
+            if (u.can_import) permBadges.push(`<span class="badge badge-saved">📤 Import</span>`);
+            if (u.can_manage_backups) permBadges.push(`<span class="badge badge-saved">🛡️ Backups</span>`);
+            if (u.can_manage_users) permBadges.push(`<span class="badge badge-saved">👥 Benutzer</span>`);
+            if (u.can_run_testsuite) permBadges.push(`<span class="badge badge-saved">🧪 Testsuite</span>`);
+            if (permBadges.length === 0) permBadges.push(`<span class="badge badge-archived">🔒 Nur Lesezugriff</span>`);
+        }
+
         card.innerHTML = `
             <div class="user-card-top">
                 <div class="user-avatar ${isAdmin ? 'avatar-admin' : 'avatar-user'}">
@@ -117,13 +144,11 @@ export async function loadUsersList() {
                 </div>
             </div>
 
-            <div class="user-card-badges" style="margin-bottom: 8px;">
+            <div class="user-card-badges" style="margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 4px;">
                 <span class="badge ${isAdmin ? 'badge-admin' : 'badge-user'}">
                     ${isAdmin ? '👑 Administrator' : '👤 Benutzer'}
                 </span>
-                <span class="badge ${u.can_export ? 'badge-saved' : 'badge-archived'}">
-                    ${u.can_export ? '💾 Export erlaubt' : '🔒 Kein Export'}
-                </span>
+                ${permBadges.join(" ")}
             </div>
 
             <div class="user-card-plans" style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 4px;">

@@ -12,7 +12,13 @@ class UserCreate(BaseModel):
     password: str
     name: str
     role: str = "user"
+    can_manage_plans: bool = False
     can_export: bool = True
+    can_import: bool = False
+    can_manage_backups: bool = False
+    can_manage_users: bool = False
+    can_run_testsuite: bool = False
+    can_view_changelog: bool = True
     assigned_plan_ids: Optional[List[int]] = None
 
 
@@ -20,7 +26,13 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     role: Optional[str] = None
     password: Optional[str] = None
+    can_manage_plans: Optional[bool] = None
     can_export: Optional[bool] = None
+    can_import: Optional[bool] = None
+    can_manage_backups: Optional[bool] = None
+    can_manage_users: Optional[bool] = None
+    can_run_testsuite: Optional[bool] = None
+    can_view_changelog: Optional[bool] = None
     assigned_plan_ids: Optional[List[int]] = None
 
 
@@ -29,7 +41,13 @@ class UserResponse(BaseModel):
     username: str
     name: str
     role: str
+    can_manage_plans: bool = False
     can_export: bool = True
+    can_import: bool = False
+    can_manage_backups: bool = False
+    can_manage_users: bool = False
+    can_run_testsuite: bool = False
+    can_view_changelog: bool = True
     assigned_plan_ids: List[int] = []
 
     model_config = ConfigDict(from_attributes=True)

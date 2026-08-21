@@ -1,13 +1,15 @@
 // Categories Management & Dropdowns
 import { state } from "../state.js";
 import { elements } from "../dom.js";
-import { apiCall } from "../api.js";
+import { apiFetch } from "../api.js";
 import { openModal, closeModal } from "./modals.js";
 import { escapeHtml } from "../formatters.js";
 
 export async function loadCategories() {
     try {
-        const categories = await apiCall("/api/categories");
+        const resp = await apiFetch("/api/categories");
+        if (!resp.ok) return;
+        const categories = await resp.json();
         state.availableCategories = categories || [];
         populateCategoryDropdowns();
         renderCategoriesList();

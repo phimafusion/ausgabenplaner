@@ -18,7 +18,7 @@ def export_data_route(
 
 
 @router.get("/export-xlsx")
-@router.get("/export/xlsx")
+@router.get("/export/xlsx", include_in_schema=False)
 def export_data_xlsx_route(
     current_user: dict = Depends(require_permission("can_export")),
     conn: sqlite3.Connection = Depends(get_db),

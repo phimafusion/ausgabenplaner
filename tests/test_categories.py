@@ -25,7 +25,7 @@ def test_list_seeded_default_categories():
     res = client.get("/api/categories", headers=headers)
     assert res.status_code == 200
     categories = res.json()
-    assert len(categories) >= 8
+    assert len(categories) >= 9
     names = [c["name"] for c in categories]
     assert "Wohnen" in names
     assert "Energie & Nebenkosten" in names
@@ -34,6 +34,7 @@ def test_list_seeded_default_categories():
     assert "Rücklagen & Sparen" in names
     assert "Medien & Kommunikation" in names
     assert "Kind" in names
+    assert "Freizeit" in names
     assert "Allgemein" in names
 
 

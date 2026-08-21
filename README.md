@@ -26,6 +26,7 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
   - Dynamische Farbkodierung (positiver/negativer Saldo).
   - **Vollflächige vertikale Tabellenanordnung**: Ausgaben und Einnahmen untereinander mit maximaler Breite für lange Bezeichnungen und Bemerkungstexte.
   - **Ultra-kompakte Mobile-Kacheln**: Optimiertes Smartphone-Layout mit Titel & Betrag oben und dezenten Kategorie-Badges darunter.
+  - **🎨 Gestochen scharfes Vektor-Favicon**: Modernes SVG-App-Icon für alle Browser-Tabs, Lesezeichen und Home-Screens.
 - **📜 Versionshistorie & Stände-Management**:
   - Git-ähnliches Arbeiten mit versionierten Ständen (z. B. *„Stand ab 01.09.2026“*).
   - **In-Memory-Entwurfsmodus & In-Place Update**: Sicheres Experimentieren mit Dirty-Tracking und Möglichkeit, bestehende Stände direkt ohne Duplikat zu überschreiben.

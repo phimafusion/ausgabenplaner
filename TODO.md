@@ -12,6 +12,8 @@ Dieses Dokument fasst geplante Erweiterungen, architektonische Verbesserungen un
 - [x] **Versionsanzeige im Header & Changelog-Reiter**:
   - Permanente Anzeige der Versionsnummer (`v1.3.0`) im Navbar-Header und Login.
   - Eigener Reiter in den Einstellungen für die Versionshistorie und Release Notes (Changelog).
+- [x] **Browser-Favicon & App-Icon**:
+  - Hochauflösendes Vektor-SVG-Favicon und `/favicon.ico` Route für gestochen scharfe Browser-Tabs.
 - [x] **Plan-Löschung**:
   - Administratoren können Pläne sicher löschen (inkl. Bestätigungsdialog, Kaskadierung und Schutz des letzten Plans).
 

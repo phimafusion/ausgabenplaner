@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+
+    <!-- Border Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#6366f1" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.8"/>
+    </linearGradient>
+
+    <!-- Bar 1 Gradient (Purple/Indigo) -->
+    <linearGradient id="bar1Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+
+    <!-- Bar 2 Gradient (Cyan/Sky) -->
+    <linearGradient id="bar2Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <!-- Bar 3 Gradient (Emerald/Mint) -->
+    <linearGradient id="bar3Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+
+    <!-- Trendline Gradient -->
+    <linearGradient id="trendGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Squircle Base with Border -->
+  <rect x="4" y="4" width="120" height="120" rx="30" ry="30" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="3.5"/>
+
+  <!-- Chart Grid Lines (Subtle) -->
+  <line x1="20" y1="104" x2="108" y2="104" stroke="rgba(255,255,255,0.12)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="20" y1="74" x2="108" y2="74" stroke="rgba(255,255,255,0.06)" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <line x1="20" y1="44" x2="108" y2="44" stroke="rgba(255,255,255,0.06)" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+  <!-- Bar 1 (Expense/Start) -->
+  <rect x="25" y="68" width="20" height="36" rx="5" fill="url(#bar1Grad)"/>
+
+  <!-- Bar 2 (Mid/Budget) -->
+  <rect x="54" y="46" width="20" height="58" rx="5" fill="url(#bar2Grad)"/>
+
+  <!-- Bar 3 (Peak/Savings) -->
+  <rect x="83" y="24" width="20" height="80" rx="5" fill="url(#bar3Grad)"/>
+
+  <!-- Trend Curve Line -->
+  <path d="M 35 62 Q 64 38, 93 18" fill="none" stroke="url(#trendGrad)" stroke-width="4.5" stroke-linecap="round"/>
+
+  <!-- Glowing Trend Point -->
+  <circle cx="93" cy="18" r="5.5" fill="#ffffff" filter="url(#glow)"/>
+  <circle cx="93" cy="18" r="3.5" fill="#34d399"/>
+
+  <!-- Small Euro/Sparkle accent -->
+  <path d="M 108 30 L 110 35 L 115 37 L 110 39 L 108 44 L 106 39 L 101 37 L 106 35 Z" fill="#38bdf8" opacity="0.85"/>
+</svg>

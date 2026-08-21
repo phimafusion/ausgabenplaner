@@ -124,6 +124,14 @@ if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+def serve_favicon():
+    favicon_svg = os.path.join(static_dir, "favicon.svg")
+    if os.path.exists(favicon_svg):
+        return FileResponse(favicon_svg, media_type="image/svg+xml")
+    raise HTTPException(status_code=404, detail="Favicon not found")
+
+
 @app.get("/{full_path:path}")
 def serve_spa(full_path: str):
     if full_path.startswith("api/"):

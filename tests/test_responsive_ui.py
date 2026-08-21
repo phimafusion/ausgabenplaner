@@ -114,6 +114,8 @@ def test_static_files_served():
     resp = client.get("/")
     assert resp.status_code == 200
     assert "Ausgabenplaner" in resp.text
+    assert '<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">' in resp.text
+    assert '<link rel="alternate icon" href="/favicon.ico">' in resp.text
 
     resp_css = client.get("/static/styles.css")
     assert resp_css.status_code == 200
@@ -122,6 +124,18 @@ def test_static_files_served():
     resp_js = client.get("/static/app.js")
     assert resp_js.status_code == 200
     assert "javascript" in resp_js.headers["content-type"]
+
+
+def test_browser_favicon_endpoints():
+    """Verify that both /static/favicon.svg and /favicon.ico are served properly."""
+    resp_svg = client.get("/static/favicon.svg")
+    assert resp_svg.status_code == 200
+    assert "svg" in resp_svg.headers["content-type"]
+    assert "<svg" in resp_svg.text
+
+    resp_ico = client.get("/favicon.ico")
+    assert resp_ico.status_code == 200
+    assert "svg" in resp_ico.headers["content-type"] or "image" in resp_ico.headers["content-type"]
 
 
 def test_table_lock_toggle_ui():

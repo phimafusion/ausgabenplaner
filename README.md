@@ -64,7 +64,7 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12+), SQLite3
 - **Frontend**: Vanilla ES6-Module (`<script type="module">`), CSS3 (Glassmorphism), HTML5
 - **Datenexport**: `openpyxl` (Excel), JSON-Engine
-- **Testing**: `pytest`, `pytest-cov`, `httpx` (75 automatisierte Tests)
+- **Testing**: `pytest`, `pytest-cov`, `httpx` (76 automatisierte Tests)
 - **Container & CI/CD**: Docker (Multi-Arch `linux/amd64` & `linux/arm64`), Docker Compose, GitHub Actions & GitHub Container Registry (GHCR)
 
 ---
@@ -129,7 +129,7 @@ Die Anwendung ist anschließend unter `http://localhost:3000` erreichbar. Die Da
 
 ## 🧪 Tests ausführen
 
-Das Projekt verfügt über eine vollständige Testabdeckung mit 75 automatisierten Tests:
+Das Projekt verfügt über eine vollständige Testabdeckung mit 76 automatisierten Tests:
 
 ```bash
 # Tests ausführen
@@ -155,6 +155,7 @@ ausgabenplaner/
 │   ├── main.py                  # FastAPI Endpunkte & Lifecycle
 │   └── schemas.py               # Pydantic Modelle & Validierung
 ├── static/
+│   ├── favicon.svg              # Modernes Vektor-Favicon & App Icon
 │   ├── js/                      # Modulare Frontend-Architektur (ES6)
 │   │   ├── state.js             # Anwendungs-Zustand & Dirty-Tracking
 │   │   ├── dom.js               # DOM-Elemente Cache
@@ -174,7 +175,7 @@ ausgabenplaner/
 │   ├── app.js                   # Haupt-Einstiegspunkt & Bootstrapping
 │   ├── index.html               # Responsive Single-Page UI (v1.3.0)
 │   └── styles.css               # Modernes Glassmorphism-Design
-├── tests/                       # 75 Pytest-Tests (Domain, Auth, UI, Multi-Plan, Backups, Export)
+├── tests/                       # 76 Pytest-Tests (Domain, Auth, UI, Multi-Plan, Backups, Export)
 ├── data/                        # Lokales SQLite-Datenbankverzeichnis & Snapshots
 ├── docker-compose.yml           # Docker Compose Konfiguration (GHCR Image)
 ├── Dockerfile                   # Multi-Stage Dockerfile

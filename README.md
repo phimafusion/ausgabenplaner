@@ -24,7 +24,8 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
 - **📊 Modernes Glassmorphism Dashboard**:
   - Echtzeit-KPI-Karten für Gesamtausgaben, Beitragszahlungen und Rest-Saldo.
   - Dynamische Farbkodierung (positiver/negativer Saldo).
-  - Touch-freundliches, voll responsives Layout für Desktop, Tablet und Smartphone.
+  - **Vollflächige vertikale Tabellenanordnung**: Ausgaben und Einnahmen untereinander mit maximaler Breite für lange Bezeichnungen und Bemerkungstexte.
+  - **Ultra-kompakte Mobile-Kacheln**: Optimiertes Smartphone-Layout mit Titel & Betrag oben und dezenten Kategorie-Badges darunter.
 - **📜 Versionshistorie & Stände-Management**:
   - Git-ähnliches Arbeiten mit versionierten Ständen (z. B. *„Stand ab 01.09.2026“*).
   - **In-Memory-Entwurfsmodus & In-Place Update**: Sicheres Experimentieren mit Dirty-Tracking und Möglichkeit, bestehende Stände direkt ohne Duplikat zu überschreiben.
@@ -63,7 +64,7 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12+), SQLite3
 - **Frontend**: Vanilla ES6-Module (`<script type="module">`), CSS3 (Glassmorphism), HTML5
 - **Datenexport**: `openpyxl` (Excel), JSON-Engine
-- **Testing**: `pytest`, `pytest-cov`, `httpx` (74 automatisierte Tests)
+- **Testing**: `pytest`, `pytest-cov`, `httpx` (75 automatisierte Tests)
 - **Container & CI/CD**: Docker (Multi-Arch `linux/amd64` & `linux/arm64`), Docker Compose, GitHub Actions & GitHub Container Registry (GHCR)
 
 ---
@@ -128,7 +129,7 @@ Die Anwendung ist anschließend unter `http://localhost:3000` erreichbar. Die Da
 
 ## 🧪 Tests ausführen
 
-Das Projekt verfügt über eine vollständige Testabdeckung mit 58 automatisierten Tests:
+Das Projekt verfügt über eine vollständige Testabdeckung mit 75 automatisierten Tests:
 
 ```bash
 # Tests ausführen
@@ -173,7 +174,7 @@ ausgabenplaner/
 │   ├── app.js                   # Haupt-Einstiegspunkt & Bootstrapping
 │   ├── index.html               # Responsive Single-Page UI (v1.3.0)
 │   └── styles.css               # Modernes Glassmorphism-Design
-├── tests/                       # 74 Pytest-Tests (Domain, Auth, UI, Multi-Plan, Backups, Export)
+├── tests/                       # 75 Pytest-Tests (Domain, Auth, UI, Multi-Plan, Backups, Export)
 ├── data/                        # Lokales SQLite-Datenbankverzeichnis & Snapshots
 ├── docker-compose.yml           # Docker Compose Konfiguration (GHCR Image)
 ├── Dockerfile                   # Multi-Stage Dockerfile

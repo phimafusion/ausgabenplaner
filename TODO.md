@@ -10,7 +10,7 @@ Dieses Dokument fasst geplante Erweiterungen, architektonische Verbesserungen un
   - Veröffentlichung des fertigen Images unter `ghcr.io/phimafusion/ausgabenplaner:latest`.
   - Anpassung der `docker-compose.yml` auf `image: ghcr.io/phimafusion/ausgabenplaner:latest` für 1-Klick-Updates im Synology Container Manager ohne lokalen Build-Aufwand auf dem NAS.
 - [x] **Versionsanzeige im Header & Changelog-Reiter**:
-  - Permanente Anzeige der Versionsnummer (`v1.1.0`) im Navbar-Header und Login.
+  - Permanente Anzeige der Versionsnummer (`v1.3.0`) im Navbar-Header und Login.
   - Eigener Reiter in den Einstellungen für die Versionshistorie und Release Notes (Changelog).
 - [x] **Plan-Löschung**:
   - Administratoren können Pläne sicher löschen (inkl. Bestätigungsdialog, Kaskadierung und Schutz des letzten Plans).

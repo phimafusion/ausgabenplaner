@@ -67,6 +67,10 @@ def test_styles_css_responsive_rules():
     assert "white-space: nowrap !important;" in content
     assert ".data-table th:nth-child(2)" in content
 
+    # Table row separation and zebra striping
+    assert ".data-table tbody tr:nth-child(even)" in content
+    assert ".data-table tbody tr:nth-child(odd)" in content
+
 
 def test_app_js_mobile_interaction_and_data_labels():
     """Verify that frontend modules wire up the mobile menu toggle and set data-label attributes."""

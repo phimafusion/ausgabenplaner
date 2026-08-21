@@ -344,25 +344,49 @@ export function setupEventListeners({
     }
 
     // Save Version Modal & Submit
-    if (elements.btnSaveVersion) {
-        elements.btnSaveVersion.addEventListener("click", () => {
-            if (!state.currentVersionDetails) return;
-
+    function updateSaveVersionModalUI() {
+        const isUpdateInPlace = elements.saveVersionUpdateInPlace && elements.saveVersionUpdateInPlace.checked;
+        if (isUpdateInPlace) {
+            if (elements.btnSubmitSaveVersion) elements.btnSubmitSaveVersion.textContent = "💾 Stand direkt aktualisieren";
+            if (elements.saveSummaryHeading) elements.saveSummaryHeading.textContent = "Zusammenfassung des aktualisierten Stands:";
+            if (state.currentVersionDetails) {
+                if (elements.saveVersionTitle) elements.saveVersionTitle.value = state.currentVersionDetails.title || "";
+                if (elements.saveVersionDate) elements.saveVersionDate.value = state.currentVersionDetails.effective_date || "";
+            }
+        } else {
+            if (elements.btnSubmitSaveVersion) elements.btnSubmitSaveVersion.textContent = "💾 Neuen Stand speichern";
+            if (elements.saveSummaryHeading) elements.saveSummaryHeading.textContent = "Zusammenfassung des neuen Stands:";
             const today = new Date();
             const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
             const formattedDate = nextMonth.toISOString().split("T")[0];
             const dateDE = nextMonth.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+            if (elements.saveVersionTitle) elements.saveVersionTitle.value = `Stand ab ${dateDE}`;
+            if (elements.saveVersionDate) elements.saveVersionDate.value = formattedDate;
+        }
+    }
 
-            elements.saveVersionTitle.value = `Stand ab ${dateDE}`;
-            elements.saveVersionDate.value = formattedDate;
+    if (elements.saveVersionUpdateInPlace) {
+        elements.saveVersionUpdateInPlace.addEventListener("change", updateSaveVersionModalUI);
+    }
+
+    if (elements.btnSaveVersion) {
+        elements.btnSaveVersion.addEventListener("click", () => {
+            if (!state.currentVersionDetails) return;
+
+            if (elements.saveVersionUpdateInPlace) {
+                elements.saveVersionUpdateInPlace.checked = false;
+            }
+            updateSaveVersionModalUI();
 
             const totals = state.currentVersionDetails.totals || {};
-            elements.saveSummaryPosCount.textContent = state.currentVersionDetails.positions.length;
-            elements.saveSummaryExpenses.textContent = totals.total_expenses_formatted || "0,00 €";
-            elements.saveSummaryContribCount.textContent = state.currentVersionDetails.contributions.length;
-            elements.saveSummaryContributions.textContent = totals.total_contributions_formatted || "0,00 €";
-            elements.saveSummaryBalance.textContent = totals.net_balance_formatted || "0,00 €";
-            elements.saveSummaryBalance.className = totals.net_balance < 0 ? "text-neg" : "text-pos";
+            if (elements.saveSummaryPosCount) elements.saveSummaryPosCount.textContent = state.currentVersionDetails.positions.length;
+            if (elements.saveSummaryExpenses) elements.saveSummaryExpenses.textContent = totals.total_expenses_formatted || "0,00 €";
+            if (elements.saveSummaryContribCount) elements.saveSummaryContribCount.textContent = state.currentVersionDetails.contributions.length;
+            if (elements.saveSummaryContributions) elements.saveSummaryContributions.textContent = totals.total_contributions_formatted || "0,00 €";
+            if (elements.saveSummaryBalance) {
+                elements.saveSummaryBalance.textContent = totals.net_balance_formatted || "0,00 €";
+                elements.saveSummaryBalance.className = totals.net_balance < 0 ? "text-neg" : "text-pos";
+            }
 
             openModal("modal-save-version");
         });
@@ -373,9 +397,14 @@ export function setupEventListeners({
             e.preventDefault();
             if (!state.activePlan || !state.currentVersionDetails) return;
 
+            const updateCurrent = elements.saveVersionUpdateInPlace ? elements.saveVersionUpdateInPlace.checked : false;
+            const targetVersionId = state.currentVersionDetails ? state.currentVersionDetails.id : null;
+
             const payload = {
                 title: elements.saveVersionTitle.value.trim(),
                 effective_date: elements.saveVersionDate.value || null,
+                update_current: updateCurrent,
+                version_id: updateCurrent ? targetVersionId : null,
                 positions: state.currentVersionDetails.positions.map((p, idx) => ({
                     title: p.title,
                     amount: p.amount,
@@ -396,17 +425,20 @@ export function setupEventListeners({
                     method: "POST",
                     body: payload,
                 });
-                if (!resp.ok) throw new Error("Fehler beim Speichern des Stands");
-                const newVer = await resp.json();
+                if (!resp.ok) {
+                    const errData = await resp.json();
+                    throw new Error(errData.detail || "Fehler beim Speichern des Stands");
+                }
+                const savedVer = await resp.json();
 
                 closeModal("modal-save-version");
                 setDirty(false);
                 await loadActivePlan();
-                state.selectedVersionId = newVer.id;
-                elements.selectVersion.value = newVer.id;
-                renderVersionDetails(newVer);
+                state.selectedVersionId = savedVer.id;
+                if (elements.selectVersion) elements.selectVersion.value = savedVer.id;
+                renderVersionDetails(savedVer);
             } catch (err) {
-                alert(err.message || "Fehler beim Speichern des neuen Stands");
+                alert(err.message || "Fehler beim Speichern des Stands");
             }
         });
     }

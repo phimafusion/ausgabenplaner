@@ -171,6 +171,8 @@ class VersionSaveRequest(BaseModel):
     effective_date: Optional[str] = None
     positions: List[PositionCreate] = []
     contributions: List[ContributionCreate] = []
+    update_current: Optional[bool] = False
+    version_id: Optional[int] = None
 
 
 class HistoryVersionSummary(BaseModel):

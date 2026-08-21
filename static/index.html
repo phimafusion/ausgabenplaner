@@ -792,9 +792,21 @@
                         <input type="date" id="save-version-date">
                     </div>
                     
+                    <div class="form-group" style="margin-top: 14px; margin-bottom: 8px;">
+                        <label class="checkbox-label" style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.88rem; background: rgba(15, 23, 42, 0.45); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <input type="checkbox" id="save-version-update-in-place" style="width: 18px; height: 18px; margin-top: 2px; cursor: pointer; accent-color: var(--accent-primary);">
+                            <div>
+                                <span style="font-weight: 600; color: var(--text-main);">🔄 Aktuellen Stand direkt aktualisieren (Überschreiben)</span>
+                                <small class="text-muted" style="display: block; font-size: 0.78rem; margin-top: 2px; line-height: 1.35;">
+                                    Überschreibt den bestehenden Stand direkt, ohne einen neuen Eintrag in der Versionshistorie anzulegen.
+                                </small>
+                            </div>
+                        </label>
+                    </div>
+
                     <!-- Preview Summary Box -->
                     <div class="save-summary-box glass-card" style="padding: 12px 16px; margin-top: 1rem;">
-                        <h4 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-muted);">Zusammenfassung des neuen Stands:</h4>
+                        <h4 id="save-summary-heading" style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-muted);">Zusammenfassung des neuen Stands:</h4>
                         <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
                             <span>Ausgaben (<span id="save-summary-pos-count">0</span> Positionen):</span>
                             <strong id="save-summary-expenses" class="text-neg">-0,00 €</strong>
@@ -811,7 +823,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" data-close="modal-save-version">Abbrechen</button>
-                    <button type="submit" class="btn btn-primary">💾 Neuen Stand speichern</button>
+                    <button type="submit" id="btn-submit-save-version" class="btn btn-primary">💾 Neuen Stand speichern</button>
                 </div>
             </form>
         </div>

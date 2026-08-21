@@ -468,6 +468,68 @@ def save_new_version(
     return details
 
 
+def update_version_in_place(
+    conn: sqlite3.Connection,
+    version_id: int,
+    title: Optional[str] = None,
+    effective_date: Optional[str] = None,
+    positions: Optional[List[Dict[str, Any]]] = None,
+    contributions: Optional[List[Dict[str, Any]]] = None,
+    updated_by: Optional[str] = "Administrator",
+) -> Dict[str, Any]:
+    existing = conn.execute("SELECT * FROM versions WHERE id = ?", (version_id,)).fetchone()
+    if not existing:
+        raise ValueError("Version nicht gefunden")
+
+    existing_dict = dict(existing)
+    new_title = title.strip() if title is not None and title.strip() else existing_dict["title"]
+    new_date = effective_date if effective_date is not None else existing_dict["effective_date"]
+    now_iso = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE versions
+        SET title = ?, effective_date = ?, updated_at = ?, updated_by = ?
+        WHERE id = ?
+        """,
+        (new_title, new_date, now_iso, updated_by or "Administrator", version_id),
+    )
+
+    # Replace positions for this version
+    cursor.execute("DELETE FROM positions WHERE version_id = ?", (version_id,))
+    if positions:
+        for idx, pos in enumerate(positions):
+            p_title = pos.get("title") or ""
+            p_amount = float(pos.get("amount") or 0.0)
+            p_comment = pos.get("comment")
+            p_cat = pos.get("category")
+            p_sort = pos.get("sort_order", idx)
+            cursor.execute(
+                "INSERT INTO positions (version_id, title, amount, comment, category, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+                (version_id, p_title, p_amount, p_comment, p_cat, p_sort),
+            )
+
+    # Replace contributions for this version
+    cursor.execute("DELETE FROM contributions WHERE version_id = ?", (version_id,))
+    if contributions:
+        for idx, c in enumerate(contributions):
+            c_person = c.get("person_name") or ""
+            c_amount = float(c.get("amount") or 0.0)
+            c_comment = c.get("comment")
+            c_sort = c.get("sort_order", idx)
+            cursor.execute(
+                "INSERT INTO contributions (version_id, person_name, amount, comment, sort_order) VALUES (?, ?, ?, ?, ?)",
+                (version_id, c_person, c_amount, c_comment, c_sort),
+            )
+
+    conn.commit()
+    details = get_version_details(conn, version_id)
+    if details is None:
+        raise ValueError("Fehler beim Abrufen der aktualisierten Version")
+    return details
+
+
 def update_version(
     conn: sqlite3.Connection,
     version_id: int,

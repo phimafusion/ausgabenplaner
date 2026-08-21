@@ -1,6 +1,6 @@
 import sqlite3
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.database import get_db
 from app.auth import get_current_user, require_permission
@@ -117,10 +117,11 @@ def get_version_route(
     return ver
 
 
-@router.post("/api/plans/{plan_id}/save-version", response_model=schemas.VersionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/api/plans/{plan_id}/save-version", response_model=schemas.VersionResponse)
 def save_version_route(
     plan_id: int,
     req: schemas.VersionSaveRequest,
+    response: Response,
     current_user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_db),
 ):
@@ -129,15 +130,33 @@ def save_version_route(
     positions_data = [p.model_dump() for p in req.positions]
     contributions_data = [c.model_dump() for c in req.contributions]
     user_name = current_user.get("name") or current_user.get("username") or "Administrator"
-    ver = crud.save_new_version(
-        conn,
-        plan_id=plan_id,
-        title=req.title,
-        effective_date=req.effective_date,
-        positions=positions_data,
-        contributions=contributions_data,
-        created_by=user_name,
-    )
+
+    if req.update_current and req.version_id:
+        # Verify version belongs to plan
+        ver_details = crud.get_version_details(conn, req.version_id)
+        if not ver_details or ver_details["plan_id"] != plan_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zu aktualisierende Version nicht gefunden")
+        ver = crud.update_version_in_place(
+            conn,
+            version_id=req.version_id,
+            title=req.title,
+            effective_date=req.effective_date,
+            positions=positions_data,
+            contributions=contributions_data,
+            updated_by=user_name,
+        )
+        response.status_code = status.HTTP_200_OK
+    else:
+        ver = crud.save_new_version(
+            conn,
+            plan_id=plan_id,
+            title=req.title,
+            effective_date=req.effective_date,
+            positions=positions_data,
+            contributions=contributions_data,
+            created_by=user_name,
+        )
+        response.status_code = status.HTTP_201_CREATED
     return ver
 
 

@@ -51,7 +51,7 @@ export const elements = {
 
     // Contribution Modal
     modalContribution: document.getElementById("modal-contribution"),
-    modalContribTitle: document.getElementById("modal-contribution-title"),
+    modalContribTitle: document.getElementById("modal-contrib-title") || document.getElementById("modal-contribution-title"),
     formContribution: document.getElementById("form-contribution"),
     contribId: document.getElementById("contrib-id"),
     contribPerson: document.getElementById("contrib-person"),

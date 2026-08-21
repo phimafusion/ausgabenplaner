@@ -1,6 +1,6 @@
 # Ausgabenplaner 📊💰
 
-Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Verwaltung von Hausgeldern, Kostenpositionen, Haushaltsbudgets und Beitragszahlungen mit integrierter **Plan-Verwaltung**, **Versionshistorie (Stände-Management)**, **Excel-Export**, **Live-Matrix-Vergleich** und **Echtzeit-Testsuite**.
+Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Verwaltung von Hausgeldern, Kostenpositionen, Haushaltsbudgets und Beitragszahlungen mit integrierter **Plan-Verwaltung**, **Versionshistorie (Stände-Management)**, **Kategorien-Management & Live-Filter**, **Excel- & JSON-Export**, **Live-Matrix-Vergleich** und **Echtzeit-Testsuite**.
 
 ---
 
@@ -12,10 +12,14 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
   - **Plan-CRUD & Anpassung**: Pläne im Optionsmenü umbenennen, mit Beschreibungen versehen, archivieren oder reaktivieren.
   - **1:1 Plan-Duplizierung (Deep Copy)**: Duplizieren kompletter Pläne inklusive aller historischen Stände, Positionen und Beiträge als Vorlage.
   - **Sichere Plan-Löschung**: Kaskadierendes Löschen mit Bestätigung und Schutz des letzten verbleibenden Plans.
-- **👥 Plan-spezifische Benutzer- & Rechteverwaltung (RBAC)**:
+- **🏷️ Kategorien-Management & Live-Filter**:
+  - **Eigene Kategorien definieren**: Individuelle Kategorien mit Farb-Tags und Icons anlegen, bearbeiten und sortieren.
+  - **Live-Suche & Tabellen-Filter**: Sofortsuche über Positionen und Bemerkungen mit Live-Trefferzähler.
+  - **Filter nach Betragstyp**: Schnelles Umschalten zwischen Ausgaben und Einnahmen.
+- **👥 Granulare Benutzer- & Rechteverwaltung (RBAC)**:
   - Rollenbasiertes Rechtesystem (Administrator vs. Benutzer).
   - **Granulare Plan-Zuordnung (`user_plans`)**: Benutzer können gezielt einzelnen Plänen zugewiesen werden; Admins besitzen automatisch Vollzugriff auf alle Pläne.
-  - Granulare Rechtevergabe für Daten-Export & Sicherung.
+  - **Funktionsspezifische Berechtigungen**: Checkboxen für Planverwaltung, Kategorien, Datenexport, Datenimport, Backups, Benutzerverwaltung und Testsuite.
   - Sichere Passwort-Verwaltung mit Hash-Verfahren.
 - **📊 Modernes Glassmorphism Dashboard**:
   - Echtzeit-KPI-Karten für Gesamtausgaben, Beitragszahlungen und Rest-Saldo.
@@ -23,7 +27,7 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
   - Touch-freundliches, voll responsives Layout für Desktop, Tablet und Smartphone.
 - **📜 Versionshistorie & Stände-Management**:
   - Git-ähnliches Arbeiten mit versionierten Ständen (z. B. *„Stand ab 01.09.2026“*).
-  - **In-Memory-Entwurfsmodus**: Sicheres Experimentieren mit Dirty-Tracking und Warnungen bei ungespeicherten Änderungen.
+  - **In-Memory-Entwurfsmodus & In-Place Update**: Sicheres Experimentieren mit Dirty-Tracking und Möglichkeit, bestehende Stände direkt ohne Duplikat zu überschreiben.
   - **Schreibschutz & Entsperren**: Gezieltes Freischalten von Tabellenzeilen für Bearbeitung oder Löschung.
   - **Audit-Metadaten**: Lückenlose Nachvollziehbarkeit, wer welchen Stand wann erstellt oder geändert hat.
 - **🔍 Historische Matrix-Vergleichsansicht**:
@@ -32,7 +36,7 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
   - Automatische Monatskosten-Umrechnung für quartalsweise und jährliche Zahlungen.
 - **💾 Datensicherung, Snapshots & Export**:
   - **Automatisierte Backups & Snapshots**: Konfigurierbare automatische Intervallsicherungen mit Rotation (Retention).
-  - **JSON-Export & Import**: Vollständige Sicherung und 1-Klick-Wiederherstellung aller Pläne, Stände und Positionen.
+  - **Vollständiger JSON-Export & Import**: Sicherung und 1-Klick-Wiederherstellung aller Pläne, Stände, Kategorien und Archivierungszustände.
   - **Excel-Export (.xlsx)**: Professionell aufbereitete Arbeitsmappe mit formatierter Datums- und Währungsdarstellung.
 - **🧪 Integrierte Live-Testsuite (Admin)**:
   - Führt die Pytest-Suite direkt aus der Web-App aus.
@@ -46,19 +50,20 @@ Ein moderner, transparenter und modularer Ausgaben- und Wirtschaftsplaner zur Ve
 ┌─────────────────────────────────────────────────────────────┐
 │                    Ausgabenplaner Architektur               │
 ├──────────────────────────────┬──────────────────────────────┤
-│ Backend:                     │ Frontend (Modular ES6):      │
+│ Backend (Modulare Router):   │ Frontend (Modular ES6):      │
 │ • Python 3.12+ / FastAPI     │ • state.js (Reactive Store)  │
 │ • SQLite3 (atomar + WAL)     │ • api.js (Auth & Endpoints)  │
 │ • openpyxl (Excel-Engine)    │ • formatters.js (DE Formats) │
-│ • Multi-Plan RBAC & Crud     │ • 7 UI-Komponenten-Module    │
-│ • SSE Subprocess Test Runner │ • plans.js, backups.js etc.  │
+│ • Multi-Plan & Category CRUD │ • 8 UI-Komponenten-Module    │
+│ • Granulare RBAC Permissions │ • categories.js, plans.js    │
+│ • SSE Subprocess Test Runner │ • users.js, backups.js etc.  │
 └──────────────────────────────┴──────────────────────────────┘
 ```
 
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12+), SQLite3
 - **Frontend**: Vanilla ES6-Module (`<script type="module">`), CSS3 (Glassmorphism), HTML5
 - **Datenexport**: `openpyxl` (Excel), JSON-Engine
-- **Testing**: `pytest`, `pytest-cov`, `httpx` (58 automatisierte Tests)
+- **Testing**: `pytest`, `pytest-cov`, `httpx` (74 automatisierte Tests)
 - **Container & CI/CD**: Docker (Multi-Arch `linux/amd64` & `linux/arm64`), Docker Compose, GitHub Actions & GitHub Container Registry (GHCR)
 
 ---
@@ -140,11 +145,13 @@ pytest --cov=app --cov-report=term-missing
 ```text
 ausgabenplaner/
 ├── app/
+│   ├── routers/                 # Modulare FastAPI Router (Auth, Users, Plans, Categories, Data, Backups, Testsuite)
 │   ├── auth.py                  # JWT-Token & Passwort-Hashing
+│   ├── backups.py               # Backup-Engine & Scheduler
 │   ├── crud.py                  # SQLite CRUD, Multi-Plan & Snapshot-Operationen
 │   ├── database.py              # DB-Initialisierung, Migrationen & Seed-Daten
 │   ├── domain.py                # Business-Logik & Intervall-Berechnungen
-│   ├── main.py                  # FastAPI Endpunkte & SSE Test Runner
+│   ├── main.py                  # FastAPI Endpunkte & Lifecycle
 │   └── schemas.py               # Pydantic Modelle & Validierung
 ├── static/
 │   ├── js/                      # Modulare Frontend-Architektur (ES6)
@@ -157,15 +164,16 @@ ausgabenplaner/
 │   │       ├── modals.js        # Dialoge & Guards
 │   │       ├── kpi.js           # KPI-Rendering & Summenberechnung
 │   │       ├── tables.js        # Positions- & Beitrags-Tabellen
+│   │       ├── categories.js    # Kategorien-Verwaltung & Farbwahl
 │   │       ├── history.js       # Timeline & Matrix-Vergleich
 │   │       ├── users.js         # Benutzerverwaltung & Plan-Rechte
 │   │       ├── testsuite.js     # SSE Testsuite-Runner
 │   │       ├── backups.js       # Backup- & Snapshot-Verwaltung
 │   │       └── plans.js         # Multi-Plan-Verwaltung & Switcher
 │   ├── app.js                   # Haupt-Einstiegspunkt & Bootstrapping
-│   ├── index.html               # Responsive Single-Page UI
+│   ├── index.html               # Responsive Single-Page UI (v1.3.0)
 │   └── styles.css               # Modernes Glassmorphism-Design
-├── tests/                       # 58 Pytest-Tests (Domain, Auth, UI, Multi-Plan, Backups)
+├── tests/                       # 74 Pytest-Tests (Domain, Auth, UI, Multi-Plan, Backups, Export)
 ├── data/                        # Lokales SQLite-Datenbankverzeichnis & Snapshots
 ├── docker-compose.yml           # Docker Compose Konfiguration (GHCR Image)
 ├── Dockerfile                   # Multi-Stage Dockerfile
@@ -180,10 +188,9 @@ ausgabenplaner/
 
 Zukünftige Erweiterungen und Vorschläge sind im [TODO.md](TODO.md) dokumentiert:
 - 📊 Interaktive Diagramme (Kostenverteilung nach Kategorien & Trendverlauf)
-- 📋 Erweiterte Plan-Verwaltung & Vorlagen
 - 📑 Druckfertiger PDF-Bericht für Versammlungen
-- 🏷️ Eigenes Kategorien-Management mit Farb-Tags
 - ⚡ Drag-and-Drop Sortierung & Inline-Editing
+- 🌓 Theme-Toggle (Light / Dark Mode)
 
 ---
 

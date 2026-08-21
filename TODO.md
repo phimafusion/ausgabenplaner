@@ -28,11 +28,11 @@ Dieses Dokument fasst geplante Erweiterungen, architektonische Verbesserungen un
 ---
 
 ## 📋 2. Plan-Verwaltung & Optionen
-- [ ] **Zentrale Plan-Verwaltung im Optionsmenü**:
+- [x] **Zentrale Plan-Verwaltung im Optionsmenü**:
   - Verwaltung, Umbenennung und Wechsel von Plänen im Einstellungsmenü bei aufgeräumtem Dashboard.
-- [ ] **Plan-CRUD für Administratoren**:
+- [x] **Plan-CRUD für Administratoren**:
   - Neuen Plan anlegen, archivieren/reaktivieren, umbenennen oder duplizieren (vollständige Deep-Copy als Vorlage).
-- [ ] **Plan-spezifische Benutzerzuordnungen**:
+- [x] **Plan-spezifische Benutzerzuordnungen**:
   - Granulare Berechtigungen pro Plan vergeben (RBAC via `user_plans`).
 
 ---
@@ -47,7 +47,7 @@ Dieses Dokument fasst geplante Erweiterungen, architektonische Verbesserungen un
 
 ## 🏷️ 4. Kategorien-Management & Tabellen-Filter
 - [x] **Kategorien-Editor**:
-  - Eigene Kategorien mit individuellen Farb-Tags anlegen und verwalten.
+  - Eigene Kategorien mit individuellen Farb-Tags und Icons anlegen und verwalten.
 - [x] **Granulare Benutzerberechtigung**:
   - Recht `can_manage_categories` per Checkbox im Benutzerformular vergeben.
 - [x] **Live-Suche & Tabellen-Filter**:
@@ -57,6 +57,8 @@ Dieses Dokument fasst geplante Erweiterungen, architektonische Verbesserungen un
 ---
 
 ## ⚡ 5. Bedienkomfort & Workflow-Optimierung
+- [x] **Stand direkt aktualisieren (In-Place Update)**:
+  - Bestehende Versionen direkt ohne Erstellung eines neuen Verlaufs-Eintrags überschreiben.
 - [ ] **Drag-and-Drop Sortierung**:
   - Positionen und Beiträge per Drag-and-Drop in der Tabelle umsortieren (`sort_order`).
 - [ ] **Inline-Editing**:

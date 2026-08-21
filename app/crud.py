@@ -1111,3 +1111,87 @@ def import_full_data(conn: sqlite3.Connection, data: Dict[str, Any], overwrite: 
         "contributions_imported": contributions_imported,
     }
 
+
+# --- Categories CRUD ---
+
+def get_all_categories(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
+    rows = conn.execute("SELECT * FROM categories ORDER BY sort_order ASC, id ASC").fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_category_by_id(conn: sqlite3.Connection, category_id: int) -> Optional[Dict[str, Any]]:
+    row = conn.execute("SELECT * FROM categories WHERE id = ?", (category_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def create_category(
+    conn: sqlite3.Connection,
+    name: str,
+    color: str = "#64748b",
+    icon: str = "📦",
+    sort_order: int = 0,
+) -> Dict[str, Any]:
+    name = name.strip()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO categories (name, color, icon, is_default, sort_order)
+        VALUES (?, ?, ?, 0, ?)
+        """,
+        (name, color, icon, sort_order),
+    )
+    conn.commit()
+    cat_id = cursor.lastrowid
+    row = conn.execute("SELECT * FROM categories WHERE id = ?", (cat_id,)).fetchone()
+    return dict(row)
+
+
+def update_category(
+    conn: sqlite3.Connection,
+    category_id: int,
+    name: Optional[str] = None,
+    color: Optional[str] = None,
+    icon: Optional[str] = None,
+    sort_order: Optional[int] = None,
+) -> Optional[Dict[str, Any]]:
+    existing = get_category_by_id(conn, category_id)
+    if not existing:
+        return None
+
+    old_name = existing["name"]
+    new_name = name.strip() if name is not None else old_name
+    new_color = color if color is not None else existing["color"]
+    new_icon = icon if icon is not None else existing["icon"]
+    new_sort = sort_order if sort_order is not None else existing["sort_order"]
+
+    conn.execute(
+        """
+        UPDATE categories
+        SET name = ?, color = ?, icon = ?, sort_order = ?
+        WHERE id = ?
+        """,
+        (new_name, new_color, new_icon, new_sort, category_id),
+    )
+
+    # If name changed, migrate positions referencing old name
+    if new_name != old_name:
+        conn.execute("UPDATE positions SET category = ? WHERE category = ?", (new_name, old_name))
+
+    conn.commit()
+    return get_category_by_id(conn, category_id)
+
+
+def delete_category(conn: sqlite3.Connection, category_id: int) -> bool:
+    existing = get_category_by_id(conn, category_id)
+    if not existing:
+        return False
+    if existing.get("is_default"):
+        raise ValueError("Standard-Kategorien können nicht gelöscht werden.")
+
+    cat_name = existing["name"]
+    conn.execute("UPDATE positions SET category = 'Allgemein' WHERE category = ?", (cat_name,))
+    conn.execute("DELETE FROM categories WHERE id = ?", (category_id,))
+    conn.commit()
+    return True
+
+

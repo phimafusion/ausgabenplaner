@@ -38,6 +38,7 @@ def login(req: schemas.LoginRequest, conn: sqlite3.Connection = Depends(get_db))
             "name": user["name"],
             "role": user["role"],
             "can_manage_plans": bool(user.get("can_manage_plans", 0)),
+            "can_manage_categories": bool(user.get("can_manage_categories", 0)),
             "can_export": bool(user.get("can_export", 1)),
             "can_import": bool(user.get("can_import", 0)),
             "can_manage_backups": bool(user.get("can_manage_backups", 0)),

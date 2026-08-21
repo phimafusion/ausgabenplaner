@@ -4,6 +4,7 @@ import { elements } from "../dom.js";
 import { formatCurrency, escapeHtml } from "../formatters.js";
 import { openModal } from "./modals.js";
 import { renderKPIs, recalculateDraftTotals, updateDraftStatusBadge } from "./kpi.js";
+import { getCategoryBadgeHtml } from "./categories.js";
 
 export function updateLockControls() {
     // Positions
@@ -79,24 +80,76 @@ export function renderVersionDetails(verData) {
 
     renderKPIs(totals);
 
+    const allPositions = verData.positions || [];
+    const query = (state.posSearchQuery || "").toLowerCase().trim();
+    const catFilter = (state.posCategoryFilter || "").toLowerCase().trim();
+    const typeFilter = state.posTypeFilter || "all";
+
+    const isFilterActive = Boolean(query || catFilter || (typeFilter && typeFilter !== "all"));
+
+    const filteredPositions = allPositions.filter((p) => {
+        // 1. Text Search (title and comment)
+        if (query) {
+            const titleMatch = (p.title || "").toLowerCase().includes(query);
+            const commentMatch = (p.comment || "").toLowerCase().includes(query);
+            if (!titleMatch && !commentMatch) return false;
+        }
+        // 2. Category Filter
+        if (catFilter) {
+            const pCat = (p.category || "Allgemein").toLowerCase();
+            if (pCat !== catFilter) return false;
+        }
+        // 3. Type Filter
+        if (typeFilter === "expense" && p.amount >= 0) return false;
+        if (typeFilter === "income" && p.amount < 0) return false;
+
+        return true;
+    });
+
+    // Update Filter Count Badge & Reset Button
+    if (elements.posFilterCountBadge) {
+        if (isFilterActive) {
+            elements.posFilterCountBadge.style.display = "inline-flex";
+            elements.posFilterCountBadge.textContent = `${filteredPositions.length} von ${allPositions.length} Positionen`;
+        } else {
+            elements.posFilterCountBadge.style.display = "none";
+        }
+    }
+    if (elements.btnResetFilters) {
+        elements.btnResetFilters.classList.toggle("hidden", !isFilterActive);
+    }
+
     // Render Positions Table
     if (elements.tablePositionsBody) {
         elements.tablePositionsBody.innerHTML = "";
-        (verData.positions || []).forEach((p) => {
-            const tr = document.createElement("tr");
-            const amountClass = p.amount < 0 ? "text-neg" : "text-pos";
-            tr.innerHTML = `
-                <td data-label="Position"><strong>${escapeHtml(p.title)}</strong></td>
-                <td data-label="Kosten" class="${amountClass}">${escapeHtml(p.amount_formatted || formatCurrency(p.amount))}</td>
-                <td data-label="Bemerkung" class="text-muted">${escapeHtml(p.comment || "")}</td>
-                ${state.isPositionsUnlocked ? `
-                <td data-label="Aktionen" class="actions-cell">
-                    <button class="btn btn-sm btn-outline btn-icon" onclick="editPosition('${p.id}')" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
-                    <button class="btn btn-sm btn-danger btn-icon" onclick="deletePosition('${p.id}')" title="Löschen" aria-label="Löschen">🗑️</button>
-                </td>` : ''}
+
+        if (filteredPositions.length === 0) {
+            const emptyTr = document.createElement("tr");
+            const colCount = state.isPositionsUnlocked ? 5 : 4;
+            emptyTr.innerHTML = `
+                <td colspan="${colCount}" class="text-center text-muted" style="padding: 24px;">
+                    ${isFilterActive ? '🔍 Keine passenden Positionen für diesen Filter gefunden.' : 'Keine Positionen vorhanden.'}
+                </td>
             `;
-            elements.tablePositionsBody.appendChild(tr);
-        });
+            elements.tablePositionsBody.appendChild(emptyTr);
+        } else {
+            filteredPositions.forEach((p) => {
+                const tr = document.createElement("tr");
+                const amountClass = p.amount < 0 ? "text-neg" : "text-pos";
+                tr.innerHTML = `
+                    <td data-label="Position"><strong>${escapeHtml(p.title)}</strong></td>
+                    <td data-label="Kategorie">${getCategoryBadgeHtml(p.category)}</td>
+                    <td data-label="Kosten" class="${amountClass}">${escapeHtml(p.amount_formatted || formatCurrency(p.amount))}</td>
+                    <td data-label="Bemerkung" class="text-muted">${escapeHtml(p.comment || "")}</td>
+                    ${state.isPositionsUnlocked ? `
+                    <td data-label="Aktionen" class="actions-cell">
+                        <button class="btn btn-sm btn-outline btn-icon" onclick="editPosition('${p.id}')" title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
+                        <button class="btn btn-sm btn-danger btn-icon" onclick="deletePosition('${p.id}')" title="Löschen" aria-label="Löschen">🗑️</button>
+                    </td>` : ''}
+                `;
+                elements.tablePositionsBody.appendChild(tr);
+            });
+        }
     }
 
     if (elements.sumPositionsVal) {
@@ -142,6 +195,9 @@ export function editPosition(posId) {
     elements.posInterval.value = "monthly";
     elements.posRawAmount.value = Math.abs(pos.amount);
     elements.posAmount.value = pos.amount;
+    if (elements.posCategory) {
+        elements.posCategory.value = pos.category || "Allgemein";
+    }
     elements.posComment.value = pos.comment || "";
     elements.posCalculatedMonthlyVal.textContent = `${formatCurrency(pos.amount)} / Monat`;
     elements.modalPosTitle.textContent = "Position bearbeiten";

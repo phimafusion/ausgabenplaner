@@ -13,6 +13,7 @@ class UserCreate(BaseModel):
     name: str
     role: str = "user"
     can_manage_plans: bool = False
+    can_manage_categories: bool = False
     can_export: bool = True
     can_import: bool = False
     can_manage_backups: bool = False
@@ -27,6 +28,7 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     password: Optional[str] = None
     can_manage_plans: Optional[bool] = None
+    can_manage_categories: Optional[bool] = None
     can_export: Optional[bool] = None
     can_import: Optional[bool] = None
     can_manage_backups: Optional[bool] = None
@@ -42,6 +44,7 @@ class UserResponse(BaseModel):
     name: str
     role: str
     can_manage_plans: bool = False
+    can_manage_categories: bool = False
     can_export: bool = True
     can_import: bool = False
     can_manage_backups: bool = False
@@ -49,6 +52,32 @@ class UserResponse(BaseModel):
     can_run_testsuite: bool = False
     can_view_changelog: bool = True
     assigned_plan_ids: List[int] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CategoryCreate(BaseModel):
+    name: str
+    color: Optional[str] = "#64748b"
+    icon: Optional[str] = "📦"
+    sort_order: Optional[int] = 0
+
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
+class CategoryResponse(BaseModel):
+    id: int
+    name: str
+    color: str
+    icon: str
+    is_default: bool = False
+    sort_order: int = 0
+    created_at: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

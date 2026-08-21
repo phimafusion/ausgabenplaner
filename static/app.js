@@ -19,6 +19,7 @@ import {
     openDuplicatePlanModal,
     openDeletePlanModal,
 } from "./js/components/plans.js";
+import { loadCategories, renderCategoriesList } from "./js/components/categories.js";
 import { setupEventListeners } from "./js/events.js";
 
 // Wire callbacks across modules
@@ -29,6 +30,7 @@ setOnPlanSwitchedHandler(async () => {
 });
 setOnBackupRestoredHandler(async () => {
     await loadAllPlans();
+    await loadCategories();
     await loadActivePlan();
     showDashboard();
 });
@@ -56,6 +58,7 @@ export function showDashboard() {
 
         const isAdmin = state.user.role === "admin";
         const canManagePlans = isAdmin || !!state.user.can_manage_plans;
+        const canManageCategories = isAdmin || !!state.user.can_manage_categories;
         const canExport = isAdmin || !!state.user.can_export;
         const canImport = isAdmin || !!state.user.can_import;
         const canManageBackups = isAdmin || !!state.user.can_manage_backups;
@@ -63,13 +66,14 @@ export function showDashboard() {
         const canRunTestsuite = isAdmin || !!state.user.can_run_testsuite;
         const canViewChangelog = isAdmin || (state.user.can_view_changelog !== undefined ? !!state.user.can_view_changelog : true);
 
-        const hasAnySettingsAccess = canManagePlans || canExport || canImport || canManageBackups || canManageUsers || canRunTestsuite || canViewChangelog;
+        const hasAnySettingsAccess = canManagePlans || canManageCategories || canExport || canImport || canManageBackups || canManageUsers || canRunTestsuite || canViewChangelog;
 
         if (elements.btnSettings) {
             elements.btnSettings.classList.toggle("hidden", !hasAnySettingsAccess);
         }
 
         if (elements.tabBtnPlans) elements.tabBtnPlans.classList.toggle("hidden", !canManagePlans);
+        if (elements.tabBtnCategories) elements.tabBtnCategories.classList.toggle("hidden", !canManageCategories);
         if (elements.tabBtnUsers) elements.tabBtnUsers.classList.toggle("hidden", !canManageUsers);
         if (elements.tabBtnNewUser) elements.tabBtnNewUser.classList.toggle("hidden", !canManageUsers);
         const canViewDataTab = canExport || canImport || canManageBackups;
@@ -107,6 +111,9 @@ export function switchSettingsTab(tabId) {
     if (tabId === "tab-settings-plans") {
         loadAllPlans();
     }
+    if (tabId === "tab-settings-categories") {
+        renderCategoriesList();
+    }
     if (tabId === "tab-settings-users") {
         loadUsersList();
     }
@@ -132,6 +139,7 @@ export function showSettings(targetTab) {
 
     const isAdmin = state.user && state.user.role === "admin";
     const canManagePlans = isAdmin || !!(state.user && state.user.can_manage_plans);
+    const canManageCategories = isAdmin || !!(state.user && state.user.can_manage_categories);
     const canExport = isAdmin || !!(state.user && state.user.can_export);
     const canImport = isAdmin || !!(state.user && state.user.can_import);
     const canManageBackups = isAdmin || !!(state.user && state.user.can_manage_backups);
@@ -145,6 +153,8 @@ export function showSettings(targetTab) {
         // Choose default visible tab for this user
         if (canManagePlans) {
             switchSettingsTab("tab-settings-plans");
+        } else if (canManageCategories) {
+            switchSettingsTab("tab-settings-categories");
         } else if (canExport || canImport || canManageBackups) {
             switchSettingsTab("tab-settings-data");
         } else if (canManageUsers) {
@@ -181,6 +191,7 @@ export async function login(username, password) {
         localStorage.setItem("token", state.token);
         showDashboard();
         await loadAllPlans();
+        await loadCategories();
         await loadActivePlan();
     } catch (err) {
         if (elements.loginError) {
@@ -276,6 +287,7 @@ export async function initApp() {
             await fetchCurrentUser();
             showDashboard();
             await loadAllPlans();
+            await loadCategories();
             await loadActivePlan();
         } catch (err) {
             logout();

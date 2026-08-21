@@ -12,6 +12,10 @@ export const state = {
     isPositionsUnlocked: false,
     isContributionsUnlocked: false,
     unlockedVersionIds: new Set(),
+    availableCategories: [],
+    posSearchQuery: "",
+    posCategoryFilter: "",
+    posTypeFilter: "all",
     pendingAction: null, // Callback when confirming discard of unsaved changes
 };
 

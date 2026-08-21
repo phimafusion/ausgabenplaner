@@ -75,7 +75,7 @@ def get_current_user(
 
     user_row = conn.execute(
         """
-        SELECT id, username, name, role, can_manage_plans, can_export, can_import,
+        SELECT id, username, name, role, can_manage_plans, can_manage_categories, can_export, can_import,
                can_manage_backups, can_manage_users, can_run_testsuite, can_view_changelog
         FROM users WHERE username = ?
         """,
@@ -86,6 +86,7 @@ def get_current_user(
 
     res = dict(user_row)
     res["can_manage_plans"] = bool(res.get("can_manage_plans", 0))
+    res["can_manage_categories"] = bool(res.get("can_manage_categories", 0))
     res["can_export"] = bool(res.get("can_export", 1))
     res["can_import"] = bool(res.get("can_import", 0))
     res["can_manage_backups"] = bool(res.get("can_manage_backups", 0))
@@ -107,6 +108,7 @@ def get_current_admin(current_user: dict = Depends(get_current_user)) -> dict:
 
 PERMISSION_ERROR_MESSAGES = {
     "can_manage_plans": "Sie besitzen keine Berechtigung zum Verwalten von Plänen.",
+    "can_manage_categories": "Sie besitzen keine Berechtigung zum Verwalten von Kategorien.",
     "can_export": "Sie besitzen keine Berechtigung zum Exportieren der Daten.",
     "can_import": "Sie besitzen keine Berechtigung zum Importieren von Daten.",
     "can_manage_backups": "Sie besitzen keine Berechtigung zur Verwaltung von Backups.",

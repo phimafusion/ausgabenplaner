@@ -29,6 +29,7 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
 def reset_db():
     conn = get_db_connection()
     cursor = conn.cursor()
+    cursor.execute("DROP TABLE IF EXISTS categories;")
     cursor.execute("DROP TABLE IF EXISTS user_plans;")
     cursor.execute("DROP TABLE IF EXISTS contributions;")
     cursor.execute("DROP TABLE IF EXISTS positions;")
@@ -57,6 +58,7 @@ def init_db(seed: Optional[bool] = None):
         name TEXT NOT NULL,
         role TEXT NOT NULL DEFAULT 'user',
         can_manage_plans INTEGER NOT NULL DEFAULT 0,
+        can_manage_categories INTEGER NOT NULL DEFAULT 0,
         can_export INTEGER NOT NULL DEFAULT 1,
         can_import INTEGER NOT NULL DEFAULT 0,
         can_manage_backups INTEGER NOT NULL DEFAULT 0,
@@ -72,6 +74,7 @@ def init_db(seed: Optional[bool] = None):
     user_cols = [row[1] for row in cursor.execute("PRAGMA table_info(users)").fetchall()]
     user_col_defs = {
         "can_manage_plans": "INTEGER NOT NULL DEFAULT 0",
+        "can_manage_categories": "INTEGER NOT NULL DEFAULT 0",
         "can_export": "INTEGER NOT NULL DEFAULT 1",
         "can_import": "INTEGER NOT NULL DEFAULT 0",
         "can_manage_backups": "INTEGER NOT NULL DEFAULT 0",
@@ -189,6 +192,40 @@ def init_db(seed: Optional[bool] = None):
     """
     )
 
+    # Categories table
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        color TEXT NOT NULL DEFAULT '#64748b',
+        icon TEXT NOT NULL DEFAULT '📦',
+        is_default INTEGER NOT NULL DEFAULT 0,
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """
+    )
+
+    # Seed default categories if table is empty
+    default_categories = [
+        ("Wohnen", "#3b82f6", "🏠", 1, 0),
+        ("Energie & Nebenkosten", "#eab308", "⚡", 1, 1),
+        ("Versicherung", "#10b981", "🛡️", 1, 2),
+        ("Instandhaltung", "#f97316", "🔧", 1, 3),
+        ("Rücklagen & Sparen", "#8b5cf6", "💰", 1, 4),
+        ("Medien & Kommunikation", "#06b6d4", "🌐", 1, 5),
+        ("Allgemein", "#64748b", "📦", 1, 6),
+    ]
+    for cat_name, cat_color, cat_icon, cat_default, cat_order in default_categories:
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO categories (name, color, icon, is_default, sort_order)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (cat_name, cat_color, cat_icon, cat_default, cat_order),
+        )
+
     # Migration for backup_settings
     backup_cols = [row[1] for row in cursor.execute("PRAGMA table_info(backup_settings)").fetchall()]
     if "backup_frequency" not in backup_cols:
@@ -210,7 +247,7 @@ def init_db(seed: Optional[bool] = None):
     if not admin_exists:
         admin_pass = os.getenv("ADMIN_PASSWORD", "admin123")
         cursor.execute(
-            "INSERT OR IGNORE INTO users (username, password_hash, name, role, can_manage_plans, can_export, can_import, can_manage_backups, can_manage_users, can_run_testsuite, can_view_changelog) VALUES (?, ?, ?, ?, 1, 1, 1, 1, 1, 1, 1)",
+            "INSERT OR IGNORE INTO users (username, password_hash, name, role, can_manage_plans, can_manage_categories, can_export, can_import, can_manage_backups, can_manage_users, can_run_testsuite, can_view_changelog) VALUES (?, ?, ?, ?, 1, 1, 1, 1, 1, 1, 1, 1)",
             ("admin", get_password_hash(admin_pass), "Administrator", "admin"),
         )
         conn.commit()

@@ -142,11 +142,35 @@
                                 </button>
                             </div>
                         </div>
+                        <!-- Filter & Search Bar -->
+                        <div class="table-filter-bar glass-panel" style="padding: 10px 14px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; border-radius: 8px;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1; min-width: 260px;">
+                                <div style="position: relative; flex: 1; min-width: 180px;">
+                                    <input type="text" id="pos-search-input" placeholder="🔍 Position oder Bemerkung suchen..." style="width: 100%; padding: 7px 10px; font-size: 0.88rem; border-radius: 6px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-color); color: var(--text-color);">
+                                </div>
+                                <select id="pos-category-filter" class="form-select" style="max-width: 190px; padding: 6px 10px; font-size: 0.85rem; height: 35px;">
+                                    <option value="">🏷️ Alle Kategorien</option>
+                                </select>
+                                <select id="pos-type-filter" class="form-select" style="max-width: 160px; padding: 6px 10px; font-size: 0.85rem; height: 35px;">
+                                    <option value="all">Alle Beträge</option>
+                                    <option value="expense">Nur Ausgaben (-)</option>
+                                    <option value="income">Nur Einnahmen (+)</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span id="pos-filter-count-badge" class="badge badge-neutral" style="font-size: 0.8rem; display: none;"></span>
+                                <button type="button" id="btn-reset-filters" class="btn btn-sm btn-outline hidden" style="font-size: 0.8rem; padding: 4px 8px;" title="Filter zurücksetzen">
+                                    🔄 Zurücksetzen
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="table-responsive">
                             <table class="data-table" id="table-positions">
                                 <thead>
                                     <tr>
                                         <th>Position</th>
+                                        <th>Kategorie</th>
                                         <th>Kosten</th>
                                         <th>Bemerkung</th>
                                         <th class="text-right th-actions hidden">Aktionen</th>
@@ -158,6 +182,7 @@
                                 <tfoot>
                                     <tr class="table-sum-row">
                                         <td><strong>Summe Ausgaben</strong></td>
+                                        <td></td>
                                         <td id="sum-positions-val"><strong>-0,00 €</strong></td>
                                         <td id="sum-positions-colspan" colspan="1"></td>
                                     </tr>
@@ -250,6 +275,9 @@
                     <div class="settings-tabs-bar">
                         <button type="button" class="settings-tab-btn" id="tab-btn-plans" data-tab="tab-settings-plans">
                             📋 Plan
+                        </button>
+                        <button type="button" class="settings-tab-btn" id="tab-btn-categories" data-tab="tab-settings-categories">
+                            🏷️ Kategorien
                         </button>
                         <button type="button" class="settings-tab-btn" id="tab-btn-users" data-tab="tab-settings-users">
                             👥 Benutzerverwaltung
@@ -421,6 +449,38 @@
                         </div>
                     </div>
 
+                    <!-- Tab: Kategorien-Verwaltung -->
+                    <div id="tab-settings-categories" class="settings-tab-content hidden">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <h4 style="margin: 0; font-size: 1.05rem;">🏷️ Kategorien-Verwaltung</h4>
+                                <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">
+                                    Verwalten Sie Ausgaben-Kategorien mit individuellen Farben und Symbolen für die Ausgabenübersicht.
+                                </p>
+                            </div>
+                            <button type="button" id="btn-open-new-category" class="btn btn-primary btn-sm">
+                                ➕ Neue Kategorie anlegen
+                            </button>
+                        </div>
+
+                        <div class="table-responsive" style="margin-top: 10px;">
+                            <table class="data-table" id="table-categories">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">Icon</th>
+                                        <th>Name</th>
+                                        <th>Farbe & Vorschau</th>
+                                        <th>Typ</th>
+                                        <th class="text-right" style="width: 120px;">Aktionen</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categories-list-body">
+                                    <!-- Dynamic categories -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Tab 2: Benutzerverwaltung (Bestehende Benutzer) -->
                     <div id="tab-settings-users" class="settings-tab-content hidden">
                         <div class="user-management-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -466,6 +526,10 @@
                                     <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
                                         <input type="checkbox" id="user-perm-manage-plans" style="width: 17px; height: 17px; cursor: pointer;">
                                         <span>📋 <strong>Plan-Verwaltung</strong> (Pläne anlegen, bearbeiten, archivieren, duplizieren, löschen)</span>
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+                                        <input type="checkbox" id="user-perm-manage-categories" style="width: 17px; height: 17px; cursor: pointer;">
+                                        <span>🏷️ <strong>Kategorien verwalten</strong> (Eigene Ausgaben-Kategorien erstellen, anpassen & löschen)</span>
                                     </label>
                                     <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
                                         <input type="checkbox" id="user-perm-export" checked style="width: 17px; height: 17px; cursor: pointer;">
@@ -660,6 +724,12 @@
                     </div>
                 </div>
                 <input type="hidden" id="pos-amount">
+                <div class="form-group">
+                    <label for="pos-category">Kategorie</label>
+                    <select id="pos-category" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
                 <div class="form-group">
                     <label for="pos-comment">Bemerkung</label>
                     <input type="text" id="pos-comment" placeholder="z.B. Wird quartalsweise eingezogen (COSMOS)">
@@ -1018,6 +1088,91 @@
                     <button type="submit" class="btn btn-primary">📤 Daten wiederherstellen</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add / Edit Category -->
+    <div id="modal-category" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 id="modal-category-title">➕ Neue Kategorie anlegen</h3>
+                <button class="modal-close" data-close="modal-category">&times;</button>
+            </div>
+            <form id="form-category">
+                <input type="hidden" id="category-edit-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="category-name">Name der Kategorie</label>
+                        <input type="text" id="category-name" required placeholder="z.B. Mobilität & Kfz">
+                    </div>
+                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label for="category-icon">Symbol / Emoji</label>
+                            <input type="text" id="category-icon" required value="📦" style="font-size: 1.2rem; text-align: center;">
+                            <div class="icon-presets" style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
+                                <button type="button" class="btn-preset-icon" data-icon="🏠">🏠</button>
+                                <button type="button" class="btn-preset-icon" data-icon="⚡">⚡</button>
+                                <button type="button" class="btn-preset-icon" data-icon="🛡️">🛡️</button>
+                                <button type="button" class="btn-preset-icon" data-icon="🔧">🔧</button>
+                                <button type="button" class="btn-preset-icon" data-icon="💰">💰</button>
+                                <button type="button" class="btn-preset-icon" data-icon="🚗">🚗</button>
+                                <button type="button" class="btn-preset-icon" data-icon="🛒">🛒</button>
+                                <button type="button" class="btn-preset-icon" data-icon="🌐">🌐</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="category-color">Farbe</label>
+                            <input type="color" id="category-color" value="#3b82f6" style="height: 42px; width: 100%; padding: 2px; border-radius: 6px; cursor: pointer;">
+                            <div class="color-presets" style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
+                                <span class="color-preset-dot" data-color="#3b82f6" style="background:#3b82f6; width:20px; height:20px; border-radius:50%; cursor:pointer; display:inline-block;"></span>
+                                <span class="color-preset-dot" data-color="#10b981" style="background:#10b981; width:20px; height:20px; border-radius:50%; cursor:pointer; display:inline-block;"></span>
+                                <span class="color-preset-dot" data-color="#eab308" style="background:#eab308; width:20px; height:20px; border-radius:50%; cursor:pointer; display:inline-block;"></span>
+                                <span class="color-preset-dot" data-color="#f97316" style="background:#f97316; width:20px; height:20px; border-radius:50%; cursor:pointer; display:inline-block;"></span>
+                                <span class="color-preset-dot" data-color="#8b5cf6" style="background:#8b5cf6; width:20px; height:20px; border-radius:50%; cursor:pointer; display:inline-block;"></span>
+                                <span class="color-preset-dot" data-color="#ec4899" style="background:#ec4899; width:20px; height:20px; border-radius:50%; cursor:pointer; display:inline-block;"></span>
+                                <span class="color-preset-dot" data-color="#06b6d4" style="background:#06b6d4; width:20px; height:20px; border-radius:50%; cursor:pointer; display:inline-block;"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 14px;">
+                        <label>Vorschau</label>
+                        <div style="margin-top: 4px;">
+                            <span id="category-preview-badge" class="category-pill" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-color: rgba(59, 130, 246, 0.4);">
+                                <span id="preview-icon">📦</span>
+                                <span id="preview-name">Kategoriename</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="gap: 8px;">
+                    <button type="button" class="btn btn-outline" data-close="modal-category">Abbrechen</button>
+                    <button type="submit" id="btn-submit-category" class="btn btn-primary">💾 Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Confirm Delete Category -->
+    <div id="modal-confirm-delete-category" class="modal-overlay hidden">
+        <div class="modal-dialog glass-panel" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 style="color: var(--danger-color, #ef4444);">🗑️ Kategorie löschen</h3>
+                <button class="modal-close" data-close="modal-confirm-delete-category">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="delete-category-id">
+                <p>
+                    Möchten Sie die Kategorie <strong id="delete-category-name-display">„...“</strong> wirklich löschen?
+                </p>
+                <div class="alert alert-info" style="margin-top: 1rem; font-size: 0.85rem;">
+                    ℹ️ Alle Positionen, die dieser Kategorie zugeordnet sind, werden automatisch auf die Standardkategorie <strong>„Allgemein“</strong> umgestellt.
+                </div>
+            </div>
+            <div class="modal-footer" style="gap: 8px;">
+                <button type="button" class="btn btn-outline" data-close="modal-confirm-delete-category">Abbrechen</button>
+                <button id="btn-execute-delete-category" type="button" class="btn btn-danger">🗑️ Löschen</button>
+            </div>
         </div>
     </div>
 

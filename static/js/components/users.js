@@ -26,6 +26,7 @@ export function resetUserForm() {
     if (elements.userPasswordHelp) elements.userPasswordHelp.classList.add("hidden");
     if (elements.userRole) elements.userRole.value = "user";
     if (elements.userPermManagePlans) elements.userPermManagePlans.checked = false;
+    if (elements.userPermManageCategories) elements.userPermManageCategories.checked = false;
     if (elements.userPermExport) elements.userPermExport.checked = true;
     if (elements.userPermImport) elements.userPermImport.checked = false;
     if (elements.userPermManageBackups) elements.userPermManageBackups.checked = false;
@@ -60,6 +61,7 @@ export function startEditUser(user) {
     if (elements.userPasswordHelp) elements.userPasswordHelp.classList.remove("hidden");
     if (elements.userRole) elements.userRole.value = user.role;
     if (elements.userPermManagePlans) elements.userPermManagePlans.checked = !!user.can_manage_plans;
+    if (elements.userPermManageCategories) elements.userPermManageCategories.checked = !!user.can_manage_categories;
     if (elements.userPermExport) elements.userPermExport.checked = !!user.can_export;
     if (elements.userPermImport) elements.userPermImport.checked = !!user.can_import;
     if (elements.userPermManageBackups) elements.userPermManageBackups.checked = !!user.can_manage_backups;
@@ -121,7 +123,8 @@ export async function loadUsersList() {
         if (isAdmin) {
             permBadges.push(`<span class="badge badge-admin">👑 Vollzugriff</span>`);
         } else {
-            if (u.can_manage_plans) permBadges.push(`<span class="badge badge-saved">📋 Pläne verwalten</span>`);
+            if (u.can_manage_plans) permBadges.push(`<span class="badge badge-saved">📋 Pläne</span>`);
+            if (u.can_manage_categories) permBadges.push(`<span class="badge badge-saved">🏷️ Kategorien</span>`);
             if (u.can_export) permBadges.push(`<span class="badge badge-saved">💾 Export</span>`);
             if (u.can_import) permBadges.push(`<span class="badge badge-saved">📤 Import</span>`);
             if (u.can_manage_backups) permBadges.push(`<span class="badge badge-saved">🛡️ Backups</span>`);

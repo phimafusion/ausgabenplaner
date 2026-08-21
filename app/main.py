@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from app.database import init_db, get_db_connection
 from app import backups
-from app.routers import auth, users, plans, data, backups as backups_router, testsuite
+from app.routers import auth, users, plans, data, backups as backups_router, testsuite, categories
 
 APP_VERSION = "4.0.0"
 
@@ -102,6 +102,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(plans.router)
+app.include_router(categories.router)
 app.include_router(data.router)
 app.include_router(backups_router.router)
 app.include_router(testsuite.router)

@@ -23,6 +23,13 @@ import {
     executeDeletePlan,
     getSelectedUserPlanIds,
 } from "./components/plans.js";
+import {
+    loadCategories,
+    openCreateCategoryModal,
+    openEditCategoryModal,
+    openDeleteCategoryModal,
+    updateCategoryPreview,
+} from "./components/categories.js";
 
 export function setupEventListeners({
     login,
@@ -214,6 +221,7 @@ export function setupEventListeners({
                 return;
             }
             const comment = elements.posComment.value.trim();
+            const category = elements.posCategory ? elements.posCategory.value : "Allgemein";
 
             if (!state.currentVersionDetails) return;
 
@@ -224,6 +232,7 @@ export function setupEventListeners({
                     pos.amount = amount;
                     pos.amount_formatted = formatCurrency(amount);
                     pos.comment = comment;
+                    pos.category = category;
                 }
             } else {
                 const newPos = {
@@ -232,7 +241,7 @@ export function setupEventListeners({
                     amount: amount,
                     amount_formatted: formatCurrency(amount),
                     comment: comment,
-                    category: "Allgemein",
+                    category: category,
                     sort_order: state.currentVersionDetails.positions.length,
                 };
                 state.currentVersionDetails.positions.push(newPos);
@@ -242,6 +251,48 @@ export function setupEventListeners({
             renderVersionDetails(state.currentVersionDetails);
             setDirty(true);
             closeModal("modal-position");
+        });
+    }
+
+    // Live Search & Filter Bar for Positions
+    if (elements.posSearchInput) {
+        elements.posSearchInput.addEventListener("input", (e) => {
+            state.posSearchQuery = e.target.value;
+            if (state.currentVersionDetails) {
+                renderVersionDetails(state.currentVersionDetails);
+            }
+        });
+    }
+
+    if (elements.posCategoryFilter) {
+        elements.posCategoryFilter.addEventListener("change", (e) => {
+            state.posCategoryFilter = e.target.value;
+            if (state.currentVersionDetails) {
+                renderVersionDetails(state.currentVersionDetails);
+            }
+        });
+    }
+
+    if (elements.posTypeFilter) {
+        elements.posTypeFilter.addEventListener("change", (e) => {
+            state.posTypeFilter = e.target.value;
+            if (state.currentVersionDetails) {
+                renderVersionDetails(state.currentVersionDetails);
+            }
+        });
+    }
+
+    if (elements.btnResetFilters) {
+        elements.btnResetFilters.addEventListener("click", () => {
+            state.posSearchQuery = "";
+            state.posCategoryFilter = "";
+            state.posTypeFilter = "all";
+            if (elements.posSearchInput) elements.posSearchInput.value = "";
+            if (elements.posCategoryFilter) elements.posCategoryFilter.value = "";
+            if (elements.posTypeFilter) elements.posTypeFilter.value = "all";
+            if (state.currentVersionDetails) {
+                renderVersionDetails(state.currentVersionDetails);
+            }
         });
     }
 
@@ -709,6 +760,7 @@ export function setupEventListeners({
             const isAdmin = elements.userRole.value === "admin";
             if (isAdmin) {
                 if (elements.userPermManagePlans) elements.userPermManagePlans.checked = true;
+                if (elements.userPermManageCategories) elements.userPermManageCategories.checked = true;
                 if (elements.userPermExport) elements.userPermExport.checked = true;
                 if (elements.userPermImport) elements.userPermImport.checked = true;
                 if (elements.userPermManageBackups) elements.userPermManageBackups.checked = true;
@@ -729,6 +781,7 @@ export function setupEventListeners({
             const password = elements.userPassword.value;
             const role = elements.userRole.value;
             const can_manage_plans = elements.userPermManagePlans ? elements.userPermManagePlans.checked : false;
+            const can_manage_categories = elements.userPermManageCategories ? elements.userPermManageCategories.checked : false;
             const can_export = elements.userPermExport ? elements.userPermExport.checked : true;
             const can_import = elements.userPermImport ? elements.userPermImport.checked : false;
             const can_manage_backups = elements.userPermManageBackups ? elements.userPermManageBackups.checked : false;
@@ -739,6 +792,7 @@ export function setupEventListeners({
 
             const permissionsPayload = {
                 can_manage_plans,
+                can_manage_categories,
                 can_export,
                 can_import,
                 can_manage_backups,
@@ -795,5 +849,104 @@ export function setupEventListeners({
     }
     if (elements.btnCreateManualBackup) {
         elements.btnCreateManualBackup.addEventListener("click", createManualBackup);
+    }
+
+    // Categories Management Listeners
+    if (elements.btnOpenNewCategory) {
+        elements.btnOpenNewCategory.addEventListener("click", openCreateCategoryModal);
+    }
+
+    if (elements.categoryName) {
+        elements.categoryName.addEventListener("input", updateCategoryPreview);
+    }
+    if (elements.categoryIcon) {
+        elements.categoryIcon.addEventListener("input", updateCategoryPreview);
+    }
+    if (elements.categoryColor) {
+        elements.categoryColor.addEventListener("input", updateCategoryPreview);
+    }
+
+    document.querySelectorAll(".btn-preset-icon").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const icon = btn.getAttribute("data-icon");
+            if (elements.categoryIcon && icon) {
+                elements.categoryIcon.value = icon;
+                updateCategoryPreview();
+            }
+        });
+    });
+
+    document.querySelectorAll(".color-preset-dot").forEach((dot) => {
+        dot.addEventListener("click", () => {
+            const color = dot.getAttribute("data-color");
+            if (elements.categoryColor && color) {
+                elements.categoryColor.value = color;
+                updateCategoryPreview();
+            }
+        });
+    });
+
+    if (elements.formCategory) {
+        elements.formCategory.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const editId = elements.categoryEditId ? elements.categoryEditId.value : "";
+            const name = elements.categoryName.value.trim();
+            const icon = elements.categoryIcon.value.trim() || "📦";
+            const color = elements.categoryColor.value || "#3b82f6";
+
+            if (!name) return;
+
+            try {
+                if (editId) {
+                    const resp = await apiFetch(`/api/categories/${editId}`, {
+                        method: "PATCH",
+                        body: { name, icon, color },
+                    });
+                    if (!resp.ok) {
+                        const err = await resp.json();
+                        throw new Error(err.detail || "Fehler beim Bearbeiten der Kategorie");
+                    }
+                } else {
+                    const resp = await apiFetch("/api/categories", {
+                        method: "POST",
+                        body: { name, icon, color },
+                    });
+                    if (!resp.ok) {
+                        const err = await resp.json();
+                        throw new Error(err.detail || "Fehler beim Erstellen der Kategorie");
+                    }
+                }
+
+                closeModal("modal-category");
+                await loadCategories();
+                if (state.currentVersionDetails) {
+                    renderVersionDetails(state.currentVersionDetails);
+                }
+            } catch (err) {
+                alert(err.message || "Fehler beim Speichern der Kategorie");
+            }
+        });
+    }
+
+    if (elements.btnExecuteDeleteCategory) {
+        elements.btnExecuteDeleteCategory.addEventListener("click", async () => {
+            const catId = elements.deleteCategoryId ? elements.deleteCategoryId.value : "";
+            if (!catId) return;
+
+            try {
+                const resp = await apiFetch(`/api/categories/${catId}`, { method: "DELETE" });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || "Fehler beim Löschen der Kategorie");
+                }
+                closeModal("modal-confirm-delete-category");
+                await loadCategories();
+                if (state.currentVersionDetails) {
+                    renderVersionDetails(state.currentVersionDetails);
+                }
+            } catch (err) {
+                alert(err.message || "Fehler beim Löschen der Kategorie");
+            }
+        });
     }
 }

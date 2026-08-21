@@ -46,11 +46,13 @@ Dieses Dokument fasst geplante Erweiterungen, architektonische Verbesserungen un
 ---
 
 ## 🏷️ 4. Kategorien-Management & Tabellen-Filter
-- [ ] **Kategorien-Editor**:
+- [x] **Kategorien-Editor**:
   - Eigene Kategorien mit individuellen Farb-Tags anlegen und verwalten.
-- [ ] **Live-Suche & Tabellen-Filter**:
+- [x] **Granulare Benutzerberechtigung**:
+  - Recht `can_manage_categories` per Checkbox im Benutzerformular vergeben.
+- [x] **Live-Suche & Tabellen-Filter**:
   - Sofortsuche über Positionen und Bemerkungen in der Hauptmaske.
-  - Filtern nach Kategorie, Betrag oder Beitragszahler.
+  - Filtern nach Kategorie und Betragstyp (Ausgaben/Einnahmen) mit Live-Trefferzähler.
 
 ---
 

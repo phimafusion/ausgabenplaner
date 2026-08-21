@@ -12,7 +12,7 @@ from app.database import init_db, get_db_connection
 from app import backups
 from app.routers import auth, users, plans, data, backups as backups_router, testsuite, categories
 
-APP_VERSION = "4.0.0"
+APP_VERSION = "1.3.0"
 
 
 async def backup_scheduler_loop():

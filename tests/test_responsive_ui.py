@@ -314,6 +314,7 @@ def test_version_badge_changelog_and_plan_deletion_ui():
     assert 'id="tab-settings-changelog"' in content
     assert "<details" in content
     assert "changelog-summary" in content
+    assert "v1.3.0" in content
     assert "v1.2.0" in content
     assert "v1.1.0" in content
     assert "v1.0.0" in content

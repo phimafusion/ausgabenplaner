@@ -21,7 +21,7 @@
             <div class="login-card glass-panel">
                 <div class="brand-header">
                     <div class="brand-icon">📊</div>
-                    <h1>Ausgabenplaner <span class="badge badge-version" style="font-size: 0.75rem; vertical-align: middle;">v1.2.0</span></h1>
+                    <h1>Ausgabenplaner <span class="badge badge-version" style="font-size: 0.75rem; vertical-align: middle;">v1.3.0</span></h1>
                     <p class="subtitle">Haushaltskosten & Beitragsverwaltung</p>
                 </div>
                 <form id="login-form">
@@ -51,7 +51,7 @@
                 <div class="navbar-brand">
                     <span class="brand-logo">📊</span>
                     <span class="brand-name">Ausgabenplaner</span>
-                    <span class="badge badge-version" id="app-version-badge">v1.2.0</span>
+                    <span class="badge badge-version" id="app-version-badge">v1.3.0</span>
                 </div>
                 <button id="btn-mobile-menu" class="btn-mobile-nav" aria-label="Menü öffnen/schließen">
                     <span class="hamburger-bar"></span>
@@ -238,7 +238,7 @@
                 <div class="navbar-brand brand-clickable" id="btn-brand-logo-settings" style="cursor: pointer;" title="Zurück zum Dashboard">
                     <span class="brand-logo">📊</span>
                     <span class="brand-name">Ausgabenplaner</span>
-                    <span class="badge badge-version" id="settings-app-version-badge">v1.2.0</span>
+                    <span class="badge badge-version" id="settings-app-version-badge">v1.3.0</span>
                 </div>
                 <div class="navbar-actions">
                     <div class="user-badge glass-badge">
@@ -614,12 +614,35 @@
                         </div>
 
                         <div class="changelog-timeline">
+                            <!-- Release v1.3.0 -->
+                            <details class="changelog-card glass-panel" style="border-left: 4px solid var(--primary-color, #38bdf8);" open>
+                                <summary class="changelog-summary">
+                                    <div class="changelog-summary-left">
+                                        <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-main);">v1.3.0</h3>
+                                        <span class="badge badge-success">Aktuell</span>
+                                    </div>
+                                    <div class="changelog-summary-right">
+                                        <span class="text-muted" style="font-size: 0.85rem;">21. August 2026</span>
+                                        <span class="changelog-chevron">▼</span>
+                                    </div>
+                                </summary>
+                                <div class="changelog-body">
+                                    <ul class="changelog-list" style="padding-left: 20px; line-height: 1.7; font-size: 0.9rem;">
+                                        <li>🏷️ <strong>Kategorienverwaltung & Live-Filter</strong>: Eigene Kategorien mit individuellen Farben und Icons anlegen/bearbeiten, Tabellen-Echtzeitfilter und Suchmaske in der Hauptansicht.</li>
+                                        <li>💾 <strong>Stand direkt aktualisieren (In-Place Update)</strong>: Änderungen können nun direkt im bestehenden Stand gespeichert werden, ohne jedes Mal einen neuen Eintrag in der Historie zu erzeugen.</li>
+                                        <li>📦 <strong>Vollständiger JSON-Export & Import</strong>: Benutzerdefinierte Kategorien (Farben, Icons) und der Archivierungsstatus von Plänen werden nun lückenlos im JSON-Export mitgesichert und wiederhergestellt.</li>
+                                        <li>📱 <strong>Mobile UI & Responsive Design</strong>: Optimiertes mobiles Layout, Touch-freundliche Buttons und flüssige Drawer/Modals für Smartphones.</li>
+                                        <li>🛡️ <strong>Granulare Benutzerberechtigungen</strong>: Detaillierte Rechteverwaltung für Kategorien, Pläne, Exporte, Importe, Backups und Testsuite.</li>
+                                    </ul>
+                                </div>
+                            </details>
+
                             <!-- Release v1.2.0 -->
-                            <details class="changelog-card glass-panel" style="border-left: 4px solid var(--primary-color, #38bdf8);">
+                            <details class="changelog-card glass-panel" style="border-left: 4px solid var(--text-muted, #94a3b8); opacity: 0.95;">
                                 <summary class="changelog-summary">
                                     <div class="changelog-summary-left">
                                         <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-main);">v1.2.0</h3>
-                                        <span class="badge badge-success">Aktuell</span>
+                                        <span class="badge badge-secondary">Release</span>
                                     </div>
                                     <div class="changelog-summary-right">
                                         <span class="text-muted" style="font-size: 0.85rem;">21. August 2026</span>
